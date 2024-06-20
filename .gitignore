@@ -396,3 +396,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+
+Multiple_CUDA_Transpose_code/build
+OpenCL_CUDA_Transpose_code/build
+backup
