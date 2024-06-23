@@ -398,6 +398,7 @@ FodyWeavers.xsd
 *.sln.iml
 
 
-Multiple_CUDA_Transpose_code/build
-OpenCL_CUDA_Transpose_code/build
+CODE_Multiple_CUDA_Transpose/build
+CODE_OpenCL_CUDA_Transpose/build
+CODE_HDK_GPU_IPC/build
 backup

@@ -5,7 +5,6 @@ set(library_name HDK_DOP_Multiple)
 find_package(CUDA REQUIRED)
 include_directories(${CUDA_INCLUDE_DIRS})
 
-# 设置CUDA架构为sm_86
 set(CUDA_ARCHITECTURES "86")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -gencode arch=compute_86,code=sm_86")
 
