@@ -25,7 +25,7 @@ GAS_Read_Buffer::GAS_Read_Buffer(const SIM_DataFactory* factory) : BaseClass(fac
 
 
 GAS_Read_Buffer::~GAS_Read_Buffer() {
-    GeometryManager::free();
+    GeometryManager::totallyfree();
 }
 
 bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
@@ -42,6 +42,7 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
     transferPTAttribTOCUDA(geo, gdp);
     transferPRIMAttribTOCUDA(geo, gdp);
+    transferDTAttribTOCUDA(geo, gdp);
 
     return true;
 }
@@ -75,8 +76,9 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 
 void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
 
+    if (GeometryManager::instance->tetInd.rows() == gdp->getNumPrimitives()) return;
+
     Eigen::MatrixXi tetInd(gdp->getNumPrimitives(), 4);
-    
     GA_Offset primoff;
     GA_FOR_ALL_PRIMOFF(gdp, primoff) {
         const GA_Primitive* prim = gdp->getPrimitive(primoff);
@@ -90,5 +92,56 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 
     GeometryManager::initializePrims(tetInd);
     GeometryManager::copyPrimsDataToCUDA();
+
+}
+
+
+void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
+
+    // TODO: surf info also be delete after each frame
+    if (GeometryManager::instance->surfEdge.rows() > 0 && 
+        GeometryManager::instance->surfInd.rows() > 0 &&
+        GeometryManager::instance->surfPos.rows() > 0) return;
+
+
+    GA_ROHandleDA surfposHandle(gdp, GA_ATTRIB_DETAIL, "surf_positions");
+    CHECK_ERROR(surfposHandle.isValid(), "Failed to get surf_positions attribute");
+    UT_DoubleArray surf_positions;
+    surfposHandle.get(0, surf_positions);
+    int numSurfPts = surf_positions.size() / 3;
+    Eigen::MatrixXd surfPos(numSurfPts, 3);
+    for (int i = 0; i < numSurfPts; ++i) {
+        surfPos(i, 0) = surf_positions[i * 3];
+        surfPos(i, 1) = surf_positions[i * 3 + 1];
+        surfPos(i, 2) = surf_positions[i * 3 + 2];
+    }
+
+
+    GA_ROHandleIA surfedgeHandle(gdp, GA_ATTRIB_DETAIL, "surf_edges");
+    CHECK_ERROR(surfedgeHandle.isValid(), "Failed to get surf_edges attribute");
+    UT_IntArray surf_edges;
+    surfedgeHandle.get(0, surf_edges);
+    int numEdges = surf_edges.size() / 2;
+    Eigen::MatrixXi surfEdge(numEdges, 2);
+    for (int i = 0; i < numEdges; ++i) {
+        surfEdge(i, 0) = surf_edges[i * 2];
+        surfEdge(i, 1) = surf_edges[i * 2 + 1];
+    }
+
+
+    GA_ROHandleIA surfIndHandle(gdp, GA_ATTRIB_DETAIL, "surf_triangles");
+    CHECK_ERROR(surfIndHandle.isValid(), "Failed to get surf_triangles attribute");
+    UT_IntArray surf_triangles;
+    surfIndHandle.get(0, surf_triangles);
+    int numSurfTri = surf_triangles.size() / 3;
+    Eigen::MatrixXi surfInd(numSurfTri, 3);
+    for (int i = 0; i < numSurfTri; ++i) {
+        surfInd(i, 0) = surf_triangles[i * 3];
+        surfInd(i, 1) = surf_triangles[i * 3 + 1];
+        surfInd(i, 2) = surf_triangles[i * 3 + 2];
+    }
+
+    GeometryManager::initializeSurfs(surfPos, surfInd, surfEdge);
+    GeometryManager::copyDetailsDataToCUDA();
 
 }

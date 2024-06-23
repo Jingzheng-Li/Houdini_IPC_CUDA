@@ -22,7 +22,7 @@ const SIM_DopDescription* GAS_Write_Buffer::getDopDescription() {
 GAS_Write_Buffer::GAS_Write_Buffer(const SIM_DataFactory* factory) : BaseClass(factory) {}
 
 GAS_Write_Buffer::~GAS_Write_Buffer() {
-    GeometryManager::free();
+    GeometryManager::totallyfree();
 }
 
 bool GAS_Write_Buffer::solveGasSubclass(SIM_Engine& engine,
@@ -66,20 +66,19 @@ void GAS_Write_Buffer::transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detai
         velHandle.set(ptoff, UT_Vector3(tetvel(ptoff, 0), tetvel(ptoff, 1), tetvel(ptoff, 2)));
         massHandle.set(ptoff, tetmass(ptoff));
     }
-
 }
 
 void GAS_Write_Buffer::transferPRIMAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp) {
     
-    Eigen::MatrixXi &tetIndices = GeometryManager::instance->tetInd;
+    // Eigen::MatrixXi &tetIndices = GeometryManager::instance->tetInd;
     
-    GeometryManager::copyPrimsDataFromCUDA();
-    CHECK_ERROR((tetIndices.rows() == gdp->getNumPrimitives()), "Number of primitives does not match");
+    // GeometryManager::copyPrimsDataFromCUDA();
+    // CHECK_ERROR((tetIndices.rows() == gdp->getNumPrimitives()), "Number of primitives does not match");
 
-    GA_Offset primoff;
-    GA_FOR_ALL_PRIMOFF(gdp, primoff) {
-        // const GA_Primitive* prim = gdp->getPrimitive(primoff);
+    // GA_Offset primoff;
+    // GA_FOR_ALL_PRIMOFF(gdp, primoff) {
+    //     // const GA_Primitive* prim = gdp->getPrimitive(primoff);
         
-    }
+    // }
 
 }

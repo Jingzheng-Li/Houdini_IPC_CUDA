@@ -15,7 +15,8 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_86,code=sm_86")
 set(SOURCES
     RWBuffer/main_readBuffer.cpp
     RWBuffer/main_writeBuffer.cpp
-    # UTILS/main_transformLissajous.cpp
+    CCD/main_LBVH.cpp
+
     common_init.cpp
 )
 
@@ -23,15 +24,17 @@ set(SOURCES
 set(HEADERS
     RWBuffer/main_readBuffer.hpp
     RWBuffer/main_writeBuffer.hpp
+    CCD/main_LBVH.hpp
+    CCD/LBVH.cuh
+
+    UTILS/CUDAUtils.hpp
     UTILS/HoudiniUtils.hpp
     UTILS/GeometryManager.hpp
-    UTILS/cuda_kernels.cuh
-    # UTILS/main_transformLissajous.hpp
 )
 
 # Gather CUDA files
 set(CUDA_SOURCES
-    UTILS/cuda_kernels.cu
+    CCD/LBVH.cu
 )
 
 # Add library
@@ -53,4 +56,5 @@ target_include_directories(${library_name} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/RWBuffer
     ${CMAKE_SOURCE_DIR}/src/UTILS
+    ${CMAKE_SOURCE_DIR}/src/CCD
 )
