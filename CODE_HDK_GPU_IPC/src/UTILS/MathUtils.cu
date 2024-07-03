@@ -5,7 +5,7 @@
 #include "zensim/math/matrix/QRSVD.hpp"
 #include "zensim/math/bit/Bits.h"
 
-namespace __GEIGEN__ {
+namespace MATHUTILS {
 
 	__device__ __host__ void __init_Mat3x3(Matrix3x3d& M, const double& val) {
 		for (int i = 0;i < 3;i++) {
@@ -1290,7 +1290,7 @@ namespace __GEIGEN__ {
 		return mat;
 	}
 
-	// __device__ void SVD(const Matrix3x3d& F, Matrix3x3d& Uout, Matrix3x3d& Vout, Matrix3x3d& Sigma) {
+	// __device__ __host__ void SVD(const Matrix3x3d& F, Matrix3x3d& Uout, Matrix3x3d& Vout, Matrix3x3d& Sigma) {
 	// 	using matview = zs::vec_view<double, zs::integer_seq<int, 3, 3>>;
 	// 	using cmatview = zs::vec_view<const double, zs::integer_seq<int, 3, 3>>;
 	// 	using vec3 = zs::vec<double, 3>;
@@ -1469,6 +1469,48 @@ namespace __GEIGEN__ {
             }
         }
     }
+
+	// calcuate square distance between point to point
+	__device__ __host__ 
+	void __distancePointPoint(const double3& v0, const double3& v1, double& d) {
+		d = __squaredNorm(__minus(v0, v1));
+	}
+
+	// calcuate square distance between point to triangle
+	__device__ __host__ 
+	void __distancePointTriangle(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d) {
+		double3 b = __v_vec_cross(__minus(v2, v1), __minus(v3, v1));
+		double3 test = __minus(v0, v1);
+		double aTb = __v_vec_dot(__minus(v0, v1), b);
+		d = aTb * aTb / __squaredNorm(b);
+	}
+
+	// calculate square distance between point to edge
+	__device__ __host__ 
+	void __distancePointEdge(const double3& v0, const double3& v1, const double3& v2, double& d) {
+		d = __squaredNorm(__v_vec_cross(__minus(v1, v0), __minus(v2, v0))) / __squaredNorm(__minus(v2, v1));
+	}
+
+	// calculate square distance between edge to edge
+	__device__ __host__ 
+	void __distanceEdgeEdge(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d) {
+		double3 b = __v_vec_cross(__minus(v1, v0), __minus(v3, v2));//(v1 - v0).cross(v3 - v2);
+		double aTb = __v_vec_dot(__minus(v2, v0), b);//(v2 - v0).dot(b);
+		d = aTb * aTb / __squaredNorm(b);
+	}
+
+	// calculate square distance between edge to edge which two are parallel
+	__device__ __host__ 
+	void __distanceEdgeEdgeParallel(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d) {
+		double3 b = __v_vec_cross(__v_vec_cross(__minus(v1, v0), __minus(v2, v0)), __minus(v1, v0));
+		double aTb = __v_vec_dot(__minus(v2, v0), b);//(v2 - v0).dot(b);
+		d = aTb * aTb / __squaredNorm(b);
+	}
+
+	__device__ __host__
+	double __computeEdgeProductNorm(const double3& v0, const double3& v1, const double3& v2, const double3& v3) {
+		return 1e-3 * __squaredNorm(__minus(v0, v1)) * __squaredNorm(__minus(v2, v3));
+	}
 
 }
 

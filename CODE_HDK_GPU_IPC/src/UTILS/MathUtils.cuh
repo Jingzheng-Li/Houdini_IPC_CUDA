@@ -4,7 +4,7 @@
 
 #include "MathUtils.hpp"
 
-namespace __GEIGEN__ {
+namespace MATHUTILS {
 
 	__device__ __host__ void __init_Mat3x3(Matrix3x3d& M, const double& val);
 
@@ -146,8 +146,6 @@ namespace __GEIGEN__ {
 
 	__device__ __host__ Matrix3x3d __S_Mat_multiply(const Matrix3x3d& A, const double& B);
 
-
-
 	__device__ __host__ Matrix3x3d __Transpose3x3(Matrix3x3d input);
 
 	__device__ __host__ Matrix12x9d __Transpose9x12(const Matrix9x12d& input);
@@ -222,14 +220,13 @@ namespace __GEIGEN__ {
 
 	__device__ __host__ void __normalized_vec6_double(Vector6& v6);
 
-
 	__device__ __host__ Vector6 __Mat3x2_to_vec6_double(const Matrix3x2d& F);
 
 	__device__ __host__ Matrix3x3d __vec9_to_Mat3x3_double(const double vec9[9]);
 
 	__device__ __host__ Matrix2x2d __vec4_to_Mat2x2_double(const double vec4[4]);
 
-	__device__ void SVD(const Matrix3x3d& F, Matrix3x3d& Uout, Matrix3x3d& Vout, Matrix3x3d& Sigma);
+	__device__ __host__ void SVD(const Matrix3x3d& F, Matrix3x3d& Uout, Matrix3x3d& Vout, Matrix3x3d& Sigma);
 
 	__device__ __host__ void __makePD2x2(const double& a00, const double& a01, const double& a10, const double& a11, double eigenValues[2], int& num, double2 eigenVectors[2], double eps = 1e-32);
 
@@ -247,6 +244,23 @@ namespace __GEIGEN__ {
 
     __device__ __host__ void __s_M_Mat_MT_multiply(const Matrix3x3d& A, const Matrix3x3d& B, const Matrix3x3d& C, const double& coe, Matrix3x3d& output);
 
+	__device__ __host__ 
+	void __distancePointPoint(const double3& v0, const double3& v1, double& d);
+
+	__device__ __host__ 
+	void __distancePointTriangle(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d);
+
+	__device__ __host__ 
+	void __distancePointEdge(const double3& v0, const double3& v1, const double3& v2, double& d);
+
+	__device__ __host__ 
+	void __distanceEdgeEdge(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d);
+
+	__device__ __host__ 
+	void __distanceEdgeEdgeParallel(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d);
+
+	__device__ __host__
+	double __computeEdgeProductNorm(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
 }
 
 

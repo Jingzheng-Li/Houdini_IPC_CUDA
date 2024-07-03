@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "UTILS/HoudiniUtils.hpp"
@@ -28,3 +27,4 @@ private:
                         getDopDescription());
 
 };
+

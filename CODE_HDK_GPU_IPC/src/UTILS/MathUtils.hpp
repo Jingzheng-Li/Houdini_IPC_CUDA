@@ -1,6 +1,6 @@
 #pragma once
 
-namespace __GEIGEN__ {
+namespace MATHUTILS {
 	struct Vector4 {
 		double v[4];
 	};

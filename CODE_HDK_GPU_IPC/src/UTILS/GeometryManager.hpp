@@ -6,7 +6,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 
-// #include "CCD/LBVH.cuh"
+#include "CCD/LBVH.cuh"
 #include "CUDAUtils.hpp"
 
 class GeometryManager {
@@ -57,121 +57,61 @@ public:
     }
 
     static void copyPointsDataToCUDA() {
-        copyToCUDA(instance->tetPos, instance->cudaTetPos);
-        copyToCUDA(instance->tetVel, instance->cudaTetVel);
-        copyToCUDA(instance->tetMass, instance->cudaTetMass);
+        copyToCUDASafe(instance->tetPos, instance->cudaTetPos);
+        copyToCUDASafe(instance->tetVel, instance->cudaTetVel);
+        copyToCUDASafe(instance->tetMass, instance->cudaTetMass);
     }
 
     static void copyPrimsDataToCUDA() {
-        copyToCUDA(instance->tetInd, instance->cudaTetInd);
+        copyToCUDASafe(instance->tetInd, instance->cudaTetInd);
     }
 
     static void copyDetailsDataToCUDA() {
-        copyToCUDA(instance->surfPos, instance->cudaSurfPos);
-        copyToCUDA(instance->surfInd, instance->cudaSurfInd);
-        copyToCUDA(instance->surfEdge, instance->cudaSurfEdge);
+        copyToCUDASafe(instance->surfPos, instance->cudaSurfPos);
+        copyToCUDASafe(instance->surfInd, instance->cudaSurfInd);
+        copyToCUDASafe(instance->surfEdge, instance->cudaSurfEdge);
     }
 
     static void copyPointsDataFromCUDA() {
-        copyFromCUDA(instance->tetPos, instance->cudaTetPos);
-        copyFromCUDA(instance->tetVel, instance->cudaTetVel);
-        copyFromCUDA(instance->tetMass, instance->cudaTetMass);
+        copyFromCUDASafe(instance->tetPos, instance->cudaTetPos);
+        copyFromCUDASafe(instance->tetVel, instance->cudaTetVel);
+        copyFromCUDASafe(instance->tetMass, instance->cudaTetMass);
     }
 
     static void copyPrimsDataFromCUDA() {
-        copyFromCUDA(instance->tetInd, instance->cudaTetInd);
+        copyFromCUDASafe(instance->tetInd, instance->cudaTetInd);
     }
 
     static void copyDetailsDataFromCUDA() {
-        copyFromCUDA(instance->surfPos, instance->cudaSurfPos);
-        copyFromCUDA(instance->surfInd, instance->cudaSurfInd);
-        copyFromCUDA(instance->surfEdge, instance->cudaSurfEdge);
+        copyFromCUDASafe(instance->surfPos, instance->cudaSurfPos);
+        copyFromCUDASafe(instance->surfInd, instance->cudaSurfInd);
+        copyFromCUDASafe(instance->surfEdge, instance->cudaSurfEdge);
     }
 
 private:
-    GeometryManager() : cudaTetPos(nullptr), cudaTetVel(nullptr), cudaTetMass(nullptr), cudaTetInd(nullptr),
-                        cudaSurfPos(nullptr), cudaSurfInd(nullptr), cudaSurfEdge(nullptr) {}
-
-    template <typename EigenType, typename CudaType>
-    static void copyToCUDA(const EigenType& data, CudaType* cudaData) {
-        std::vector<CudaType> temp(data.rows());
-        for (int i = 0; i < data.rows(); ++i) {
-            if constexpr (std::is_same<CudaType, double3>::value) {
-                temp[i] = make_double3(data(i, 0), data(i, 1), data(i, 2));
-            } else if constexpr (std::is_same<CudaType, int4>::value) {
-                temp[i] = make_int4(data(i, 0), data(i, 1), data(i, 2), data(i, 3));
-            } else if constexpr (std::is_same<CudaType, int3>::value) {
-                temp[i] = make_int3(data(i, 0), data(i, 1), data(i, 2));
-            } else if constexpr (std::is_same<CudaType, int2>::value) {
-                temp[i] = make_int2(data(i, 0), data(i, 1));
-            } else if constexpr (std::is_same<CudaType, double>::value) {
-                temp[i] = data(i);
-            }
-        }
-        CUDA_SAFE_CALL(cudaMemcpy(cudaData, temp.data(), data.rows() * sizeof(CudaType), cudaMemcpyHostToDevice));
-    }
-
-    template <typename EigenType, typename CudaType>
-    static void copyFromCUDA(EigenType& data, CudaType* cudaData) {
-        std::vector<CudaType> temp(data.rows());
-        CUDA_SAFE_CALL(cudaMemcpy(temp.data(), cudaData, data.rows() * sizeof(CudaType), cudaMemcpyDeviceToHost));
-        for (int i = 0; i < data.rows(); ++i) {
-            if constexpr (std::is_same<CudaType, double3>::value) {
-                data(i, 0) = temp[i].x;
-                data(i, 1) = temp[i].y;
-                data(i, 2) = temp[i].z;
-            } else if constexpr (std::is_same<CudaType, int4>::value) {
-                data(i, 0) = temp[i].x;
-                data(i, 1) = temp[i].y;
-                data(i, 2) = temp[i].z;
-                data(i, 3) = temp[i].w;
-            } else if constexpr (std::is_same<CudaType, int3>::value) {
-                data(i, 0) = temp[i].x;
-                data(i, 1) = temp[i].y;
-                data(i, 2) = temp[i].z;
-            } else if constexpr (std::is_same<CudaType, int2>::value) {
-                data(i, 0) = temp[i].x;
-                data(i, 1) = temp[i].y;
-            } else if constexpr (std::is_same<CudaType, double>::value) {
-                data(i) = temp[i];
-            }
-        }
-    }
+    GeometryManager() : 
+        cudaTetPos(nullptr), 
+        cudaTetVel(nullptr), 
+        cudaTetMass(nullptr), 
+        cudaTetInd(nullptr),
+        cudaSurfPos(nullptr), 
+        cudaSurfInd(nullptr), 
+        cudaSurfEdge(nullptr) {}
 
     static void initializeCUDAPoints(const Eigen::MatrixXd& tetPosMat, const Eigen::MatrixXd& tetVelMat, const Eigen::VectorXd& tetMassVec) {
-        allocateCUDA(instance->cudaTetPos, tetPosMat.rows());
-        allocateCUDA(instance->cudaTetVel, tetVelMat.rows());
-        allocateCUDA(instance->cudaTetMass, tetMassVec.size());
+        allocateCUDASafe(instance->cudaTetPos, tetPosMat.rows());
+        allocateCUDASafe(instance->cudaTetVel, tetVelMat.rows());
+        allocateCUDASafe(instance->cudaTetMass, tetMassVec.size());
     }
 
     static void initializeCUDAPrims(const Eigen::MatrixXi& tetIndMat) {
-        allocateCUDA(instance->cudaTetInd, tetIndMat.rows());
+        allocateCUDASafe(instance->cudaTetInd, tetIndMat.rows());
     }
 
     static void initializeCUDASurfs(const Eigen::MatrixXd& surfPosMat, const Eigen::MatrixXi& surfTriMat, const Eigen::MatrixXi& surfEdgeMat) {
-        allocateCUDA(instance->cudaSurfPos, surfPosMat.rows());
-        allocateCUDA(instance->cudaSurfInd, surfTriMat.rows());
-        allocateCUDA(instance->cudaSurfEdge, surfEdgeMat.rows());
-    }
-
-    static void allocateCUDA(double3*& cudaData, int rows) {
-        CUDA_SAFE_CALL(cudaMalloc((void**)&cudaData, rows * sizeof(double3)));
-    }
-
-    static void allocateCUDA(double*& cudaData, int size) {
-        CUDA_SAFE_CALL(cudaMalloc((void**)&cudaData, size * sizeof(double)));
-    }
-
-    static void allocateCUDA(int4*& cudaData, int rows) {
-        CUDA_SAFE_CALL(cudaMalloc((void**)&cudaData, rows * sizeof(int4)));
-    }
-
-    static void allocateCUDA(int3*& cudaData, int rows) {
-        CUDA_SAFE_CALL(cudaMalloc((void**)&cudaData, rows * sizeof(int3)));
-    }
-
-    static void allocateCUDA(int2*& cudaData, int rows) {
-        CUDA_SAFE_CALL(cudaMalloc((void**)&cudaData, rows * sizeof(int2)));
+        allocateCUDASafe(instance->cudaSurfPos, surfPosMat.rows());
+        allocateCUDASafe(instance->cudaSurfInd, surfTriMat.rows());
+        allocateCUDASafe(instance->cudaSurfEdge, surfEdgeMat.rows());
     }
 
     static void freeCUDA() {
@@ -183,24 +123,6 @@ private:
         freeCUDASafe(instance->cudaSurfInd);
         freeCUDASafe(instance->cudaSurfEdge);
     }
-
-    // static void freeCUDA() {
-    //     freeCUDA(instance->cudaTetPos);
-    //     freeCUDA(instance->cudaTetVel);
-    //     freeCUDA(instance->cudaTetMass);
-    //     freeCUDA(instance->cudaTetInd);
-    //     freeCUDA(instance->cudaSurfPos);
-    //     freeCUDA(instance->cudaSurfInd);
-    //     freeCUDA(instance->cudaSurfEdge);
-    // }
-
-    // template<typename T>
-    // static void freeCUDA(T*& cudaData) {
-    //     if (cudaData) {
-    //         CUDA_SAFE_CALL(cudaFree(cudaData));
-    //         cudaData = nullptr;
-    //     }
-    // }
 
     static void freeDynamicGeometry() {
         instance->tetPos.resize(0, 0);

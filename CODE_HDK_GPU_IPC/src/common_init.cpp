@@ -14,6 +14,6 @@ std::unique_ptr<GeometryManager> GeometryManager::instance = nullptr;
 void initializeSIM(void *) {
     IMPLEMENT_DATAFACTORY(GAS_Read_Buffer);
     IMPLEMENT_DATAFACTORY(GAS_Write_Buffer);
-    // IMPLEMENT_DATAFACTORY(GAS_CUDA_LBVH);
-    // IMPLEMENT_DATAFACTORY(GAS_CUDA_ACCD);
+    IMPLEMENT_DATAFACTORY(GAS_CUDA_LBVH);
+    IMPLEMENT_DATAFACTORY(GAS_CUDA_ACCD);
 }

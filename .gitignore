@@ -401,4 +401,5 @@ FodyWeavers.xsd
 CODE_Multiple_CUDA_Transpose/build
 CODE_OpenCL_CUDA_Transpose/build
 CODE_HDK_GPU_IPC/build
+GPU_IPC_Ref/build
 backup

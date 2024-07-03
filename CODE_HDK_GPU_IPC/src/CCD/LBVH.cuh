@@ -81,23 +81,7 @@ public:
 
 };
 
-__device__
-void _d_PP(const double3& v0, const double3& v1, double& d);
 
-__device__
-void _d_PT(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d);
-
-__device__
-void _d_PE(const double3& v0, const double3& v1, const double3& v2, double& d);
-
-__device__
-void _d_EE(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d);
-
-__device__
-void _d_EEParallel(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d);
-
-__device__
-double _compute_epx(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
 
 
 
