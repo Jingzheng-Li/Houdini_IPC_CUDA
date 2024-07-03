@@ -6,6 +6,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 
+// #include "CCD/LBVH.cuh"
 #include "CUDAUtils.hpp"
 
 class GeometryManager {
@@ -174,22 +175,32 @@ private:
     }
 
     static void freeCUDA() {
-        freeCUDA(instance->cudaTetPos);
-        freeCUDA(instance->cudaTetVel);
-        freeCUDA(instance->cudaTetMass);
-        freeCUDA(instance->cudaTetInd);
-        freeCUDA(instance->cudaSurfPos);
-        freeCUDA(instance->cudaSurfInd);
-        freeCUDA(instance->cudaSurfEdge);
+        freeCUDASafe(instance->cudaTetPos);
+        freeCUDASafe(instance->cudaTetVel);
+        freeCUDASafe(instance->cudaTetMass);
+        freeCUDASafe(instance->cudaTetInd);
+        freeCUDASafe(instance->cudaSurfPos);
+        freeCUDASafe(instance->cudaSurfInd);
+        freeCUDASafe(instance->cudaSurfEdge);
     }
 
-    template<typename T>
-    static void freeCUDA(T*& cudaData) {
-        if (cudaData) {
-            CUDA_SAFE_CALL(cudaFree(cudaData));
-            cudaData = nullptr;
-        }
-    }
+    // static void freeCUDA() {
+    //     freeCUDA(instance->cudaTetPos);
+    //     freeCUDA(instance->cudaTetVel);
+    //     freeCUDA(instance->cudaTetMass);
+    //     freeCUDA(instance->cudaTetInd);
+    //     freeCUDA(instance->cudaSurfPos);
+    //     freeCUDA(instance->cudaSurfInd);
+    //     freeCUDA(instance->cudaSurfEdge);
+    // }
+
+    // template<typename T>
+    // static void freeCUDA(T*& cudaData) {
+    //     if (cudaData) {
+    //         CUDA_SAFE_CALL(cudaFree(cudaData));
+    //         cudaData = nullptr;
+    //     }
+    // }
 
     static void freeDynamicGeometry() {
         instance->tetPos.resize(0, 0);
@@ -229,4 +240,9 @@ public:
     double3* cudaSurfPos;
     int3* cudaSurfInd;
     int2* cudaSurfEdge;
+
+public:
+    
+    
+
 };

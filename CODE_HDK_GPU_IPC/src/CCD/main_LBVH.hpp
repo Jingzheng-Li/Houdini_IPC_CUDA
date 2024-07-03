@@ -17,6 +17,10 @@ protected:
                         SIM_Time time,
                         SIM_Time timestep) override;
 
+protected:
+    void buildBVH();
+    void buildBVH_FULLCCD(const double& alpha);
+
 private:
 
     static const SIM_DopDescription* getDopDescription();

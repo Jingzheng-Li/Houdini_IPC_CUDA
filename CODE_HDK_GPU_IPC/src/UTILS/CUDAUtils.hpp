@@ -18,3 +18,11 @@ inline void cuda_safe_call_(cudaError_t err, const char* file_name, const int nu
         exit(EXIT_FAILURE);
     }
 }
+
+template<typename T>
+static void freeCUDASafe(T*& cudaData) {
+    if (cudaData) {
+        CUDA_SAFE_CALL(cudaFree(cudaData));
+        cudaData = nullptr;
+    }
+}

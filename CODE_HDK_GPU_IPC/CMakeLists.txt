@@ -1,12 +1,20 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(CODE_HDK_GPU_IPC)
+project(CODE_HDK_GPU_IPC LANGUAGES CXX CUDA)
+
+# Set CUDA architectures
+set(CUDA_ARCHITECTURES "86")
+set(CMAKE_BUILD_TYPE "Release")
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose Release or Debug")
+endif()
 
 list(APPEND CMAKE_PREFIX_PATH "/opt/hfs19.5/toolkit/cmake")
 
 find_package(Houdini REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 
 if (EIGEN3_FOUND)
     include_directories(${EIGEN3_INCLUDE_DIR})
@@ -14,8 +22,6 @@ else (EIGEN3_FOUND)
     message(FATAL_ERROR "Cannot find Eigen3")
 endif (EIGEN3_FOUND)
 
-# CUDA architectures
-set(CUDA_ARCHITECTURES "86")
 # Clear previous CUDA NVCC flags to avoid duplication
 set(CUDA_NVCC_FLAGS "")
 # Add C++17 standard flag
