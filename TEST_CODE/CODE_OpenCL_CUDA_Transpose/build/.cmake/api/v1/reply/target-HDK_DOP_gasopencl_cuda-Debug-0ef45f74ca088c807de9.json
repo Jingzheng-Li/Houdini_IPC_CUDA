@@ -1,0 +1,380 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "/home/jingzheng/houdini19.5/dso/HDK_DOP_gasopencl_cuda.so"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 22,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 33,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 13,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 30,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -fPIC"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-fPIC"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-std=c++17"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-W"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wno-parentheses"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wno-reorder"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wno-sign-compare"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wno-uninitialized"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wno-unused-parameter"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wunused"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wdeprecated-declarations"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wno-deprecated"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-D_GLIBCXX_USE_CXX11_ABI=0"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-fno-strict-aliasing"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wno-unused-local-typedefs"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 2,
+					"define" : "AMD64"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "ENABLE_THREADS"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "FBX_ENABLED=1"
+				},
+				{
+					"define" : "HDK_DOP_gasopencl_cuda_EXPORTS"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "LINUX"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "MAKING_DSO"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "OPENCL_ENABLED=1"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "OPENVDB_ENABLED=1"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "SESI_LITTLE_ENDIAN"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "SIZEOF_VOID_P=8"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "USE_PTHREADS"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "USE_PYTHON3=1"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "UT_ASSERT_LEVEL=2"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VERSION=\"19.5.493\""
+				},
+				{
+					"backtrace" : 2,
+					"define" : "_FILE_OFFSET_BITS=64"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "_GNU_SOURCE"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "_REENTRANT"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS=1"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "/usr/include/eigen3"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/usr/local/cuda/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/opt/hfs19.5/toolkit/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/opt/hfs19.5/toolkit/include/python3.9"
+				}
+			],
+			"language" : "CXX",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"id" : "HDK_DOP_gasopencl_cuda::@6890427a1f51a3e7e1df",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "-Wl,-rpath,/usr/local/cuda/lib64:/opt/hfs19.5/dsolib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/local/cuda/lib64/libcudart_static.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-ldl",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/lib/x86_64-linux-gnu/librt.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/local/cuda/lib64/libOpenCL.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniAPPS3.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniAPPS2.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniUI.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniUT.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libhboost_system.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniPRM.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniPDG.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniHARD.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniHAPIL.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniOP2.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniOP1.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniSIM.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniGEO.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniOPZ.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniOP3.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniOP4.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniUSD.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniAPPS1.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/hfs19.5/dsolib/libHoudiniDEVICE.so",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
+	"name" : "HDK_DOP_gasopencl_cuda",
+	"nameOnDisk" : "HDK_DOP_gasopencl_cuda.so",
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				1,
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "main_test.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "main_test.hpp",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "public_functions.hpp",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "SHARED_LIBRARY"
+}

@@ -1,0 +1,3 @@
+/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/GPU_IPC_Ref/build/CMakeFiles/gipc.dir
+/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/GPU_IPC_Ref/build/CMakeFiles/edit_cache.dir
+/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/GPU_IPC_Ref/build/CMakeFiles/rebuild_cache.dir
