@@ -1,8 +1,0 @@
-每天有空就完成一个小节点：
-明天有空完成laodMesh
-后天有空完成BVH
-再有空完成CCD
-再有空完成PCG
-再有空完成Energy
-再有空完成Preconditioner
-再有空完成GIPC
