@@ -6,89 +6,12 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 
-#include "CCD/LBVH.cuh"
+// #include "CCD/LBVH.cuh"
 #include "CUDAUtils.hpp"
 
 class GeometryManager {
 public:
-    static void initializePoints(const Eigen::MatrixXd& tetPosMat, const Eigen::MatrixXd& tetVelMat, const Eigen::VectorXd& tetMassVec) {
-        if (!instance) {
-            instance = std::unique_ptr<GeometryManager>(new GeometryManager());
-        }
-        instance->tetPos = tetPosMat;
-        instance->tetVel = tetVelMat;
-        instance->tetMass = tetMassVec;
-        initializeCUDAPoints(tetPosMat, tetVelMat, tetMassVec);
-    }
 
-    static void initializePrims(const Eigen::MatrixXi& tetIndMat) {
-        if (!instance) {
-            instance = std::unique_ptr<GeometryManager>(new GeometryManager());
-        }
-        instance->tetInd = tetIndMat;
-        initializeCUDAPrims(tetIndMat);
-    }
-
-    static void initializeSurfs(const Eigen::MatrixXd& surfPosMat, const Eigen::MatrixXi& surfTriMat, const Eigen::MatrixXi& surfEdgeMat) {
-        if (!instance) {
-            instance = std::unique_ptr<GeometryManager>(new GeometryManager());
-        }
-        instance->surfPos = surfPosMat;
-        instance->surfInd = surfTriMat;
-        instance->surfEdge = surfEdgeMat;
-        initializeCUDASurfs(surfPosMat, surfTriMat, surfEdgeMat);
-    }
-
-    // TODO: we prefer not to delete const geometry after one frame, but if instance not be reset, CUDA memory goes wrong
-    static void free() {
-        if (instance) {
-            freeCUDA();
-            freeDynamicGeometry();
-            instance.reset();
-        }
-    }
-
-    static void totallyfree() {
-        if (instance) {
-            freeCUDA();
-            freeAllGeometry();
-            instance.reset();
-        }
-    }
-
-    static void copyPointsDataToCUDA() {
-        copyToCUDASafe(instance->tetPos, instance->cudaTetPos);
-        copyToCUDASafe(instance->tetVel, instance->cudaTetVel);
-        copyToCUDASafe(instance->tetMass, instance->cudaTetMass);
-    }
-
-    static void copyPrimsDataToCUDA() {
-        copyToCUDASafe(instance->tetInd, instance->cudaTetInd);
-    }
-
-    static void copyDetailsDataToCUDA() {
-        copyToCUDASafe(instance->surfPos, instance->cudaSurfPos);
-        copyToCUDASafe(instance->surfInd, instance->cudaSurfInd);
-        copyToCUDASafe(instance->surfEdge, instance->cudaSurfEdge);
-    }
-
-    static void copyPointsDataFromCUDA() {
-        copyFromCUDASafe(instance->tetPos, instance->cudaTetPos);
-        copyFromCUDASafe(instance->tetVel, instance->cudaTetVel);
-        copyFromCUDASafe(instance->tetMass, instance->cudaTetMass);
-    }
-
-    static void copyPrimsDataFromCUDA() {
-        copyFromCUDASafe(instance->tetInd, instance->cudaTetInd);
-    }
-
-    static void copyDetailsDataFromCUDA() {
-        copyFromCUDASafe(instance->surfPos, instance->cudaSurfPos);
-        copyFromCUDASafe(instance->surfInd, instance->cudaSurfInd);
-        copyFromCUDASafe(instance->surfEdge, instance->cudaSurfEdge);
-    }
-
-private:
     GeometryManager() : 
         cudaTetPos(nullptr), 
         cudaTetVel(nullptr), 
@@ -98,21 +21,17 @@ private:
         cudaSurfInd(nullptr), 
         cudaSurfEdge(nullptr) {}
 
-    static void initializeCUDAPoints(const Eigen::MatrixXd& tetPosMat, const Eigen::MatrixXd& tetVelMat, const Eigen::VectorXd& tetMassVec) {
-        allocateCUDASafe(instance->cudaTetPos, tetPosMat.rows());
-        allocateCUDASafe(instance->cudaTetVel, tetVelMat.rows());
-        allocateCUDASafe(instance->cudaTetMass, tetMassVec.size());
+
+    // TODO: we prefer not to delete const geometry after one frame, but if instance not be reset, CUDA memory goes wrong
+    static void totallyfree() {
+        if (instance) {
+            freeCUDA();
+            freeAllGeometry();
+            instance.reset();
+        }
     }
 
-    static void initializeCUDAPrims(const Eigen::MatrixXi& tetIndMat) {
-        allocateCUDASafe(instance->cudaTetInd, tetIndMat.rows());
-    }
-
-    static void initializeCUDASurfs(const Eigen::MatrixXd& surfPosMat, const Eigen::MatrixXi& surfTriMat, const Eigen::MatrixXi& surfEdgeMat) {
-        allocateCUDASafe(instance->cudaSurfPos, surfPosMat.rows());
-        allocateCUDASafe(instance->cudaSurfInd, surfTriMat.rows());
-        allocateCUDASafe(instance->cudaSurfEdge, surfEdgeMat.rows());
-    }
+private:
 
     static void freeCUDA() {
         freeCUDASafe(instance->cudaTetPos);
@@ -142,8 +61,8 @@ private:
 public:
     static std::unique_ptr<GeometryManager> instance;
 
-    Eigen::Vector3d minCorner;
-    Eigen::Vector3d maxCorner;
+    double3 minCorner;
+    double3 maxCorner;
 
     Eigen::MatrixXd tetPos; // numPoints * 3
     Eigen::MatrixXd tetVel; // numPoints * 3
@@ -164,7 +83,27 @@ public:
     int2* cudaSurfEdge;
 
 public:
+    double IPC_dt;
     
-    
+    double density;
+	double YoungModulus;
+	double PoissonRate;
+	double lengthRateLame;
+	double volumeRateLame;
+	double lengthRate;
+	double volumeRate;
+	double frictionRate;
+	double clothThickness;
+	double clothYoungModulus;
+	double stretchStiff;
+	double shearStiff;
+	double clothDensity;
+	double softMotionRate;
+	double Newton_solver_threshold;
+	double pcg_threshold;
+
+public:
+    std::vector<int> boundaryTypies;
+
 
 };

@@ -30,54 +30,54 @@ static void freeCUDASafe(T*& cudaData) {
 }
 
 template <typename T>
-void allocateCUDASafe(T*& cudaData, int size) {
+void CUDAMallocSafe(T*& cudaData, int size) {
     CUDA_SAFE_CALL(cudaMalloc((void**)&cudaData, size * sizeof(T)));
 }
 
 
 template <typename EigenType, typename CudaType>
-static void copyToCUDASafe(const EigenType& data, CudaType* cudaData) {
-    std::vector<CudaType> temp(data.rows());
-    for (int i = 0; i < data.rows(); ++i) {
+static void copyToCUDASafe(const EigenType& eigenData, CudaType* cudaData) {
+    std::vector<CudaType> temp(eigenData.rows());
+    for (int i = 0; i < eigenData.rows(); ++i) {
         if constexpr (std::is_same<CudaType, double3>::value) {
-            temp[i] = make_double3(data(i, 0), data(i, 1), data(i, 2));
+            temp[i] = make_double3(eigenData(i, 0), eigenData(i, 1), eigenData(i, 2));
         } else if constexpr (std::is_same<CudaType, int4>::value) {
-            temp[i] = make_int4(data(i, 0), data(i, 1), data(i, 2), data(i, 3));
+            temp[i] = make_int4(eigenData(i, 0), eigenData(i, 1), eigenData(i, 2), eigenData(i, 3));
         } else if constexpr (std::is_same<CudaType, int3>::value) {
-            temp[i] = make_int3(data(i, 0), data(i, 1), data(i, 2));
+            temp[i] = make_int3(eigenData(i, 0), eigenData(i, 1), eigenData(i, 2));
         } else if constexpr (std::is_same<CudaType, int2>::value) {
-            temp[i] = make_int2(data(i, 0), data(i, 1));
+            temp[i] = make_int2(eigenData(i, 0), eigenData(i, 1));
         } else if constexpr (std::is_same<CudaType, double>::value) {
-            temp[i] = data(i);
+            temp[i] = eigenData(i);
         }
     }
-    CUDA_SAFE_CALL(cudaMemcpy(cudaData, temp.data(), data.rows() * sizeof(CudaType), cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(cudaData, temp.data(), eigenData.rows() * sizeof(CudaType), cudaMemcpyHostToDevice));
 }
 
 
 template <typename EigenType, typename CudaType>
-static void copyFromCUDASafe(EigenType& data, CudaType* cudaData) {
-    std::vector<CudaType> temp(data.rows());
-    CUDA_SAFE_CALL(cudaMemcpy(temp.data(), cudaData, data.rows() * sizeof(CudaType), cudaMemcpyDeviceToHost));
-    for (int i = 0; i < data.rows(); ++i) {
+static void copyFromCUDASafe(EigenType& eigenData, CudaType* cudaData) {
+    std::vector<CudaType> temp(eigenData.rows());
+    CUDA_SAFE_CALL(cudaMemcpy(temp.data(), cudaData, eigenData.rows() * sizeof(CudaType), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < eigenData.rows(); ++i) {
         if constexpr (std::is_same<CudaType, double3>::value) {
-            data(i, 0) = temp[i].x;
-            data(i, 1) = temp[i].y;
-            data(i, 2) = temp[i].z;
+            eigenData(i, 0) = temp[i].x;
+            eigenData(i, 1) = temp[i].y;
+            eigenData(i, 2) = temp[i].z;
         } else if constexpr (std::is_same<CudaType, int4>::value) {
-            data(i, 0) = temp[i].x;
-            data(i, 1) = temp[i].y;
-            data(i, 2) = temp[i].z;
-            data(i, 3) = temp[i].w;
+            eigenData(i, 0) = temp[i].x;
+            eigenData(i, 1) = temp[i].y;
+            eigenData(i, 2) = temp[i].z;
+            eigenData(i, 3) = temp[i].w;
         } else if constexpr (std::is_same<CudaType, int3>::value) {
-            data(i, 0) = temp[i].x;
-            data(i, 1) = temp[i].y;
-            data(i, 2) = temp[i].z;
+            eigenData(i, 0) = temp[i].x;
+            eigenData(i, 1) = temp[i].y;
+            eigenData(i, 2) = temp[i].z;
         } else if constexpr (std::is_same<CudaType, int2>::value) {
-            data(i, 0) = temp[i].x;
-            data(i, 1) = temp[i].y;
+            eigenData(i, 0) = temp[i].x;
+            eigenData(i, 1) = temp[i].y;
         } else if constexpr (std::is_same<CudaType, double>::value) {
-            data(i) = temp[i];
+            eigenData(i) = temp[i];
         }
     }
 }

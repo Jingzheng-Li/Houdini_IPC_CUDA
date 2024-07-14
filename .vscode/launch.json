@@ -9,7 +9,7 @@
       "stopAtEntry": false,
       "externalConsole": false,
       "cwd": "/home/jingzheng/Public/Study/CppMine/Houdini_IPC_CUDA/CODE_HDK_GPU_IPC/src/RWBuffer",
-      "program": "/home/jingzheng/Public/Study/CppMine/Houdini_IPC_CUDA/CODE_HDK_GPU_IPC/src/RWBuffer/build/Debug/outDebug",
+      "program": "/home/jingzheng/Public/Study/CppMine/Houdini_IPC_CUDA/CODE_HDK_GPU_IPC/src/RWBuffer/build/Release/outRelease",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

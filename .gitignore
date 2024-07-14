@@ -402,6 +402,7 @@ CODE_Multiple_CUDA_Transpose/build
 CODE_OpenCL_CUDA_Transpose/build
 CODE_HDK_GPU_IPC/build
 backup
+build
 
 TEST_CODE/GPU_IPC_Ref
 TEST_CODE/Plan.txt

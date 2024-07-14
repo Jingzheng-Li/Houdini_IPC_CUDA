@@ -17,7 +17,6 @@ protected:
                         SIM_Time timestep) override;
 
     void transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp);
-    void transferPRIMAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp);
     void transferDTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp);
 
 

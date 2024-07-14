@@ -18,6 +18,8 @@ protected:
                         SIM_Time timestep) override;
 
 protected:
+
+    void initBVH();
     void buildBVH();
     void buildBVH_FULLCCD(const double& alpha);
 

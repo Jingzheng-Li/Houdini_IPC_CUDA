@@ -20,6 +20,7 @@ protected:
     void transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
     void transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
 
+    void loadSIMParams();
 
 private:
 

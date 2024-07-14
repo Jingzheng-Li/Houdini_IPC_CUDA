@@ -25,19 +25,24 @@ const SIM_DopDescription* GAS_CUDA_LBVH::getDopDescription() {
 GAS_CUDA_LBVH::GAS_CUDA_LBVH(const SIM_DataFactory* factory) : BaseClass(factory) {}
 
 GAS_CUDA_LBVH::~GAS_CUDA_LBVH() {
-    GeometryManager::free();
+    GeometryManager::totallyfree();
 }
 
 bool GAS_CUDA_LBVH::solveGasSubclass(SIM_Engine& engine,
-                                               SIM_Object* object,
-                                               SIM_Time time,
-                                               SIM_Time timestep) {
+                                    SIM_Object* object,
+                                    SIM_Time time,
+                                    SIM_Time timestep) {
     
+    // initBVH();
     // buildBVH();
     // buildBVH_FULLCCD();
 
 
     return true;
+}
+
+void GAS_CUDA_LBVH::initBVH() {
+
 }
 
 void GAS_CUDA_LBVH::buildBVH() {

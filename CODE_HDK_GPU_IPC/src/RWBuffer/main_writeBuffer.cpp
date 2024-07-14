@@ -38,23 +38,22 @@ bool GAS_Write_Buffer::solveGasSubclass(SIM_Engine& engine,
     CHECK_ERROR_SOLVER(!gdp->isEmpty(), "writeBuffer Geometry is empty");
 
     transferPTAttribTOHoudini(newgeo, gdp);
-    transferPRIMAttribTOHoudini(newgeo, gdp);
-
-    GeometryManager::free();
 
     return true;
 }
 
 void GAS_Write_Buffer::transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp) {
 
-    GeometryManager::copyPointsDataFromCUDA();
+    auto &instance = GeometryManager::instance;
+    CHECK_ERROR(instance, "PT geoinstance to Houdini not initialized");
+
+    copyFromCUDASafe(instance->tetPos, instance->cudaTetPos);
+    copyFromCUDASafe(instance->tetVel, instance->cudaTetVel);
 
     Eigen::MatrixXd &tetpos = GeometryManager::instance->tetPos;
     Eigen::MatrixXd &tetvel = GeometryManager::instance->tetVel;
-    Eigen::VectorXd &tetmass = GeometryManager::instance->tetMass;
     CHECK_ERROR((tetpos.rows() == gdp->getNumPoints()), "Number of particles does not match");
     CHECK_ERROR((tetvel.rows() == gdp->getNumPoints()), "Number of velocities does not match");
-    CHECK_ERROR((tetmass.rows() == gdp->getNumPoints()), "Number of masses does not match");
 
     GA_RWHandleV3 velHandle(gdp, GA_ATTRIB_POINT, "v");
     GA_RWHandleF massHandle(gdp, GA_ATTRIB_POINT, "mass");
@@ -64,21 +63,6 @@ void GAS_Write_Buffer::transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detai
     GA_FOR_ALL_PTOFF(gdp, ptoff) {
         gdp->setPos3(ptoff, UT_Vector3(tetpos(ptoff, 0), tetpos(ptoff, 1), tetpos(ptoff, 2)));
         velHandle.set(ptoff, UT_Vector3(tetvel(ptoff, 0), tetvel(ptoff, 1), tetvel(ptoff, 2)));
-        massHandle.set(ptoff, tetmass(ptoff));
     }
-}
-
-void GAS_Write_Buffer::transferPRIMAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp) {
-    
-    // Eigen::MatrixXi &tetIndices = GeometryManager::instance->tetInd;
-    
-    // GeometryManager::copyPrimsDataFromCUDA();
-    // CHECK_ERROR((tetIndices.rows() == gdp->getNumPrimitives()), "Number of primitives does not match");
-
-    // GA_Offset primoff;
-    // GA_FOR_ALL_PRIMOFF(gdp, primoff) {
-    //     // const GA_Primitive* prim = gdp->getPrimitive(primoff);
-        
-    // }
 
 }
