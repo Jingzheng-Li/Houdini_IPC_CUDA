@@ -19,7 +19,6 @@ protected:
 
 protected:
 
-    void initBVH();
     void buildBVH();
     void buildBVH_FULLCCD(const double& alpha);
 

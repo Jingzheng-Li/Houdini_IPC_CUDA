@@ -33,16 +33,11 @@ bool GAS_CUDA_LBVH::solveGasSubclass(SIM_Engine& engine,
                                     SIM_Time time,
                                     SIM_Time timestep) {
     
-    // initBVH();
     // buildBVH();
     // buildBVH_FULLCCD();
 
 
     return true;
-}
-
-void GAS_CUDA_LBVH::initBVH() {
-
 }
 
 void GAS_CUDA_LBVH::buildBVH() {

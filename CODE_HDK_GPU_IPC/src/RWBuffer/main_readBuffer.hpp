@@ -21,6 +21,7 @@ protected:
     void transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
 
     void loadSIMParams();
+    void initSIMBVH();
 
 private:
 

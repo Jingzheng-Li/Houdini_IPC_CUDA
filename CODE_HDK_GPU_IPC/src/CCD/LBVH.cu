@@ -1336,6 +1336,7 @@ LBVH::~LBVH() {
     FREE_BVH_CUDA();
 }
 
+
 void LBVH_F::init(int* _mbtype, double3* _mVerts, uint3* _mFaces, uint32_t* _mSurfVert, int4* _mCollisonPairs, int4* _ccd_mCollisonPairs, uint32_t* _mcpNum, int* _mMatIndex, const int& faceNum, const int& vertNum) {
     mc_faces = _mFaces;
     mc_surfVerts = _mSurfVert;

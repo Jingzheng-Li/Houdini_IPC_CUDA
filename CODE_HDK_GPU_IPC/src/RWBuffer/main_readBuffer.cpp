@@ -2,9 +2,11 @@
 #include "main_readBuffer.hpp"
 
 #include "UTILS/GeometryManager.hpp"
+#include "CCD/LBVH.cuh"
 
 namespace FIRSTFRAME {
     static bool hou_initialized = false;
+    static int collision_detection_buff_scale = 1;
 
 };
 
@@ -45,21 +47,23 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
     CHECK_ERROR_SOLVER(readlock.isValid(), "Failed to get readBuffer geometry detail");
     const GU_Detail *gdp = readlock.getGdp();
     CHECK_ERROR_SOLVER(!gdp->isEmpty(), "readBuffer Geometry is empty");
+    auto &instance = GeometryManager::instance;
 
     if (!FIRSTFRAME::hou_initialized) {
         
         PRINT_BLUE("running_initialized");
 
-        if (!GeometryManager::instance) {
-            GeometryManager::instance = std::unique_ptr<GeometryManager>(new GeometryManager());
+        if (!instance) {
+            instance = std::unique_ptr<GeometryManager>(new GeometryManager());
         }
-        CHECK_ERROR_SOLVER(GeometryManager::instance, "geometry instance not initialize");
+        CHECK_ERROR_SOLVER(instance, "geometry instance not initialize");
 
         transferPTAttribTOCUDA(geo, gdp);
         transferPRIMAttribTOCUDA(geo, gdp);
         transferDTAttribTOCUDA(geo, gdp);
 
         loadSIMParams();
+        initSIMBVH();
 
         FIRSTFRAME::hou_initialized = true;
     }
@@ -72,10 +76,19 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 
     auto &instance = GeometryManager::instance;
     CHECK_ERROR(instance, "PT geoinstance not initialized");
+    int num_points = gdp->getNumPoints();
 
-    Eigen::MatrixXd tetpos(gdp->getNumPoints(), 3);
-    Eigen::MatrixXd tetvel(gdp->getNumPoints(), 3);
-    Eigen::VectorXd tetmass(gdp->getNumPoints());
+    // position velocity mass
+    auto &tetpos = instance->tetPos;
+    auto &tetvel = instance->tetVel;
+    auto &tetmass = instance->tetMass;
+    tetpos.resize(num_points, 3);
+    tetvel.resize(num_points, 3);
+    tetmass.resize(num_points);
+
+    // boundary type
+    auto &boundarytype = instance->boundaryTypies;
+    boundarytype.resize(num_points);
 
     GA_ROHandleV3D velHandle(gdp, GA_ATTRIB_POINT, "v");
     GA_ROHandleD massHandle(gdp, GA_ATTRIB_POINT, "mass");
@@ -98,25 +111,32 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
         if (xmax < pos3.x()) xmax = pos3.x();
         if (ymax < pos3.y()) ymax = pos3.y();
         if (zmax < pos3.z()) zmax = pos3.z();
-    }
-    CHECK_ERROR(ptoff==gdp->getNumPoints(), "Failed to get all points");
 
-    instance->tetPos = tetpos;
-    instance->tetVel = tetvel;
-    instance->tetMass = tetmass;
-    CUDAMallocSafe(instance->cudaTetPos, tetpos.rows());
-    CUDAMallocSafe(instance->cudaTetVel, tetvel.rows());
-    CUDAMallocSafe(instance->cudaTetMass, tetmass.size());
+        boundarytype(ptoff) = 0;
+
+    }
+    CHECK_ERROR(ptoff==num_points, "Failed to get all points");
+
+    CUDAMallocSafe(instance->cudaTetPos, num_points);
+    CUDAMallocSafe(instance->cudaTetVel, num_points);
+    CUDAMallocSafe(instance->cudaTetMass, num_points);
     copyToCUDASafe(instance->tetPos, instance->cudaTetPos);
     copyToCUDASafe(instance->tetVel, instance->cudaTetVel);
     copyToCUDASafe(instance->tetMass, instance->cudaTetMass);
 
+    CUDAMallocSafe(instance->cudaBoundaryType, num_points);
+    copyToCUDASafe(instance->boundaryTypies, instance->cudaBoundaryType);
+
+    CUDAMallocSafe(instance->cudaOriginTetPos, num_points);
+    copyToCUDASafe(instance->tetPos, instance->cudaOriginTetPos);
+    CUDAMallocSafe(instance->cudaRestTetPos, num_points);
+    copyToCUDASafe(instance->tetPos, instance->cudaRestTetPos);
+
+
     instance->minCorner = make_double3(xmin, ymin, zmin);
     instance->maxCorner = make_double3(xmax, ymax, zmax);
-    std::cout << "mincorner~~" << xmin << " " << ymin << " " << zmin << std::endl;
-    std::cout << "maxcorner~~" << xmax << " " << ymax << " " << zmax << std::endl;
 
-    writeNodesToFile("/home/jingzheng/Public/Study/CppMine/GPU_IPC_Ref/Assets/tetMesh/pighead.msh", tetpos);
+
 }
 
 
@@ -127,23 +147,23 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 
     if (GeometryManager::instance->tetInd.rows() == gdp->getNumPrimitives()) return;
 
-    Eigen::MatrixXi tetInd(gdp->getNumPrimitives(), 4);
+    auto &tetind = instance->tetInd;
+    tetind.resize(gdp->getNumPrimitives(), 4);
+
+
     GA_Offset primoff;
     GA_FOR_ALL_PRIMOFF(gdp, primoff) {
         const GA_Primitive* prim = gdp->getPrimitive(primoff);
         for (int i = 0; i < prim->getVertexCount(); ++i) {
             GA_Offset vtxoff = prim->getVertexOffset(i);
             GA_Offset ptoff = gdp->vertexPoint(vtxoff);
-            tetInd(primoff, i) = static_cast<int>(gdp->pointIndex(ptoff));
+            tetind(primoff, i) = static_cast<int>(gdp->pointIndex(ptoff));
         }
     }
     CHECK_ERROR(primoff==gdp->getNumPrimitives(), "Failed to get all primitives");
 
-    instance->tetInd = tetInd;
-    CUDAMallocSafe(instance->cudaTetInd, tetInd.rows());
+    CUDAMallocSafe(instance->cudaTetInd, tetind.rows());
     copyToCUDASafe(instance->tetInd, instance->cudaTetInd);
-
-    writeElementsToFile("/home/jingzheng/Public/Study/CppMine/GPU_IPC_Ref/Assets/tetMesh/pighead.msh", tetInd);
 
 }
 
@@ -225,5 +245,39 @@ void GAS_Read_Buffer::loadSIMParams() {
 	// instance->relative_dhat = 1e-3;
 	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	instance->shearStiff = 0.03 * instance->stretchStiff;
+
+    instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * FIRSTFRAME::collision_detection_buff_scale * (((double)(instance->surfInd.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
+    instance->MAX_COLLITION_PAIRS_NUM = (instance->surfPos.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * FIRSTFRAME::collision_detection_buff_scale;
+
+    std::cout << "arrived here ccd~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
+    std::cout << "arrived here collision~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
+
+}
+
+void GAS_Read_Buffer::initSIMBVH() {
+    auto &instance = GeometryManager::instance;
+    if (!instance->LBVH_F_ptr) {
+        instance->LBVH_F_ptr = std::make_unique<LBVH_F>();
+    }
+    if (!instance->LBVH_E_ptr) {
+        instance->LBVH_E_ptr = std::make_unique<LBVH_E>();
+    }
+
+    instance->LBVH_F_ptr->init(
+        instance->cudaBoundaryType, 
+        instance->cudaTetPos,
+        instance->cudaSurfInd,
+        instance->surverts,
+        instance->collisionpairs,
+        instance->collidionspair,
+        instance->_cpNum, 
+        instance->_MatIndex, 
+        instance->surface_Num, 
+        instance->surf_vertexNum);
+
+
+
+
+// _btype, _vertexes, _faces, _surfVerts, _collisonPairs, _ccd_collisonPairs, _cpNum, _MatIndex, surface_Num, surf_vertexNum
 
 }
