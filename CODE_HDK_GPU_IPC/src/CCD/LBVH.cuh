@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+
 #include "UTILS/CUDAUtils.hpp"
 
 
@@ -37,7 +38,7 @@ public:
     Node* mc_nodes; // point to BVH Node
     int4* mc_collisionPair; // collision pair
     int4* mc_ccd_collisionPair; // ccd collision pair
-    uint64_t* mc_MortonHash; // point to 64bit morton code
+    uint64_t* mc_MortonCodeHash; // point to 64bit morton code
     uint32_t* mc_indices; // point to 32bit indices
     uint32_t* mc_cpNum; // point to 32bit number of collision pairs
     uint32_t* mc_flags;
@@ -80,6 +81,8 @@ public:
     uint32_t m_edge_number;
 
 };
+
+
 
 
 

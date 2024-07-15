@@ -6,6 +6,18 @@
 
 namespace MATHUTILS {
 
+	template<class T>
+	__device__ __host__ 
+	inline T __m_min(T a, T b) {
+		return a < b ? a : b;
+	}
+
+	template <class T>
+	__device__ __host__ 
+	inline T __m_max(T a, T b) {
+		return a < b ? b : a;
+	}
+
 	__device__ __host__ void __init_Mat3x3(Matrix3x3d& M, const double& val);
 
 	__device__ __host__ void __init_Mat6x6(Matrix6x6d& M, const double& val);
@@ -261,6 +273,7 @@ namespace MATHUTILS {
 
 	__device__ __host__
 	double __computeEdgeProductNorm(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
+	
 }
 
 

@@ -7,6 +7,7 @@
 
 namespace MATHUTILS {
 
+
 	__device__ __host__ void __init_Mat3x3(Matrix3x3d& M, const double& val) {
 		for (int i = 0;i < 3;i++) {
 			for (int j = 0;j < 3;j++) {

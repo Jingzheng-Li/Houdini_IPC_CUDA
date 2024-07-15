@@ -68,7 +68,7 @@ inline bool writeNodesToFile(const std::string &filename, const Eigen::MatrixXd 
     return true;
 }
 
-inline bool writeElementsToFile(const std::string &filename, const Eigen::MatrixXi &tetInd) {
+inline bool writeElementsToFile(const std::string &filename, const Eigen::MatrixXi &tetElement) {
     std::ofstream outFile(filename, std::ios_base::app);
     if (!outFile.is_open()) {
         std::cerr << "Failed to open the output file." << std::endl;
@@ -76,14 +76,14 @@ inline bool writeElementsToFile(const std::string &filename, const Eigen::Matrix
     }
 
     outFile << "$Elements\n";
-    outFile << tetInd.rows() << "\n";
+    outFile << tetElement.rows() << "\n";
 
-    for (int i = 0; i < tetInd.rows(); ++i) {
+    for (int i = 0; i < tetElement.rows(); ++i) {
         outFile << i + 1 << " 4 0 "
-                << tetInd(i, 0) + 1 << " " 
-                << tetInd(i, 1) + 1 << " " 
-                << tetInd(i, 2) + 1 << " " 
-                << tetInd(i, 3) + 1 << "\n";
+                << tetElement(i, 0) + 1 << " " 
+                << tetElement(i, 1) + 1 << " " 
+                << tetElement(i, 2) + 1 << " " 
+                << tetElement(i, 3) + 1 << "\n";
     }
     outFile << "$EndElements\n";
 

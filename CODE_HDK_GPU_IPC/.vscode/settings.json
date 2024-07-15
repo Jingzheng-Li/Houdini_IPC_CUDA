@@ -2,7 +2,6 @@
     "files.associations": {
         "*.cpp": "cpp",
         "iostream": "cpp",
-        "iosfwd": "cpp",
         "ostream": "cpp",
         "condition_variable": "cpp",
         "thread": "cpp",
@@ -58,6 +57,7 @@
         "fstream": "cpp",
         "initializer_list": "cpp",
         "iomanip": "cpp",
+        "iosfwd": "cpp",
         "istream": "cpp",
         "limits": "cpp",
         "mutex": "cpp",
@@ -73,7 +73,6 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "__nullptr": "cpp",
-        "dense": "cpp"
+        "__nullptr": "cpp"
     }
 }
