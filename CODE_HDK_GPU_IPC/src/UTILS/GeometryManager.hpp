@@ -9,6 +9,7 @@
 #include "CCD/LBVH.cuh"
 #include "CUDAUtils.hpp"
 #include "MathUtils.hpp"
+#include "MathUtils.cuh"
 
 class GeometryManager {
 public:
@@ -85,8 +86,17 @@ public:
     Eigen::VectorXd tetMass; // numPoints * 1
     double* cudaTetMass;
 
+    std::vector<MATHUTILS::Matrix3x3d> constraints;
+    MATHUTILS::Matrix3x3d* cudaConstraints;
+
     Eigen::MatrixXi tetElement; // numTets * 4
     uint4* cudaTetElement;
+
+    Eigen::MatrixXi triElement;
+    uint3* cudaTriElement;
+
+    Eigen::VectorXd tetVolume; // numTets
+    double* cudaTetVolume;
 
     Eigen::VectorXi surfVert; // num SurfPoints
     uint32_t* cudaSurfVert;
@@ -97,6 +107,9 @@ public:
     Eigen::MatrixXi surfEdge; // num Edges * 2
     uint2* cudaSurfEdge;
 
+    // Eigen::MatrixXi surfEdgeAdjVert; // num Edges * 2
+    // uint2* cudaSurfEdgeAdjVert;
+
     double3* cudaOriginTetPos;
     double3* cudaRestTetPos;
 
@@ -104,6 +117,7 @@ public:
     int4* cudaCCDCollisionPairs;
     uint32_t* cudaCPNum;
     int* cudaMatIndex;
+
 
 public:
     std::unique_ptr<LBVH_F> LBVH_F_ptr;
@@ -140,12 +154,13 @@ public:
 
     double* cudaTempDouble;
     MATHUTILS::Matrix3x3d* cudaDmInverses;
-    MATHUTILS::Matrix2x2d* cudaTriDmInverses;
-    MATHUTILS::Matrix3x3d* cudaConstraints;
     MATHUTILS::Matrix3x3d* cudaTempMat3x3;
+    // MATHUTILS::Matrix2x2d* cudaTriDmInverses;
 
     Eigen::VectorXi boundaryTypies;
     int* cudaBoundaryType;
     int* cudaTempBoundaryType;
+
+
 
 };

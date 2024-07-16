@@ -39,10 +39,10 @@ add_library(${library_name} SHARED ${GIPC_SOURCE} ${GIPC_HEADER})
 target_include_directories(${library_name} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/CCD
-    ${CMAKE_SOURCE_DIR}/src/Energy
+    ${CMAKE_SOURCE_DIR}/src/FEM
     ${CMAKE_SOURCE_DIR}/src/IPC
-    ${CMAKE_SOURCE_DIR}/src/RWBuffer
     ${CMAKE_SOURCE_DIR}/src/UTILS
+    ${CMAKE_SOURCE_DIR}/src/RWBuffer
     ${CMAKE_SOURCE_DIR}/src/zensim
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
 )

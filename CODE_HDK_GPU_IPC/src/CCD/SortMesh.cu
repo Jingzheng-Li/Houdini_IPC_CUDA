@@ -119,12 +119,16 @@ __global__
 void _updateVertexes(double3* o_vertexes, const double3* _vertexes, double* tempM, const double* mass, MATHUTILS::Matrix3x3d* tempCons, int* tempBtype, const MATHUTILS::Matrix3x3d* cons, const int* bType, const uint32_t* sortIndex, uint32_t* sortMapIndex, int number) {
 	uint32_t idx = threadIdx.x + blockIdx.x * blockDim.x;
 	if (idx >= number) return;
+
+	CHECK_INDEX_BOUNDS(sortIndex[idx], number);
+
 	o_vertexes[idx] = _vertexes[sortIndex[idx]];
 	tempM[idx] = mass[sortIndex[idx]];
 	tempCons[idx] = cons[sortIndex[idx]];
 	sortMapIndex[sortIndex[idx]] = idx;
 	tempBtype[idx] = bType[sortIndex[idx]];
-	//printf("original idx: %d        new idx: %d\n", sortIndex[idx], idx);
+
+	// printf("original idx: %d new idx: %d\n", sortIndex[idx], idx);
 }
 
 __global__
@@ -203,30 +207,29 @@ void _updateSurfaces(uint32_t* sortIndex, uint3* _faces, int _offset_num, int nu
 
 __global__
 void _updateSurfVerts(uint32_t* sortIndex, uint32_t* _sVerts, int _offset_num, int numbers) {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx >= numbers) return;
-	if (_sVerts[idx] < _offset_num) {
-		_sVerts[idx] = sortIndex[_sVerts[idx]];
-	}
-	else {
-		_sVerts[idx] = _sVerts[idx];
-	}
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numbers) return;
+    if (_sVerts[idx] < _offset_num) {
+        _sVerts[idx] = sortIndex[_sVerts[idx]];
+    }
+    else {
+        _sVerts[idx] = _sVerts[idx];
+    }
 }
 
-
-
+// caculate morton code of each tet vertex pos
 void calcVertMChash(uint64_t* _MChash, const double3* _vertexes, const AABB* _MaxBv, int number) {
 	int numbers = number;
 	const unsigned int threadNum = default_threads;
 	int blockNum = (numbers + threadNum - 1) / threadNum;
-	_calcVertMChash << <blockNum, threadNum >> > (_MChash, _vertexes, _MaxBv, number);
+	_calcVertMChash <<<blockNum, threadNum>>> (_MChash, _vertexes, _MaxBv, number);
 }
 
 void updateVertexes(double3* o_vertexes, const double3* _vertexes, double* tempM, const double* mass, MATHUTILS::Matrix3x3d* tempCons, int* tempBtype, const MATHUTILS::Matrix3x3d* cons, const int* bType, const uint32_t* sortIndex, uint32_t* sortMapIndex, int number) {
 	int numbers = number;
 	const unsigned int threadNum = default_threads;
 	int blockNum = (numbers + threadNum - 1) / threadNum;
-	_updateVertexes << <blockNum, threadNum >> > (o_vertexes, _vertexes, tempM, mass, tempCons, tempBtype, cons, bType, sortIndex, sortMapIndex, numbers);
+	_updateVertexes <<<blockNum, threadNum>>> (o_vertexes, _vertexes, tempM, mass, tempCons, tempBtype, cons, bType, sortIndex, sortMapIndex, numbers);
 }
 
 
@@ -239,23 +242,21 @@ void updateTopology(uint4* tets, uint3* tris, const uint32_t* sortMapVertIndex, 
 
 
 void sortGeometry(std::unique_ptr<GeometryManager>& instance, const AABB* _MaxBv, const int& vertex_num, const int& tetradedra_num, const int& triangle_num) {
-	std::cout << "vertex_num~~ " << vertex_num << std::endl;
-	std::cout << "tetradedra_num~~ " << tetradedra_num << std::endl;
-	std::cout << "triangle_num~~ " << triangle_num << std::endl;
 
     calcVertMChash(instance->cudaMortonCodeHash, instance->cudaTetPos, _MaxBv, vertex_num);
     
+	// generate cudaSortIndex from 0 to vertex_num - 1
 	thrust::sequence(thrust::device_ptr<uint32_t>(instance->cudaSortIndex), thrust::device_ptr<uint32_t>(instance->cudaSortIndex) + vertex_num);
     thrust::sort_by_key(thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash), thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash) + vertex_num, thrust::device_ptr<uint32_t>(instance->cudaSortIndex));
 
     updateVertexes(instance->cudaOriginTetPos, instance->cudaTetPos, instance->cudaTempDouble, instance->cudaTetMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraints, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
 
-    // CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTetPos, instance->cudaOriginTetPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
-    // CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTetMass, instance->cudaTempDouble, vertex_num * sizeof(double), cudaMemcpyDeviceToDevice));
-    // CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->cudaTempMat3x3, vertex_num * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToDevice));
-    // CUDA_SAFE_CALL(cudaMemcpy(instance->cudaBoundaryType, instance->cudaTempBoundaryType, vertex_num * sizeof(int), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTetPos, instance->cudaOriginTetPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTetMass, instance->cudaTempDouble, vertex_num * sizeof(double), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->cudaTempMat3x3, vertex_num * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaBoundaryType, instance->cudaTempBoundaryType, vertex_num * sizeof(int), cudaMemcpyDeviceToDevice));
 
-    // updateTopology(instance->cudaTetElement, instance->cudaSurfFace, instance->cudaSortMapVertIndex, tetradedra_num, triangle_num);
+    updateTopology(instance->cudaTetElement, instance->cudaTriElement, instance->cudaSortMapVertIndex, tetradedra_num, triangle_num);
 
 }
 
@@ -281,7 +282,7 @@ void updateTriEdges_adjVerts(uint32_t* sortIndex, uint2* _tri_edges, uint2* _adj
 void updateSurfaceVerts(uint32_t* sortIndex, uint32_t* _sVerts, const int& offset_num, const int& numbers) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateSurfVerts <<<blockNum, threadNum >>> (sortIndex, _sVerts, offset_num, numbers);
+    _updateSurfVerts << <blockNum, threadNum >> > (sortIndex, _sVerts, offset_num, numbers);
 }
 
 AABB* calcuMaxSceneSize(std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
@@ -289,19 +290,47 @@ AABB* calcuMaxSceneSize(std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
 }
 
 void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
-    sortGeometry(instance, calcuMaxSceneSize(LBVH_F_ptr), instance->tetPos.rows(), instance->tetElement.rows(), instance->surfFace.rows());
-    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+	int triangleNum = 0;
+	int triangleedgeNum = 0;
 
-    // updateSurfaces(TetMesh.sortMapVertIndex, _faces, updateVertNum, surf_faceNum);
-    // //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-	
-    // updateSurfaceEdges(TetMesh.sortMapVertIndex, _edges, updateVertNum, suft_edgeNum);
-    // //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+	int numVerts = instance->tetPos.rows();
+	int numTetEles = instance->tetElement.rows();
+	int numSurfVerts = instance->surfVert.rows();
+	int numSurfFaces = instance->surfFace.rows();
+	int numSurfEdges = instance->surfEdge.rows();
 
-    // updateTriEdges_adjVerts(TetMesh.sortMapVertIndex, TetMesh.tri_edges, TetMesh.tri_edge_adj_vertex, updateVertNum, tri_edge_num);
-    // //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-	
-    // updateSurfaceVerts(TetMesh.sortMapVertIndex, _surfVerts, updateVertNum, surf_vertexNum);
-    // //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    sortGeometry(instance, calcuMaxSceneSize(LBVH_F_ptr), numVerts, numTetEles, triangleNum);
+    CUDA_KERNEL_CHECK();
+
+    updateSurfaces(instance->cudaSortMapVertIndex, instance->cudaSurfFace, numVerts, numSurfFaces);
+	CUDA_KERNEL_CHECK();
+
+    updateSurfaceEdges(instance->cudaSortMapVertIndex, instance->cudaSurfEdge, numVerts, numSurfEdges);
+	CUDA_KERNEL_CHECK();
+
+    // updateTriEdges_adjVerts(instance->cudaSortMapVertIndex, TetMesh.tri_edges, TetMesh.tri_edge_adj_vertex, numVerts, 0);
+	// CUDA_KERNEL_CHECK();
+
+    updateSurfaceVerts(instance->cudaSortMapVertIndex, instance->cudaSurfVert, numVerts, numSurfVerts);
+	CUDA_KERNEL_CHECK();
+
+
+	//////////////////////
+	// check the result //
+	//////////////////////
+	Eigen::MatrixXi tempsurfface(numSurfFaces, 3);
+	Eigen::MatrixXi tempsurfedge(numSurfEdges, 2);
+	Eigen::VectorXi tempsurfvert(numSurfVerts);
+	copyFromCUDASafe(tempsurfface, instance->cudaSurfFace);
+	copyFromCUDASafe(tempsurfedge, instance->cudaSurfEdge);
+	copyFromCUDASafe(tempsurfvert, instance->cudaSurfVert);
+	std::cout << "gettempsurfface~" << tempsurfface.row(0) << std::endl;
+	std::cout << "gettempsurfedge~" << tempsurfedge.row(0) << std::endl;
+	std::cout << "gettempsurfvert~" << tempsurfvert(0) << std::endl;
+
+	Eigen::VectorXi tempsortmapvertindex(numVerts);
+	copyFromCUDASafe(tempsortmapvertindex, instance->cudaSortMapVertIndex);
+	std::cout << "getcudaSortMapVertIndex~" << tempsortmapvertindex(0) << " " << tempsortmapvertindex(100) << " " << tempsortmapvertindex(200) << std::endl;
 
 }
+

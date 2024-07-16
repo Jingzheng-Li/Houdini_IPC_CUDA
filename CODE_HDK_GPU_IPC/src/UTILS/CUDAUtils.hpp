@@ -10,7 +10,6 @@
 const static int default_threads = 256;
 
 #define CUDA_SAFE_CALL(err) cuda_safe_call_(err, __FILE__, __LINE__)
-
 inline void cuda_safe_call_(cudaError_t err, const char* file_name, const int num_line) {
     if (cudaSuccess != err) {
         std::cerr << file_name << "[" << num_line << "]: "
@@ -18,6 +17,25 @@ inline void cuda_safe_call_(cudaError_t err, const char* file_name, const int nu
                   << cudaGetErrorString(err) << std::endl;
 
         exit(EXIT_FAILURE);
+    }
+}
+
+#define CUDA_KERNEL_CHECK() cuda_kernel_check_(__FILE__, __LINE__)
+inline void cuda_kernel_check_(const char* file_name, const int num_line) {
+    cudaError_t err = cudaDeviceSynchronize();
+    if (cudaSuccess != err) {
+        std::cerr << file_name << "[" << num_line << "]: "
+                  << "CUDA Kernel execution error[" << static_cast<int>(err) << "]: "
+                  << cudaGetErrorString(err) << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+#define CHECK_INDEX_BOUNDS(idx, limit) check_index_bounds_(idx, limit, __FILE__, __LINE__)
+__device__ inline void check_index_bounds_(uint32_t idx, uint32_t limit, const char* file_name, int num_line) {
+    if (idx >= limit) {
+        printf("%s[%d]: Error: index %d out of bounds (>= %d)\n", file_name, num_line, idx, limit);
+        asm("trap;");
     }
 }
 

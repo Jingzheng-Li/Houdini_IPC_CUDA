@@ -90,6 +90,9 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	tetvel.resize(num_points, 3);
 	tetmass.resize(num_points);
 
+	auto &cons = instance->constraints;
+	cons.resize(num_points);
+
 	// boundary type
 	auto &boundarytype = instance->boundaryTypies;
 	boundarytype.resize(num_points);
@@ -108,6 +111,10 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 		tetpos.row(ptoff) << pos3.x(), pos3.y(), pos3.z();
 		tetvel.row(ptoff) << vel3.x(), vel3.y(), vel3.z();
 		tetmass(ptoff) = massHandle.get(ptoff);
+
+		MATHUTILS::Matrix3x3d constraint;
+		MATHUTILS::__set_Mat_val(constraint, 1, 0, 0, 0, 1, 0, 0, 0, 1);
+		cons[ptoff] = constraint;
 
 		if (xmin > pos3.x()) xmin = pos3.x();
 		if (ymin > pos3.y()) ymin = pos3.y();
@@ -136,10 +143,12 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMallocSafe(instance->cudaRestTetPos, num_points);
 	copyToCUDASafe(instance->tetPos, instance->cudaRestTetPos);
 
+	CUDAMallocSafe(instance->cudaConstraints, num_points);
+	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->constraints.data(), num_points * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
+
 
 	instance->minCorner = make_double3(xmin, ymin, zmin);
 	instance->maxCorner = make_double3(xmax, ymax, zmax);
-
 
 }
 
@@ -236,10 +245,25 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaMortonCodeHash, maxNumbers);
 	CUDAMallocSafe(instance->cudaSortIndex, maxNumbers);
 	CUDAMallocSafe(instance->cudaSortMapVertIndex, numVerts);
+	CUDAMallocSafe(instance->cudaDmInverses, numElems);
+	
+	CUDAMallocSafe(instance->cudaTempBoundaryType, numVerts);
+	CUDAMallocSafe(instance->cudaTempDouble, maxNumbers);
+	CUDAMallocSafe(instance->cudaTempMat3x3, maxNumbers);
+
+	int triangle_num = 0;
+	CUDAMallocSafe(instance->cudaTriElement, triangle_num);
+
+	//TODO: DmInverses
+	// copyToCUDASafe(instance->cudaDmInverses, );
+	// copyToCUDASafe(instance->cudaTetVolume, );
+
 
 	std::cout << "numVerts~~" << numVerts << std::endl;
 	std::cout << "numElems~~" << numElems << std::endl;
 	std::cout << "maxnumbers~~" << maxNumbers << std::endl;
+
+
 
 }
 
