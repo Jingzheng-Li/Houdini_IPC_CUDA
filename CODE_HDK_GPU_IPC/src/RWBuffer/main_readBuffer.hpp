@@ -23,6 +23,7 @@ protected:
 
     void loadSIMParams();
     void initSIMBVH();
+    void buildSIMBVH();
 
 private:
 

@@ -69,6 +69,11 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 		SortMesh::sortMesh(instance, instance->LBVH_F_ptr);
 
+		CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestTetPos, instance->cudaOriginTetPos, instance->tetPos.rows() * sizeof(double3), cudaMemcpyDeviceToDevice));
+
+		buildSIMBVH();
+
+
 		FIRSTFRAME::hou_initialized = true;
 	}
 
@@ -344,5 +349,15 @@ void GAS_Read_Buffer::initSIMBVH() {
 		instance->surfFace.rows(), 
 		instance->surfVert.rows()
 	);
+
+}
+
+
+void GAS_Read_Buffer::buildSIMBVH() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "buildSIMBVH geoinstance not initialized");
+
+	instance->LBVH_F_ptr->Construct();
+	instance->LBVH_E_ptr->Construct();
 
 }
