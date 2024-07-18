@@ -77,6 +77,9 @@ public:
     double3 minCorner;
     double3 maxCorner;
 
+    int numVertices;
+    int numElements;
+
     Eigen::MatrixX3d tetPos; // numPoints * 3
     double3* cudaTetPos;
 
@@ -123,6 +126,8 @@ public:
 
 
 public:
+
+    std::unique_ptr<AABB> AABB_SceneSize_ptr;
     std::unique_ptr<LBVH_F> LBVH_F_ptr;
     std::unique_ptr<LBVH_E> LBVH_E_ptr;
 
@@ -164,6 +169,13 @@ public:
     int* cudaBoundaryType;
     int* cudaTempBoundaryType;
 
+public:
+    double bboxDiagSize2;
+    double dTol;
+    double minKappaCoef;
+    double dHat;
+    double relative_dhat;
+    double fDhat;
 
-
+    
 };

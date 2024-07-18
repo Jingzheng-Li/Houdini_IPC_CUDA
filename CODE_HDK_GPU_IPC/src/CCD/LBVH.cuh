@@ -51,7 +51,7 @@ public:
 };
 
 
-class LBVH_F : LBVH {
+class LBVH_F : public LBVH {
 public:
     void init(int* _btype, double3* _mVerts, uint3* _mFaces, uint32_t* _mSurfVert, int4* _mCollisonPairs, int4* _ccd_mCollisonPairs, uint32_t* _mcpNum, int* _mMatIndex, const int& faceNum, const int& vertNum);
     double Construct();
@@ -67,7 +67,7 @@ public:
 
 };
 
-class LBVH_E : LBVH {
+class LBVH_E : public LBVH {
 public:
     void init(int* _btype, double3* _mVerts, double3* _rest_vertexes, uint2* _mEdges, int4* _mCollisonPairs, int4* _ccd_mCollisonPairs, uint32_t* _mcpNum, int* _mMatIndex, const int& edgeNum, const int& vertNum);
     double Construct();

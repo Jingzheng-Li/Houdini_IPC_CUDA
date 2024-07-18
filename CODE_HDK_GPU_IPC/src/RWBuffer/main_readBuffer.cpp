@@ -68,11 +68,11 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		loadSIMParams();
 		initSIMFEM();
 		initSIMBVH();
+		buildSIMBVH();
 		initSIMIPC();
 
-		CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestTetPos, instance->cudaOriginTetPos, instance->tetPos.rows() * sizeof(double3), cudaMemcpyDeviceToDevice));
 
-		buildSIMBVH();
+
 
 
 		FIRSTFRAME::hou_initialized = true;
@@ -245,8 +245,10 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferOtherTOCUDA geoinstance not initialized");
 
-	int numVerts = instance->tetPos.rows();
-	int numElems = instance->tetElement.rows();
+	instance->numVertices = instance->tetPos.rows();
+	instance->numElements = instance->tetElement.rows();
+	int &numVerts = instance->numVertices;
+	int &numElems = instance->numElements;
 	int maxNumbers = numVerts > numElems ? numVerts : numElems; 
 	CUDAMallocSafe(instance->cudaMortonCodeHash, maxNumbers);
 	CUDAMallocSafe(instance->cudaSortIndex, maxNumbers);
@@ -297,7 +299,7 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->Newton_solver_threshold = 1e-1;
 	instance->pcg_threshold = 1e-3;
 	instance->IPC_dt = 1e-2;
-	// instance->relative_dhat = 1e-3;
+	instance->relative_dhat = 1e-3;
 	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	instance->shearStiff = 0.03 * instance->stretchStiff;
 
@@ -320,7 +322,12 @@ void GAS_Read_Buffer::initSIMFEM() {
 
 	auto &tetpos = instance->tetPos;
 	auto &tetele = instance->tetElement;
-	for (int i = 0; i < instance->tetElement.rows(); i++) {
+	for (int i = 0; i < instance->numVertices; i++) {
+		double mass = instance->tetMass[i];
+		sumMass += mass;
+	}
+
+	for (int i = 0; i < instance->numElements; i++) {
 		int idx0 = tetele(i, 0);
         int idx1 = tetele(i, 1);
         int idx2 = tetele(i, 2);
@@ -330,8 +337,16 @@ void GAS_Read_Buffer::initSIMFEM() {
         const double3 &v2 = make_double3(tetpos(idx2, 0), tetpos(idx2, 1), tetpos(idx2, 2));
         const double3 &v3 = make_double3(tetpos(idx3, 0), tetpos(idx3, 1), tetpos(idx3, 2));
 		double vlm = MATHUTILS::__calculateVolume(v0, v1, v2, v3);
+
+		sumVolume += vlm;
+
 	}
 
+	instance->meanMass = sumMass / instance->numVertices;
+	instance->meanVolume = sumVolume / instance->numVertices;
+
+	printf("meanMass: %f\n", instance->meanMass);
+	printf("meanVolum: %f\n", instance->meanVolume);
 
 }
 
@@ -384,6 +399,27 @@ void GAS_Read_Buffer::initSIMBVH() {
 }
 
 void GAS_Read_Buffer::initSIMIPC() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
+
+	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestTetPos, instance->cudaOriginTetPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
+
+	if (!instance->AABB_SceneSize_ptr) {
+		instance->AABB_SceneSize_ptr = std::make_unique<AABB>();
+	}
+	*(instance->AABB_SceneSize_ptr) = instance->LBVH_F_ptr->m_scene;
+	auto &AABBScene = instance->AABB_SceneSize_ptr;
+	double3 &upper = AABBScene->upper;
+	double3 &lower = AABBScene->lower;
+	CHECK_ERROR((upper.x >= lower.x) && (upper.y >= lower.y) && (upper.z >= lower.z), "AABB maybe error, please check again");
+    std::cout << "SceneSize upper/lower: ~~" << upper.x << " " << lower.x << std::endl;
+
+	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene->upper, AABBScene->lower));
+	instance->dTol = 1e-18 * instance->bboxDiagSize2;
+	instance->minKappaCoef = 1e11;
+	instance->dHat = instance->relative_dhat * instance->relative_dhat * instance->bboxDiagSize2;
+	instance->fDhat = 1e-6 * instance->bboxDiagSize2;
+	
 
 }
 
