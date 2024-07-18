@@ -7,14 +7,12 @@
 namespace MATHUTILS {
 
 	template<class T>
-	__device__ __host__ 
-	inline T __m_min(T a, T b) {
+	__device__ __host__ T __m_min(T a, T b) {
 		return a < b ? a : b;
 	}
 
 	template <class T>
-	__device__ __host__ 
-	inline T __m_max(T a, T b) {
+	__device__ __host__ T __m_max(T a, T b) {
 		return a < b ? b : a;
 	}
 
@@ -274,6 +272,12 @@ namespace MATHUTILS {
 	__device__ __host__
 	double __computeEdgeProductNorm(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
 	
+	__device__ __host__ 
+	double __calculateVolume(const double3* vertexes, const uint4& index);
+
+	__device__ __host__ 
+	double __calculateArea(const double3* vertexes, const uint3& index);
+
 }
 
 

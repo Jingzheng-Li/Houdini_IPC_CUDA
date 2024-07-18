@@ -64,10 +64,11 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		transferDTAttribTOCUDA(geo, gdp);
 		transferOtherTOCUDA();
 
+		initSIMFEM();
+
 		loadSIMParams();
 		initSIMBVH();
 
-		SortMesh::sortMesh(instance, instance->LBVH_F_ptr);
 
 		CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestTetPos, instance->cudaOriginTetPos, instance->tetPos.rows() * sizeof(double3), cudaMemcpyDeviceToDevice));
 
@@ -272,6 +273,21 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 
 }
 
+void GAS_Read_Buffer::initSIMFEM() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+
+	double sumMass = 0;
+	double sumVolume = 0;
+
+	for (int i = 0; i < instance->tetElement.rows(); i++) {
+		
+
+	}
+
+
+}
+
 
 void GAS_Read_Buffer::loadSIMParams() {
 	auto &instance = GeometryManager::instance;
@@ -343,12 +359,15 @@ void GAS_Read_Buffer::initSIMBVH() {
 		instance->cudaSurfFace,
 		instance->cudaSurfVert,
 		instance->cudaCollisionPairs,
-		instance->cudaCCDCollisionPairs,
+		instance->cudaCCDCollisionPairs, 
 		instance->cudaCPNum, 
 		instance->cudaMatIndex, 
 		instance->surfFace.rows(), 
 		instance->surfVert.rows()
 	);
+
+	// calcuate Morton Code and sort MC together with face index
+	SortMesh::sortMesh(instance, instance->LBVH_F_ptr);
 
 }
 
@@ -359,5 +378,6 @@ void GAS_Read_Buffer::buildSIMBVH() {
 
 	instance->LBVH_F_ptr->Construct();
 	instance->LBVH_E_ptr->Construct();
+
 
 }

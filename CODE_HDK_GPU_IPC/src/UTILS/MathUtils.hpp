@@ -139,6 +139,8 @@ namespace MATHUTILS {
 	struct Matrix2x3d {
 		double m[2][3];
 	};
+
+
 }
 
 

@@ -107,6 +107,9 @@ public:
     Eigen::MatrixXi surfEdge; // num Edges * 2
     uint2* cudaSurfEdge;
 
+    double meanMass;
+    double meanVolume;
+
     // Eigen::MatrixXi surfEdgeAdjVert; // num Edges * 2
     // uint2* cudaSurfEdgeAdjVert;
 

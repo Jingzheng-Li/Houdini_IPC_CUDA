@@ -1513,5 +1513,42 @@ namespace MATHUTILS {
 		return 1e-3 * __squaredNorm(__minus(v0, v1)) * __squaredNorm(__minus(v2, v3));
 	}
 
+    __device__ __host__ 
+	double __calculateVolume(const double3* vertexes, const uint4& index) {
+        int id0 = 0;
+        int id1 = 1;
+        int id2 = 2;
+        int id3 = 3;
+        double o1x = vertexes[index.y].x - vertexes[index.x].x;
+        double o1y = vertexes[index.y].y - vertexes[index.x].y;
+        double o1z = vertexes[index.y].z - vertexes[index.x].z;
+        double3 OA = make_double3(o1x, o1y, o1z);
+
+        double o2x = vertexes[index.z].x - vertexes[index.x].x;
+        double o2y = vertexes[index.z].y - vertexes[index.x].y;
+        double o2z = vertexes[index.z].z - vertexes[index.x].z;
+        double3 OB = make_double3(o2x, o2y, o2z);
+
+        double o3x = vertexes[index.w].x - vertexes[index.x].x;
+        double o3y = vertexes[index.w].y - vertexes[index.x].y;
+        double o3z = vertexes[index.w].z - vertexes[index.x].z;
+        double3 OC = make_double3(o3x, o3y, o3z);
+
+        double3 heightDir = MATHUTILS::__v_vec_cross(OA, OB); // OA.cross(OB);
+        double bottomArea = MATHUTILS::__norm(heightDir); // heightDir.norm();
+        heightDir = MATHUTILS::__normalized(heightDir);
+
+        double volume = bottomArea * MATHUTILS::__v_vec_dot(heightDir, OC) / 6;
+        return volume > 0 ? volume : -volume;
+    }
+
+    __device__ __host__ 
+	double __calculateArea(const double3* vertexes, const uint3& index) {
+        double3 v10 = MATHUTILS::__minus(vertexes[index.y], vertexes[index.x]);
+        double3 v20 = MATHUTILS::__minus(vertexes[index.z], vertexes[index.x]);
+        double area = MATHUTILS::__norm(MATHUTILS::__v_vec_cross(v10, v20));
+        return 0.5 * area;
+    }
+
 }
 
