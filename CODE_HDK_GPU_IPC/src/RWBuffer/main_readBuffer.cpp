@@ -64,11 +64,11 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		transferDTAttribTOCUDA(geo, gdp);
 		transferOtherTOCUDA();
 
-		initSIMFEM();
 
 		loadSIMParams();
+		initSIMFEM();
 		initSIMBVH();
-
+		initSIMIPC();
 
 		CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestTetPos, instance->cudaOriginTetPos, instance->tetPos.rows() * sizeof(double3), cudaMemcpyDeviceToDevice));
 
@@ -92,8 +92,8 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	auto &tetpos = instance->tetPos;
 	auto &tetvel = instance->tetVel;
 	auto &tetmass = instance->tetMass;
-	tetpos.resize(num_points, 3);
-	tetvel.resize(num_points, 3);
+	tetpos.resize(num_points, Eigen::NoChange);
+	tetvel.resize(num_points, Eigen::NoChange);
 	tetmass.resize(num_points);
 
 	auto &cons = instance->constraints;
@@ -167,7 +167,7 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 	if (GeometryManager::instance->tetElement.rows() == gdp->getNumPrimitives()) return;
 
 	auto &tetEle = instance->tetElement;
-	tetEle.resize(gdp->getNumPrimitives(), 4);
+	tetEle.resize(gdp->getNumPrimitives(), Eigen::NoChange);
 
 
 	GA_Offset primoff;
@@ -273,20 +273,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 
 }
 
-void GAS_Read_Buffer::initSIMFEM() {
-	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
-
-	double sumMass = 0;
-	double sumVolume = 0;
-
-	for (int i = 0; i < instance->tetElement.rows(); i++) {
-		
-
-	}
-
-
-}
 
 
 void GAS_Read_Buffer::loadSIMParams() {
@@ -320,6 +306,32 @@ void GAS_Read_Buffer::loadSIMParams() {
 
 	std::cout << "arrived here ccd~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
 	std::cout << "arrived here collision~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
+
+}
+
+
+
+void GAS_Read_Buffer::initSIMFEM() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+
+	double sumMass = 0;
+	double sumVolume = 0;
+
+	auto &tetpos = instance->tetPos;
+	auto &tetele = instance->tetElement;
+	for (int i = 0; i < instance->tetElement.rows(); i++) {
+		int idx0 = tetele(i, 0);
+        int idx1 = tetele(i, 1);
+        int idx2 = tetele(i, 2);
+        int idx3 = tetele(i, 3);
+        const double3 &v0 = make_double3(tetpos(idx0, 0), tetpos(idx0, 1), tetpos(idx0, 2));
+        const double3 &v1 = make_double3(tetpos(idx1, 0), tetpos(idx1, 1), tetpos(idx1, 2));
+        const double3 &v2 = make_double3(tetpos(idx2, 0), tetpos(idx2, 1), tetpos(idx2, 2));
+        const double3 &v3 = make_double3(tetpos(idx3, 0), tetpos(idx3, 1), tetpos(idx3, 2));
+		double vlm = MATHUTILS::__calculateVolume(v0, v1, v2, v3);
+	}
+
 
 }
 
@@ -368,6 +380,10 @@ void GAS_Read_Buffer::initSIMBVH() {
 
 	// calcuate Morton Code and sort MC together with face index
 	SortMesh::sortMesh(instance, instance->LBVH_F_ptr);
+
+}
+
+void GAS_Read_Buffer::initSIMIPC() {
 
 }
 

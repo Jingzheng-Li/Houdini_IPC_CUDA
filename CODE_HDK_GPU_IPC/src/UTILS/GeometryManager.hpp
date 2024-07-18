@@ -77,10 +77,10 @@ public:
     double3 minCorner;
     double3 maxCorner;
 
-    Eigen::MatrixXd tetPos; // numPoints * 3
+    Eigen::MatrixX3d tetPos; // numPoints * 3
     double3* cudaTetPos;
 
-    Eigen::MatrixXd tetVel; // numPoints * 3
+    Eigen::MatrixX3d tetVel; // numPoints * 3
     double3* cudaTetVel;
 
     Eigen::VectorXd tetMass; // numPoints * 1
@@ -89,10 +89,10 @@ public:
     std::vector<MATHUTILS::Matrix3x3d> constraints;
     MATHUTILS::Matrix3x3d* cudaConstraints;
 
-    Eigen::MatrixXi tetElement; // numTets * 4
+    Eigen::MatrixX4i tetElement; // numTets * 4
     uint4* cudaTetElement;
 
-    Eigen::MatrixXi triElement;
+    Eigen::MatrixX3i triElement; // numTris * 3
     uint3* cudaTriElement;
 
     Eigen::VectorXd tetVolume; // numTets
@@ -101,10 +101,10 @@ public:
     Eigen::VectorXi surfVert; // num SurfPoints
     uint32_t* cudaSurfVert;
 
-    Eigen::MatrixXi surfFace; // num Triangles * 3
+    Eigen::MatrixX3i surfFace; // num surfTriangles * 3
     uint3* cudaSurfFace;
 
-    Eigen::MatrixXi surfEdge; // num Edges * 2
+    Eigen::MatrixX2i surfEdge; // num surfEdges * 2
     uint2* cudaSurfEdge;
 
     double meanMass;

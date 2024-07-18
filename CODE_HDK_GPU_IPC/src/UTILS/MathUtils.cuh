@@ -273,10 +273,10 @@ namespace MATHUTILS {
 	double __computeEdgeProductNorm(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
 	
 	__device__ __host__ 
-	double __calculateVolume(const double3* vertexes, const uint4& index);
+	double __calculateVolume(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
 
 	__device__ __host__ 
-	double __calculateArea(const double3* vertexes, const uint3& index);
+	double __calculateArea(const double3& v0, const double3& v1, const double3& v2);
 
 }
 
