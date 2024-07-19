@@ -42,6 +42,9 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 										SIM_Time time,
 										SIM_Time timestep) {
 
+	cudaError_t cudaStatus = cudaSetDevice(0);
+	CHECK_ERROR_SOLVER(cudaStatus==cudaSuccess, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+
 	const SIM_Geometry *geo = object->getGeometry();
 	CHECK_ERROR_SOLVER(geo != NULL, "Failed to get readBuffer geometry object")
 	GU_DetailHandleAutoReadLock readlock(geo->getGeometry());
@@ -70,6 +73,8 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		initSIMBVH();
 		buildSIMBVH();
 		initSIMIPC();
+
+		buildSIMCP();
 
 
 
@@ -192,48 +197,14 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferDTAttribTOCUDA geoinstance not initialized");
 
-	// Read surf_verts attribute
-	GA_ROHandleIA surfVertHandle(gdp, GA_ATTRIB_DETAIL, "surf_verts");
-	CHECK_ERROR(surfVertHandle.isValid(), "Failed to get surf_verts attribute");
-	UT_IntArray surf_verts;
-	surfVertHandle.get(0, surf_verts);
-	int numSurfVerts = surf_verts.size();
-	Eigen::VectorXi surfVert(numSurfVerts, 3);
-	for (int i = 0; i < numSurfVerts; ++i) {
-		surfVert[i] = surf_verts[i];
-	}
+	Eigen::VectorXi &surfverts = instance->surfVert;
+	Eigen::MatrixX3i &surffaces = instance->surfFace;
+	Eigen::MatrixX2i &surfedges = instance->surfEdge;
+	MATHUTILS::__getSurface(surfverts, surffaces, surfedges, instance->tetPos, instance->tetElement);
 
-	// Read surf_edges attribute
-	GA_ROHandleIA surfEdgeHandle(gdp, GA_ATTRIB_DETAIL, "surf_edges");
-	CHECK_ERROR(surfEdgeHandle.isValid(), "Failed to get surf_edges attribute");
-	UT_IntArray surf_edges;
-	surfEdgeHandle.get(0, surf_edges);
-	int numSurfEdges = surf_edges.size() / 2;
-	Eigen::MatrixXi surfEdge(numSurfEdges, 2);
-	for (int i = 0; i < numSurfEdges; ++i) {
-		surfEdge(i, 0) = surf_edges[i * 2];
-		surfEdge(i, 1) = surf_edges[i * 2 + 1];
-	}
-
-	// Read surf_faces attribute
-	GA_ROHandleIA surfFaceHandle(gdp, GA_ATTRIB_DETAIL, "surf_faces");
-	CHECK_ERROR(surfFaceHandle.isValid(), "Failed to get surf_faces attribute");
-	UT_IntArray surf_faces;
-	surfFaceHandle.get(0, surf_faces);
-	int numSurfFaces = surf_faces.size() / 3;
-	Eigen::MatrixXi surfFace(numSurfFaces, 3);
-	for (int i = 0; i < numSurfFaces; ++i) {
-		surfFace(i, 0) = surf_faces[i * 3];
-		surfFace(i, 1) = surf_faces[i * 3 + 1];
-		surfFace(i, 2) = surf_faces[i * 3 + 2];
-	}
-
-	instance->surfVert = surfVert;
-	instance->surfFace = surfFace;
-	instance->surfEdge = surfEdge;
-	CUDAMallocSafe(instance->cudaSurfVert, surfVert.rows());
-	CUDAMallocSafe(instance->cudaSurfFace, surfFace.rows());
-	CUDAMallocSafe(instance->cudaSurfEdge, surfEdge.rows());
+	CUDAMallocSafe(instance->cudaSurfVert, surfverts.rows());
+	CUDAMallocSafe(instance->cudaSurfFace, surffaces.rows());
+	CUDAMallocSafe(instance->cudaSurfEdge, surfedges.rows());
 	copyToCUDASafe(instance->surfVert, instance->cudaSurfVert);
 	copyToCUDASafe(instance->surfFace, instance->cudaSurfFace);
 	copyToCUDASafe(instance->surfEdge, instance->cudaSurfEdge);
@@ -262,6 +233,32 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	int triangle_num = 0;
 	CUDAMallocSafe(instance->cudaTriElement, triangle_num);
 
+
+	instance->IPC_dt = 1e-2;
+	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * FIRSTFRAME::collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
+	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * FIRSTFRAME::collision_detection_buff_scale;
+
+	CHECK_ERROR(instance->MAX_CCD_COLLITION_PAIRS_NUM > 0, "MAX_CCD_COLLITION_PAIRS_NUM is 0, this is incorrect");
+	CHECK_ERROR(instance->MAX_COLLITION_PAIRS_NUM > 0, "MAX_COLLITION_PAIRS_NUM is 0, this is incorrect");
+
+	CUDAMallocSafe(instance->cudaCollisionPairs, instance->MAX_COLLITION_PAIRS_NUM);
+	CUDAMallocSafe(instance->cudaCCDCollisionPairs, instance->MAX_CCD_COLLITION_PAIRS_NUM);
+	CUDAMallocSafe(instance->cudaMatIndex, instance->MAX_COLLITION_PAIRS_NUM);
+	CUDAMallocSafe(instance->cudaCPNum, 5);
+	CUDAMallocSafe(instance->cudaGPNum, 1);
+	CUDAMallocSafe(instance->cudaEnvCollisionPairs, numVerts);
+	CUDAMallocSafe(instance->cudaGroundNormal, 5);
+	CUDAMallocSafe(instance->cudaGroundOffset, 5);
+	double h_offset[5] = {-1, -1, 1, -1, 1};
+	double3 H_normal[5];
+	H_normal[0] = make_double3(0, 1, 0);
+    H_normal[1] = make_double3(1, 0, 0);
+    H_normal[2] = make_double3(-1, 0, 0);
+    H_normal[3] = make_double3(0, 0, 1);
+    H_normal[4] = make_double3(0, 0, -1);
+	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundOffset, &h_offset, 5 * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundNormal, &H_normal, 5 * sizeof(double3), cudaMemcpyHostToDevice));
+
 	//TODO: DmInverses
 	// copyToCUDASafe(instance->cudaDmInverses, );
 	// copyToCUDASafe(instance->cudaTetVolume, );
@@ -270,6 +267,11 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	std::cout << "numVerts~~" << numVerts << std::endl;
 	std::cout << "numElems~~" << numElems << std::endl;
 	std::cout << "maxnumbers~~" << maxNumbers << std::endl;
+	std::cout << "numSurfVerts~~" << instance->surfVert.rows() << std::endl;
+	std::cout << "numSurfEdges~~" << instance->surfEdge.rows() << std::endl;
+	std::cout << "numSurfFaces~~" << instance->surfFace.rows() << std::endl;
+	std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
+	std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
 
 
 
@@ -298,16 +300,11 @@ void GAS_Read_Buffer::loadSIMParams() {
 	// instance->bendStiff = 3e-4;
 	instance->Newton_solver_threshold = 1e-1;
 	instance->pcg_threshold = 1e-3;
-	instance->IPC_dt = 1e-2;
 	instance->relative_dhat = 1e-3;
 	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	instance->shearStiff = 0.03 * instance->stretchStiff;
 
-	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * FIRSTFRAME::collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
-	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * FIRSTFRAME::collision_detection_buff_scale;
 
-	std::cout << "arrived here ccd~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
-	std::cout << "arrived here collision~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
 
 }
 
@@ -361,10 +358,7 @@ void GAS_Read_Buffer::initSIMBVH() {
 		instance->LBVH_E_ptr = std::make_unique<LBVH_E>();
 	}
 
-	CUDAMallocSafe(instance->cudaCollisionPairs, instance->MAX_COLLITION_PAIRS_NUM);
-	CUDAMallocSafe(instance->cudaCCDCollisionPairs, instance->MAX_CCD_COLLITION_PAIRS_NUM);
-	CUDAMallocSafe(instance->cudaMatIndex, instance->MAX_COLLITION_PAIRS_NUM);
-	CUDAMallocSafe(instance->cudaCPNum, 5); // TODO: why 5?
+
 
 
 	instance->LBVH_E_ptr->init(
@@ -398,6 +392,20 @@ void GAS_Read_Buffer::initSIMBVH() {
 
 }
 
+
+
+
+void GAS_Read_Buffer::buildSIMBVH() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "buildSIMBVH geoinstance not initialized");
+
+	instance->LBVH_F_ptr->Construct();
+	instance->LBVH_E_ptr->Construct();
+
+
+}
+
+
 void GAS_Read_Buffer::initSIMIPC() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
@@ -420,16 +428,26 @@ void GAS_Read_Buffer::initSIMIPC() {
 	instance->dHat = instance->relative_dhat * instance->relative_dhat * instance->bboxDiagSize2;
 	instance->fDhat = 1e-6 * instance->bboxDiagSize2;
 	
-
 }
 
-
-void GAS_Read_Buffer::buildSIMBVH() {
+void GAS_Read_Buffer::buildSIMCP() {
 	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "buildSIMBVH geoinstance not initialized");
+	CHECK_ERROR(instance, "buildSIMCP geoinstance not initialized");
 
-	instance->LBVH_F_ptr->Construct();
-	instance->LBVH_E_ptr->Construct();
+	CUDA_SAFE_CALL(cudaMemset(instance->cudaCPNum, 0, 5 * sizeof(uint32_t)));
+	CUDA_SAFE_CALL(cudaMemset(instance->cudaGPNum, 0, sizeof(uint32_t)));
 
+	instance->LBVH_F_ptr->SelfCollitionDetect(instance->dHat);
+	instance->LBVH_E_ptr->SelfCollitionDetect(instance->dHat);
+
+	instance->LBVH_F_ptr->GroundCollisionDetect(
+		instance->cudaTetPos, 
+		instance->cudaSurfVert,
+		instance->cudaGroundOffset,
+		instance->cudaGroundNormal,
+		instance->cudaEnvCollisionPairs,
+		instance->cudaGPNum,
+		instance->dHat,
+		instance->surfVert.rows());
 
 }

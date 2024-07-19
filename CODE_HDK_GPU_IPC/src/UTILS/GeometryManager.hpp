@@ -18,16 +18,38 @@ public:
         cudaTetVel(nullptr), 
         cudaTetMass(nullptr), 
         cudaTetElement(nullptr),
+        cudaTriElement(nullptr),
+        cudaTetVolume(nullptr),
         cudaSurfVert(nullptr), 
         cudaSurfFace(nullptr), 
         cudaSurfEdge(nullptr),
         cudaBoundaryType(nullptr),
+        cudaTempBoundaryType(nullptr),
+        cudaConstraints(nullptr),
         cudaRestTetPos(nullptr),
         cudaOriginTetPos(nullptr),
         cudaCollisionPairs(nullptr),
         cudaCCDCollisionPairs(nullptr),
+        cudaEnvCollisionPairs(nullptr),
         cudaCPNum(nullptr),
-        cudaMatIndex(nullptr) {}
+        cudaGPNum(nullptr),
+        cudaGroundNormal(nullptr),
+        cudaGroundOffset(nullptr),
+        cudaMatIndex(nullptr),
+        cudaMortonCodeHash(nullptr),
+        cudaSortIndex(nullptr),
+        cudaSortMapVertIndex(nullptr),
+        cudaTempDouble(nullptr),
+        cudaDmInverses(nullptr),
+        cudaTempMat3x3(nullptr),
+        cudaH12x12(nullptr),
+        cudaH9x9(nullptr),
+        cudaH6x6(nullptr),
+        cudaH3x3(nullptr),
+        cudaD1Index(nullptr),
+        cudaD3Index(nullptr),
+        cudaD4Index(nullptr),
+        cudaD2Index(nullptr) {}
 
     ~GeometryManager() {
         freeCUDA();
@@ -45,16 +67,38 @@ private:
         freeCUDASafe(instance->cudaTetVel);
         freeCUDASafe(instance->cudaTetMass);
         freeCUDASafe(instance->cudaTetElement);
+        freeCUDASafe(instance->cudaTriElement);
+        freeCUDASafe(instance->cudaTetVolume);
         freeCUDASafe(instance->cudaSurfVert);
         freeCUDASafe(instance->cudaSurfFace);
         freeCUDASafe(instance->cudaSurfEdge);
-        freeCUDASafe(instance->cudaBoundaryType);
+        freeCUDASafe(instance->cudaConstraints);
         freeCUDASafe(instance->cudaRestTetPos);
         freeCUDASafe(instance->cudaOriginTetPos);
         freeCUDASafe(instance->cudaCollisionPairs);
         freeCUDASafe(instance->cudaCCDCollisionPairs);
+        freeCUDASafe(instance->cudaEnvCollisionPairs);
         freeCUDASafe(instance->cudaCPNum);
+        freeCUDASafe(instance->cudaGPNum);
+        freeCUDASafe(instance->cudaGroundNormal);
+        freeCUDASafe(instance->cudaGroundOffset);
         freeCUDASafe(instance->cudaMatIndex);
+        freeCUDASafe(instance->cudaMortonCodeHash);
+        freeCUDASafe(instance->cudaSortIndex);
+        freeCUDASafe(instance->cudaSortMapVertIndex);
+        freeCUDASafe(instance->cudaTempDouble);
+        freeCUDASafe(instance->cudaDmInverses);
+        freeCUDASafe(instance->cudaTempMat3x3);
+        freeCUDASafe(instance->cudaBoundaryType);
+        freeCUDASafe(instance->cudaTempBoundaryType);
+        freeCUDASafe(instance->cudaH12x12);
+        freeCUDASafe(instance->cudaH9x9);
+        freeCUDASafe(instance->cudaH6x6);
+        freeCUDASafe(instance->cudaH3x3);
+        freeCUDASafe(instance->cudaD1Index);
+        freeCUDASafe(instance->cudaD3Index);
+        freeCUDASafe(instance->cudaD4Index);
+        freeCUDASafe(instance->cudaD2Index);
     }
 
     static void freeDynamicGeometry() {
@@ -119,9 +163,6 @@ public:
     double3* cudaOriginTetPos;
     double3* cudaRestTetPos;
 
-    int4* cudaCollisionPairs;
-    int4* cudaCCDCollisionPairs;
-    uint32_t* cudaCPNum;
     int* cudaMatIndex;
 
 
@@ -131,11 +172,24 @@ public:
     std::unique_ptr<LBVH_F> LBVH_F_ptr;
     std::unique_ptr<LBVH_E> LBVH_E_ptr;
 
+    int MAX_COLLITION_PAIRS_NUM;
+    int MAX_CCD_COLLITION_PAIRS_NUM;
+
+    int4* cudaCollisionPairs;
+    int4* cudaCCDCollisionPairs;
+    uint32_t* cudaEnvCollisionPairs;
+
+    uint32_t* cudaCPNum; // collision pair
+    uint32_t* cudaGPNum; // ground pair
+
+    double* cudaGroundOffset;
+    double3* cudaGroundNormal;
+
+
 public:
     // physics parameters
     double IPC_dt;
-    int MAX_COLLITION_PAIRS_NUM;
-    int MAX_CCD_COLLITION_PAIRS_NUM;
+
     
     double density;
     double YoungModulus;
@@ -178,4 +232,15 @@ public:
     double fDhat;
 
     
+public:
+    // PCG_Solver
+    MATHUTILS::Matrix12x12d* cudaH12x12;
+	MATHUTILS::Matrix9x9d* cudaH9x9;
+	MATHUTILS::Matrix6x6d* cudaH6x6;
+	MATHUTILS::Matrix3x3d* cudaH3x3;
+	uint32_t* cudaD1Index;//pIndex, DpeIndex, DptIndex;
+	uint3* cudaD3Index;
+	uint4* cudaD4Index;
+	uint2* cudaD2Index;
+
 };

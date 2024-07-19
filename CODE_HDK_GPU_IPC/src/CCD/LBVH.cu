@@ -1479,6 +1479,23 @@ AABB* LBVH_F::getSceneSize() {
 }
 
 
+__global__
+void _GroundCollisionDetect(const double3* vertexes, const uint32_t* surfVertIds, const double* g_offset, const double3* g_normal, uint32_t* _environment_collisionPair, uint32_t* _gpNum, double dHat, int number) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= number) return;
+    double dist = MATHUTILS::__v_vec_dot(*g_normal, vertexes[surfVertIds[idx]]) - *g_offset;
+    if (dist * dist > dHat) return;
+
+    _environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
+
+}
+
+void LBVH::GroundCollisionDetect(const double3* _vertexes, const uint32_t* _surfVerts, const double* _groundOffset, const double3* _groundNormal, uint32_t* _environment_collisionPair, uint32_t* _gpNum, double dHat, int numSurfVerts) {
+    const unsigned int threadNum = default_threads;
+    int blockNum = (numSurfVerts + threadNum - 1) / threadNum; //
+    _GroundCollisionDetect <<<blockNum, threadNum >>> (_vertexes, _surfVerts, _groundOffset, _groundNormal, _environment_collisionPair, _gpNum, dHat, numSurfVerts);
+}
+
 
 
 ///////////////////

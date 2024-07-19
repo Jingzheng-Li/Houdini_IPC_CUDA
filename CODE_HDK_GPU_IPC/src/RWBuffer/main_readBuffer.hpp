@@ -26,6 +26,7 @@ protected:
     void initSIMBVH();
     void initSIMIPC();
     void buildSIMBVH();
+    void buildSIMCP();
 
 private:
 

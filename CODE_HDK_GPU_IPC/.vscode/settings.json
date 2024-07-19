@@ -74,6 +74,11 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "__nullptr": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "__split_buffer": "cpp",
+        "__bit_reference": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "filesystem": "cpp"
     }
 }
