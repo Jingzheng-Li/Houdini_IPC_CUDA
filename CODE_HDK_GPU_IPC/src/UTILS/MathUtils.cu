@@ -1296,21 +1296,21 @@ namespace MATHUTILS {
 		return mat;
 	}
 
-	// __device__ __host__ void SVD(const Matrix3x3d& F, Matrix3x3d& Uout, Matrix3x3d& Vout, Matrix3x3d& Sigma) {
-	// 	using matview = zs::vec_view<double, zs::integer_seq<int, 3, 3>>;
-	// 	using cmatview = zs::vec_view<const double, zs::integer_seq<int, 3, 3>>;
-	// 	using vec3 = zs::vec<double, 3>;
-	// 	cmatview F_{ (const double*)F.m };
-	// 	matview UU{ (double*)Uout.m }, VV{ (double*)Vout.m };
-	// 	vec3 SS{};
-	// 	zs::tie(UU, SS, VV) = zs::math::qr_svd(F_);
-	// 	for (int i = 0; i != 3; ++i)
-	// 		for (int j = 0; j != 3; ++j) {
-	// 			Uout.m[i][j] = UU(i, j);
-	// 			Vout.m[i][j] = VV(i, j);
-	// 			Sigma.m[i][j] = (i != j ? 0. : SS[i]);
-	// 		}
-	// }
+	__device__ __host__ void SVD(const Matrix3x3d& F, Matrix3x3d& Uout, Matrix3x3d& Vout, Matrix3x3d& Sigma) {
+		using matview = zs::vec_view<double, zs::integer_seq<int, 3, 3>>;
+		using cmatview = zs::vec_view<const double, zs::integer_seq<int, 3, 3>>;
+		using vec3 = zs::vec<double, 3>;
+		cmatview F_{ (const double*)F.m };
+		matview UU{ (double*)Uout.m }, VV{ (double*)Vout.m };
+		vec3 SS{};
+		zs::tie(UU, SS, VV) = zs::math::qr_svd(F_);
+		for (int i = 0; i != 3; ++i)
+			for (int j = 0; j != 3; ++j) {
+				Uout.m[i][j] = UU(i, j);
+				Vout.m[i][j] = VV(i, j);
+				Sigma.m[i][j] = (i != j ? 0. : SS[i]);
+			}
+	}
 
 	__device__ __host__ void __makePD2x2(const double& a00, const double& a01, const double& a10, const double& a11, double eigenValues[2], int& num, double2 eigenVectors[2], double eps) {
 		double b = -(a00 + a11), c = a00 * a11 - a10 * a01;
