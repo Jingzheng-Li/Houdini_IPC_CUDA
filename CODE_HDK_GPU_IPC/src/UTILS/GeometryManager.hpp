@@ -6,7 +6,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 
-#include "CCD/LBVH.cuh"
+#include "LBVH/LBVH.cuh"
 #include "CUDAUtils.hpp"
 #include "MathUtils.hpp"
 #include "MathUtils.cuh"

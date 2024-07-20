@@ -2,8 +2,8 @@
 #include "main_readBuffer.hpp"
 
 #include "UTILS/GeometryManager.hpp"
-#include "CCD/SortMesh.cuh"
-#include "CCD/LBVH.cuh"
+#include "LBVH/SortMesh.cuh"
+#include "LBVH/LBVH.cuh"
 
 namespace FIRSTFRAME {
 	static bool hou_initialized = false;

@@ -3,8 +3,8 @@
 
 #include "RWBuffer/main_readBuffer.hpp"
 #include "RWBuffer/main_writeBuffer.hpp"
-#include "CCD/main_LBVH.hpp"
-#include "CCD/main_ACCD.hpp"
+#include "LBVH/main_LBVH.hpp"
+#include "ACCD/main_ACCD.hpp"
 
 #include "UTILS/GeometryManager.hpp"
 

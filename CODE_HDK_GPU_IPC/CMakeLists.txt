@@ -38,7 +38,8 @@ add_library(${library_name} SHARED ${GIPC_SOURCE} ${GIPC_HEADER})
 # Add include directories for the target
 target_include_directories(${library_name} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/CCD
+    ${CMAKE_SOURCE_DIR}/src/LBVH
+    ${CMAKE_SOURCE_DIR}/src/ACCD
     ${CMAKE_SOURCE_DIR}/src/FEM
     ${CMAKE_SOURCE_DIR}/src/IPC
     ${CMAKE_SOURCE_DIR}/src/UTILS
