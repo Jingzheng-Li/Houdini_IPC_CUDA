@@ -14,16 +14,16 @@ public:
 public:
 
     // TODO: 全部切换成mc_*
-    uint32_t* D1Index;//pIndex, DpeIndex, DptIndex;
-	uint3* D3Index;
-	uint4* D4Index;
-	uint2* D2Index;
-	MATHUTILS::Matrix12x12d* H12x12;
-	MATHUTILS::Matrix3x3d* H3x3;
-	MATHUTILS::Matrix6x6d* H6x6;
-	MATHUTILS::Matrix9x9d* H9x9;
+    uint32_t* m_D1Index;//pIndex, DpeIndex, DptIndex;
+	uint3* m_D3Index;
+	uint4* m_D4Index;
+	uint2* m_D2Index;
+	MATHUTILS::Matrix12x12d* m_H12x12;
+	MATHUTILS::Matrix3x3d* m_H3x3;
+	MATHUTILS::Matrix6x6d* m_H6x6;
+	MATHUTILS::Matrix9x9d* m_H9x9;
 
-	uint32_t DNum[4];
+	uint32_t m_DNum[4];
 
 public:
     void CUDA_MALLOC_BHESSIAN(const int& tet_number, const int& surfvert_number, const int& surface_number, const int& surfEdge_number, const int& triangle_num, const int& tri_Edge_number);
@@ -49,22 +49,20 @@ public:
 
 public:
     // TODO: 全部切换成mc_*
-    double* squeue;
-	double3* b;
-	MATHUTILS::Matrix3x3d* P;
-	double3* r;
-	double3* c;
-	double3* q;
-	double3* s;
-	double3* z;
-	double3* dx;
-	double3* tempDx;
-
-	double3* filterTempVec3;
-	double3* preconditionTempVec3;
+    double* m_squeue;
+	double3* m_b;
+	MATHUTILS::Matrix3x3d* m_P;
+	double3* m_r;
+	double3* m_c;
+	double3* m_q;
+	double3* m_s;
+	double3* m_z;
+	double3* m_dx;
+	double3* m_tempDx;
 
     // int P_type;
-    // double3* preconditionTempVec3;
+	// double3* m_filterTempVec3;
+	// double3* m_preconditionTempVec3;
 
 public:
     void CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum);

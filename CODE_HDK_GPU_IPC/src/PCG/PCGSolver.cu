@@ -11,27 +11,27 @@ PCGData::PCGData() {};
 PCGData::~PCGData() {};
 
 void PCGData::CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum) {
-    CUDAMallocSafe(squeue, MATHUTILS::__m_max(vertexNum, tetrahedraNum));
-    CUDAMallocSafe(P, vertexNum);
-    CUDAMallocSafe(r, vertexNum);
-    CUDAMallocSafe(c, vertexNum);
-    CUDAMallocSafe(z, vertexNum);
-    CUDAMallocSafe(q, vertexNum);
-    CUDAMallocSafe(s, vertexNum);
-    CUDAMallocSafe(dx, vertexNum);
-    CUDA_SAFE_CALL(cudaMemset(z, 0, vertexNum * sizeof(double3)));
+    CUDAMallocSafe(m_squeue, MATHUTILS::__m_max(vertexNum, tetrahedraNum));
+    CUDAMallocSafe(m_P, vertexNum);
+    CUDAMallocSafe(m_r, vertexNum);
+    CUDAMallocSafe(m_c, vertexNum);
+    CUDAMallocSafe(m_z, vertexNum);
+    CUDAMallocSafe(m_q, vertexNum);
+    CUDAMallocSafe(m_s, vertexNum);
+    CUDAMallocSafe(m_dx, vertexNum);
+    CUDA_SAFE_CALL(cudaMemset(m_z, 0, vertexNum * sizeof(double3)));
 
 }
 
 void PCGData::CUDA_FREE_PCGDATA() {
-    CUDAFreeSafe(squeue);
-    CUDAFreeSafe(r);
-    CUDAFreeSafe(r);
-    CUDAFreeSafe(c);
-    CUDAFreeSafe(z);
-    CUDAFreeSafe(q);
-    CUDAFreeSafe(s);
-    CUDAFreeSafe(dx);
+    CUDAFreeSafe(m_squeue);
+    CUDAFreeSafe(m_r);
+    CUDAFreeSafe(m_r);
+    CUDAFreeSafe(m_c);
+    CUDAFreeSafe(m_z);
+    CUDAFreeSafe(m_q);
+    CUDAFreeSafe(m_s);
+    CUDAFreeSafe(m_dx);
 
 }
 
@@ -45,39 +45,39 @@ BHessian::BHessian() {};
 BHessian::~BHessian() {};
 
 void BHessian::CUDA_MALLOC_BHESSIAN(const int& tet_number, const int& surfvert_number, const int& surface_number, const int& surfEdge_number, const int& triangle_num, const int& tri_Edge_number) {
-    CUDAMallocSafe(H12x12, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
-    CUDAMallocSafe(H9x9, (2 * (surfEdge_number + surfvert_number) + triangle_num));
-    CUDAMallocSafe(H6x6, 2 * (surfvert_number + surfEdge_number));
-    CUDAMallocSafe(H3x3, 2 * surfvert_number);
+    CUDAMallocSafe(m_H12x12, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
+    CUDAMallocSafe(m_H9x9, (2 * (surfEdge_number + surfvert_number) + triangle_num));
+    CUDAMallocSafe(m_H6x6, 2 * (surfvert_number + surfEdge_number));
+    CUDAMallocSafe(m_H3x3, 2 * surfvert_number);
 
-    CUDAMallocSafe(D4Index, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
-    CUDAMallocSafe(D3Index, (2 * (surfEdge_number + surfvert_number)+ triangle_num));
-    CUDAMallocSafe(D2Index, 2 * (surfvert_number + surfEdge_number));
-    CUDAMallocSafe(D1Index, 2 * surfvert_number);
+    CUDAMallocSafe(m_D4Index, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
+    CUDAMallocSafe(m_D3Index, (2 * (surfEdge_number + surfvert_number)+ triangle_num));
+    CUDAMallocSafe(m_D2Index, 2 * (surfvert_number + surfEdge_number));
+    CUDAMallocSafe(m_D1Index, 2 * surfvert_number);
 
 }
 
 void BHessian::CUDA_FREE_BHESSIAN() {
-    CUDAFreeSafe(H12x12);
-    CUDAFreeSafe(H9x9);
-    CUDAFreeSafe(H6x6);
-    CUDAFreeSafe(H3x3);
-    CUDAFreeSafe(D1Index);
-    CUDAFreeSafe(D2Index);
-    CUDAFreeSafe(D3Index);
-    CUDAFreeSafe(D4Index);    
+    CUDAFreeSafe(m_H12x12);
+    CUDAFreeSafe(m_H9x9);
+    CUDAFreeSafe(m_H6x6);
+    CUDAFreeSafe(m_H3x3);
+    CUDAFreeSafe(m_D1Index);
+    CUDAFreeSafe(m_D2Index);
+    CUDAFreeSafe(m_D3Index);
+    CUDAFreeSafe(m_D4Index);    
 
 }
 
 void BHessian::updateDNum(const int& tri_Num, const int& tet_number, const uint32_t* cpNums, const uint32_t* last_cpNums, const int& tri_edge_number) {
-    DNum[1] = cpNums[1];
-    DNum[2] = cpNums[2] + tri_Num;
-    DNum[3] = tet_number + cpNums[3] + tri_edge_number;
+    m_DNum[1] = cpNums[1];
+    m_DNum[2] = cpNums[2] + tri_Num;
+    m_DNum[3] = tet_number + cpNums[3] + tri_edge_number;
 
 #ifdef USE_FRICTION
-    DNum[1] += last_cpNums[1];
-    DNum[2] += last_cpNums[2];
-    DNum[3] += last_cpNums[3];
+    m_DNum[1] += last_cpNums[1];
+    m_DNum[2] += last_cpNums[2];
+    m_DNum[3] += last_cpNums[3];
 #endif
 
 }
@@ -1297,19 +1297,19 @@ namespace PCGSOLVER {
         unsigned int sharedMsize = sizeof(double) * (threadNum >> 5);
         switch (type) {
         case 0:
-            PCG_add_Reduction_force << <blockNum, threadNum, sharedMsize >> > (pcg_data->squeue, pcg_data->b, numbers);
+            PCG_add_Reduction_force << <blockNum, threadNum, sharedMsize >> > (pcg_data->m_squeue, pcg_data->m_b, numbers);
             break;
         case 1:
-            PCG_add_Reduction_delta0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->squeue, pcg_data->P, pcg_data->b, instance->cudaConstraints, numbers);
+            PCG_add_Reduction_delta0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->m_squeue, pcg_data->m_P, pcg_data->m_b, instance->cudaConstraints, numbers);
             break;
         case 2:
-            PCG_add_Reduction_deltaN0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->squeue, pcg_data->P, pcg_data->b, pcg_data->r, pcg_data->c, instance->cudaConstraints, numbers);
+            PCG_add_Reduction_deltaN0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->m_squeue, pcg_data->m_P, pcg_data->m_b, pcg_data->m_r, pcg_data->m_c, instance->cudaConstraints, numbers);
             break;
         case 3:
-            PCG_add_Reduction_tempSum << <blockNum, threadNum, sharedMsize >> > (pcg_data->squeue, pcg_data->c, pcg_data->q, instance->cudaConstraints, numbers);
+            PCG_add_Reduction_tempSum << <blockNum, threadNum, sharedMsize >> > (pcg_data->m_squeue, pcg_data->m_c, pcg_data->m_q, instance->cudaConstraints, numbers);
             break;
         case 4:
-            PCG_add_Reduction_deltaN << <blockNum, threadNum, sharedMsize >> > (pcg_data->squeue, pcg_data->dx, pcg_data->c, pcg_data->r, pcg_data->q, pcg_data->P, pcg_data->s, alpha, numbers);
+            PCG_add_Reduction_deltaN << <blockNum, threadNum, sharedMsize >> > (pcg_data->m_squeue, pcg_data->m_dx, pcg_data->m_c, pcg_data->m_r, pcg_data->m_q, pcg_data->m_P, pcg_data->m_s, alpha, numbers);
             break;
         }
 
@@ -1317,13 +1317,13 @@ namespace PCGSOLVER {
         blockNum = (numbers + threadNum - 1) / threadNum;
 
         while (numbers > 1) {
-            add_reduction << <blockNum, threadNum, sharedMsize >> > (pcg_data->squeue, numbers);
+            add_reduction << <blockNum, threadNum, sharedMsize >> > (pcg_data->m_squeue, numbers);
             numbers = blockNum;
             blockNum = (numbers + threadNum - 1) / threadNum;
 
         }
         double result;
-        cudaMemcpy(&result, pcg_data->squeue, sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&result, pcg_data->m_squeue, sizeof(double), cudaMemcpyDeviceToHost);
         return result;
     }
 
@@ -1333,26 +1333,26 @@ namespace PCGSOLVER {
         int blockNum = (numbers + threadNum - 1) / threadNum;
         __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaTetMass, c, q, numbers);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-        numbers = BH.DNum[3];
+        numbers = BH.m_DNum[3];
         if (numbers > 0) {
             //unsigned int sharedMsize = sizeof(double) * threadNum;
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_Solve_AX12_b << <blockNum, threadNum >> > (BH.H12x12, BH.D4Index, c, q, numbers);
+            __PCG_Solve_AX12_b << <blockNum, threadNum >> > (BH.m_H12x12, BH.m_D4Index, c, q, numbers);
         }
-        numbers = BH.DNum[2];
+        numbers = BH.m_DNum[2];
         if (numbers > 0) {
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_Solve_AX9_b << <blockNum, threadNum >> > (BH.H9x9, BH.D3Index, c, q, numbers);
+            __PCG_Solve_AX9_b << <blockNum, threadNum >> > (BH.m_H9x9, BH.m_D3Index, c, q, numbers);
         }
-        numbers = BH.DNum[1];
+        numbers = BH.m_DNum[1];
         if (numbers > 0) {
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_Solve_AX6_b << <blockNum, threadNum >> > (BH.H6x6, BH.D2Index, c, q, numbers);
+            __PCG_Solve_AX6_b << <blockNum, threadNum >> > (BH.m_H6x6, BH.m_D2Index, c, q, numbers);
         }
-        numbers = BH.DNum[0];
+        numbers = BH.m_DNum[0];
         if (numbers > 0) {
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_Solve_AX3_b << <blockNum, threadNum >> > (BH.H3x3, BH.D1Index, c, q, numbers);
+            __PCG_Solve_AX3_b << <blockNum, threadNum >> > (BH.m_H3x3, BH.m_D1Index, c, q, numbers);
         }
 
     }
@@ -1372,20 +1372,20 @@ namespace PCGSOLVER {
         int blockNum = (numbers + threadNum - 1) / threadNum;
 
         unsigned int sharedMsize = sizeof(double) * (threadNum >> 5);
-        PCG_vdv_Reduction << <blockNum, threadNum >> > (pcg_data->squeue, A, B, numbers);
+        PCG_vdv_Reduction << <blockNum, threadNum >> > (pcg_data->m_squeue, A, B, numbers);
 
 
         numbers = blockNum;
         blockNum = (numbers + threadNum - 1) / threadNum;
 
         while (numbers > 1) {
-            add_reduction << <blockNum, threadNum, sharedMsize >> > (pcg_data->squeue, numbers);
+            add_reduction << <blockNum, threadNum, sharedMsize >> > (pcg_data->m_squeue, numbers);
             numbers = blockNum;
             blockNum = (numbers + threadNum - 1) / threadNum;
 
         }
         double result;
-        cudaMemcpy(&result, pcg_data->squeue, sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&result, pcg_data->m_squeue, sizeof(double), cudaMemcpyDeviceToHost);
         return result;
     }
 
@@ -1395,12 +1395,12 @@ namespace PCGSOLVER {
         int blockNum = (numbers + threadNum - 1) / threadNum;
         __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaTetMass, c, q, numbers);
 
-        int offset4 = (BH.DNum[3] * 144 + threadNum - 1) / threadNum;
-        int offset3 = (BH.DNum[2] * 81 + threadNum - 1) / threadNum;
-        int offset2 = (BH.DNum[1] * 36 + threadNum - 1) / threadNum;
-        int offset1 = (BH.DNum[0] + threadNum - 1) / threadNum;
+        int offset4 = (BH.m_DNum[3] * 144 + threadNum - 1) / threadNum;
+        int offset3 = (BH.m_DNum[2] * 81 + threadNum - 1) / threadNum;
+        int offset2 = (BH.m_DNum[1] * 36 + threadNum - 1) / threadNum;
+        int offset1 = (BH.m_DNum[0] + threadNum - 1) / threadNum;
         blockNum = offset1 + offset2 + offset3 + offset4;
-        __PCG_Solve_AXALL_b2 << <blockNum, threadNum >> > (BH.H12x12, BH.H9x9, BH.H6x6, BH.H3x3, BH.D4Index, BH.D3Index, BH.D2Index, BH.D1Index, c, q, BH.DNum[3] * 144, BH.DNum[2] * 81, BH.DNum[1] * 36, BH.DNum[0], offset4, offset3, offset2);
+        __PCG_Solve_AXALL_b2 << <blockNum, threadNum >> > (BH.m_H12x12, BH.m_H9x9, BH.m_H6x6, BH.m_H3x3, BH.m_D4Index, BH.m_D3Index, BH.m_D2Index, BH.m_D1Index, c, q, BH.m_DNum[3] * 144, BH.m_DNum[2] * 81, BH.m_DNum[1] * 36, BH.m_DNum[0], offset4, offset3, offset2);
 
     }
 
@@ -1410,25 +1410,25 @@ namespace PCGSOLVER {
         int blockNum = (numbers + threadNum - 1) / threadNum;
         __PCG_mass_P << <blockNum, threadNum >> > (instance->cudaTetMass, P, numbers);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-        numbers = BH.DNum[3] * 12;
+        numbers = BH.m_DNum[3] * 12;
         if (numbers > 0) {
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_AX12_P << <blockNum, threadNum >> > (BH.H12x12, BH.D4Index, P, numbers);
+            __PCG_AX12_P << <blockNum, threadNum >> > (BH.m_H12x12, BH.m_D4Index, P, numbers);
         }
-        numbers = BH.DNum[2] * 9;
+        numbers = BH.m_DNum[2] * 9;
         if (numbers > 0) {
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_AX9_P << <blockNum, threadNum >> > (BH.H9x9, BH.D3Index, P, numbers);
+            __PCG_AX9_P << <blockNum, threadNum >> > (BH.m_H9x9, BH.m_D3Index, P, numbers);
         }
-        numbers = BH.DNum[1] * 6;
+        numbers = BH.m_DNum[1] * 6;
         if (numbers > 0) {
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_AX6_P << <blockNum, threadNum >> > (BH.H6x6, BH.D2Index, P, numbers);
+            __PCG_AX6_P << <blockNum, threadNum >> > (BH.m_H6x6, BH.m_D2Index, P, numbers);
         }
-        numbers = BH.DNum[0] * 3;
+        numbers = BH.m_DNum[0] * 3;
         if (numbers > 0) {
             blockNum = (numbers + threadNum - 1) / threadNum;
-            __PCG_AX3_P << <blockNum, threadNum >> > (BH.H3x3, BH.D1Index, P, numbers);
+            __PCG_AX3_P << <blockNum, threadNum >> > (BH.m_H3x3, BH.m_D1Index, P, numbers);
         }
         blockNum = (vertNum + threadNum - 1) / threadNum;
         //__PCG_inverse_P << <blockNum, threadNum >> > (P, vertNum);
@@ -1441,10 +1441,10 @@ namespace PCGSOLVER {
         int blockNum = (numbers + threadNum - 1) / threadNum;
         __PCG_mass_P << <blockNum, threadNum >> > (instance->cudaTetMass, P, numbers);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-        numbers = BH.DNum[3] * 12 + BH.DNum[2] * 9 + BH.DNum[1] * 6 + BH.DNum[0] * 3;
+        numbers = BH.m_DNum[3] * 12 + BH.m_DNum[2] * 9 + BH.m_DNum[1] * 6 + BH.m_DNum[0] * 3;
         blockNum = (numbers + threadNum - 1) / threadNum;
 
-        __PCG_AXALL_P << <blockNum, threadNum >> > (BH.H12x12, BH.H9x9, BH.H6x6, BH.H3x3, BH.D4Index, BH.D3Index, BH.D2Index, BH.D1Index, P, BH.DNum[3] * 12, BH.DNum[2] * 9, BH.DNum[1] * 6, BH.DNum[0] * 3);
+        __PCG_AXALL_P << <blockNum, threadNum >> > (BH.m_H12x12, BH.m_H9x9, BH.m_H6x6, BH.m_H3x3, BH.m_D4Index, BH.m_D3Index, BH.m_D2Index, BH.m_D1Index, P, BH.m_DNum[3] * 12, BH.m_DNum[2] * 9, BH.m_DNum[1] * 6, BH.m_DNum[0] * 3);
 
         blockNum = (vertNum + threadNum - 1) / threadNum;
         __PCG_inverse_P << <blockNum, threadNum >> > (P, vertNum);
@@ -1474,13 +1474,13 @@ namespace PCGSOLVER {
 
 
     int PCG_Process(std::unique_ptr<GeometryManager>& instance, PCGData* pcg_data, const BHessian& BH, double3* _mvDir, int vertexNum, int tetrahedraNum, double IPC_dt, double meanVolumn, double threshold) {
-        construct_P2(instance, pcg_data->P, BH, vertexNum);
+        construct_P2(instance, pcg_data->m_P, BH, vertexNum);
         double deltaN = 0;
         double delta0 = 0;
         double deltaO = 0;
         //PCG_initDX(pcg_data->dx, pcg_data->z, 0.5, vertexNum);
-        CUDA_SAFE_CALL(cudaMemset(pcg_data->dx, 0x0, vertexNum * sizeof(double3)));
-        CUDA_SAFE_CALL(cudaMemset(pcg_data->r, 0x0, vertexNum * sizeof(double3)));
+        CUDA_SAFE_CALL(cudaMemset(pcg_data->m_dx, 0x0, vertexNum * sizeof(double3)));
+        CUDA_SAFE_CALL(cudaMemset(pcg_data->m_r, 0x0, vertexNum * sizeof(double3)));
         delta0 = My_PCG_add_Reduction_Algorithm(1, instance, pcg_data, vertexNum);
         //Solve_PCG_AX_B2(instance, pcg_data->z, pcg_data->r, BH, vertexNum);
         deltaN = My_PCG_add_Reduction_Algorithm(2, instance, pcg_data, vertexNum);
@@ -1493,7 +1493,7 @@ namespace PCGSOLVER {
             cgCounts++;
             //std::cout << "delta0:   " << delta0 << "      deltaN:   " << deltaN << "      iteration_counts:      " << cgCounts << std::endl;
             //CUDA_SAFE_CALL(cudaMemset(pcg_data->q, 0, vertexNum * sizeof(double3)));
-            Solve_PCG_AX_B2(instance, pcg_data->c, pcg_data->q, BH, vertexNum);
+            Solve_PCG_AX_B2(instance, pcg_data->m_c, pcg_data->m_q, BH, vertexNum);
             double tempSum = My_PCG_add_Reduction_Algorithm(3, instance, pcg_data, vertexNum);
             double alpha = deltaN / tempSum;
             deltaO = deltaN;
@@ -1501,10 +1501,10 @@ namespace PCGSOLVER {
             //CUDA_SAFE_CALL(cudaMemset(pcg_data->s, 0, vertexNum * sizeof(double3)));
             deltaN = My_PCG_add_Reduction_Algorithm(4, instance, pcg_data, vertexNum, alpha);
             double rate = deltaN / deltaO;
-            PCG_FinalStep_UpdateC(instance, pcg_data->c, pcg_data->s, rate, vertexNum);
+            PCG_FinalStep_UpdateC(instance, pcg_data->m_c, pcg_data->m_s, rate, vertexNum);
             //cudaDeviceSynchronize();
         }
-        _mvDir = pcg_data->dx;
+        _mvDir = pcg_data->m_dx;
         //CUDA_SAFE_CALL(cudaMemcpy(pcg_data->z, _mvDir, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
         if (cgCounts == 0) {
             printf("indefinite exit\n");
