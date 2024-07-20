@@ -76,9 +76,11 @@ public:
 
 
 namespace PCGSOLVER {
-    int PCG_Process(std::unique_ptr<GeometryManager>& instance, PCGData* pcg_data, const BHessian& BH, double3* _mvDir, int vertexNum, int tetrahedraNum, double IPC_dt, double meanVolumn, double threshold);
+    
+	int PCG_Process(std::unique_ptr<GeometryManager>& instance, PCGData* pcg_data, const BHessian& BH, double3* _mvDir, int vertexNum, int tetrahedraNum, double IPC_dt, double meanVolumn, double threshold);
 
     // int MASPCG_Process(device_TetraData* mesh, PCG_Data* pcg_data, const BHessian& BH, double3* _mvDir, int vertexNum, int tetrahedraNum, double IPC_dt, double meanVolumn, int cpNum, double threshold);
+
 };
 
 
