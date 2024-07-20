@@ -5,7 +5,6 @@
 #include "UTILS/GeometryManager.hpp"
 
 
-
 class BHessian {
 public:
     BHessian();
@@ -33,14 +32,13 @@ public:
 };
 
 
-class MASPreconditioner {
-public:
-    MASPreconditioner();
-    ~MASPreconditioner();
-    // Preconditioner is not avaliable
+// class MASPreconditioner {
+// public:
+//     MASPreconditioner();
+//     ~MASPreconditioner();
+//     // Preconditioner is not avaliable
 
-
-};
+// };
 
 
 
