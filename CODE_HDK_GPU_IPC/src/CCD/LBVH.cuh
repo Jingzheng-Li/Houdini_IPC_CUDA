@@ -28,8 +28,7 @@ class LBVH {
 public:
     LBVH();
     ~LBVH();
-    void ALLOCATE_BVH_CUDA(const int& number);
-    void FREE_BVH_CUDA();
+
     void GroundCollisionDetect(const double3* _vertexes, const uint32_t* _surfVerts, const double* _groundOffset, const double3* _groundNormal, uint32_t* _environment_collisionPair, uint32_t* _gpNum, double dHat, int numSurfVerts);
 
 public:
@@ -48,6 +47,10 @@ public:
     
     double3* mc_vertexes; // save vertices (x,y,z)
     uint32_t m_vert_number; // save number of vertices
+
+public:
+    void CUDA_MALLOC_LBVH(const int& number);
+    void CUDA_FREE_LBVH();
 
 };
 

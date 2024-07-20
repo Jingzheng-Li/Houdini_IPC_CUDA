@@ -1324,7 +1324,6 @@ LBVH::LBVH() {
 
 LBVH::~LBVH() {
 	std::cout << "deconstruct LBVH" << std::endl;
-	FREE_BVH_CUDA();
 }
 
 
@@ -1339,7 +1338,7 @@ void LBVH_F::init(int* _mbtype, double3* _mVerts, uint3* _mFaces, uint32_t* _mSu
 	m_face_number = faceNum;
 	m_vert_number = vertNum;
 	mc_btype = _mbtype;
-	ALLOCATE_BVH_CUDA(m_face_number);
+	// CUDA_MALLOC_LBVH(m_face_number);
 }
 
 void LBVH_E::init(int* _mbtype, double3* _mVerts, double3* _mRest_vertexes, uint2* _mEdges, int4* _mCollisonPairs, int4* _ccd_mCollisonPairs, uint32_t* _mcpNum, int* _mMatIndex, const int& edgeNum, const int& vertNum) {
@@ -1353,7 +1352,7 @@ void LBVH_E::init(int* _mbtype, double3* _mVerts, double3* _mRest_vertexes, uint
 	m_edge_number = edgeNum;
 	m_vert_number = vertNum;
 	mc_btype = _mbtype;
-	ALLOCATE_BVH_CUDA(m_edge_number);
+	// CUDA_MALLOC_LBVH(m_edge_number);
 }
 
 double LBVH_F::Construct() {
@@ -1503,7 +1502,7 @@ void LBVH::GroundCollisionDetect(const double3* _vertexes, const uint32_t* _surf
 ///////////////////
 
 
-void LBVH::ALLOCATE_BVH_CUDA(const int& number) {
+void LBVH::CUDA_MALLOC_LBVH(const int& number) {
 	// number will be leafnodes, number-1 will be internal nodes
 	CUDAMallocSafe(mc_indices, number);
 	CUDAMallocSafe(mc_MortonCodeHash, number);
@@ -1513,12 +1512,14 @@ void LBVH::ALLOCATE_BVH_CUDA(const int& number) {
 	CUDAMallocSafe(mc_flags, number - 1);
 }
 
-void LBVH::FREE_BVH_CUDA() {
-	freeCUDASafe(mc_indices);
-	freeCUDASafe(mc_MortonCodeHash);
-	freeCUDASafe(mc_nodes);
-	freeCUDASafe(mc_boundVolumes);
-	freeCUDASafe(mc_tempLeafBox);
-	freeCUDASafe(mc_flags);
+void LBVH::CUDA_FREE_LBVH() {
+
+
+	CUDAFreeSafe(mc_indices);
+	CUDAFreeSafe(mc_MortonCodeHash);
+	CUDAFreeSafe(mc_nodes);
+	CUDAFreeSafe(mc_boundVolumes);
+	CUDAFreeSafe(mc_tempLeafBox);
+	CUDAFreeSafe(mc_flags);
 }
 

@@ -208,6 +208,9 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	copyToCUDASafe(instance->surfVert, instance->cudaSurfVert);
 	copyToCUDASafe(instance->surfFace, instance->cudaSurfFace);
 	copyToCUDASafe(instance->surfEdge, instance->cudaSurfEdge);
+	instance->numSurfVerts = surfverts.rows();
+	instance->numSurfEdges = surfedges.rows();
+	instance->numSurfFaces = surffaces.rows();
 
 }
 
@@ -272,8 +275,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	std::cout << "numSurfFaces~~" << instance->surfFace.rows() << std::endl;
 	std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
 	std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
-
-
 
 }
 
@@ -370,9 +371,10 @@ void GAS_Read_Buffer::initSIMBVH() {
 		instance->cudaCCDCollisionPairs,
 		instance->cudaCPNum,
 		instance->cudaMatIndex,
-		instance->surfEdge.rows(),
-		instance->surfVert.rows()
+		instance->numSurfEdges,
+		instance->numSurfVerts
 	);
+	instance->LBVH_E_ptr->CUDA_MALLOC_LBVH(instance->numSurfEdges);
 
 	instance->LBVH_F_ptr->init(
 		instance->cudaBoundaryType, 
@@ -383,9 +385,10 @@ void GAS_Read_Buffer::initSIMBVH() {
 		instance->cudaCCDCollisionPairs, 
 		instance->cudaCPNum, 
 		instance->cudaMatIndex, 
-		instance->surfFace.rows(), 
-		instance->surfVert.rows()
+		instance->numSurfFaces,
+		instance->numSurfVerts
 	);
+	instance->LBVH_F_ptr->CUDA_MALLOC_LBVH(instance->numSurfFaces);
 
 	// calcuate Morton Code and sort MC together with face index
 	SortMesh::sortMesh(instance, instance->LBVH_F_ptr);

@@ -57,48 +57,51 @@ public:
 
     static void totallyfree() {
         if (instance) {
+            instance->LBVH_E_ptr->CUDA_FREE_LBVH();
+            instance->LBVH_F_ptr->CUDA_FREE_LBVH();
+
             instance.reset();
         }
     }
 
 private:
     static void freeCUDA() {
-        freeCUDASafe(instance->cudaTetPos);
-        freeCUDASafe(instance->cudaTetVel);
-        freeCUDASafe(instance->cudaTetMass);
-        freeCUDASafe(instance->cudaTetElement);
-        freeCUDASafe(instance->cudaTriElement);
-        freeCUDASafe(instance->cudaTetVolume);
-        freeCUDASafe(instance->cudaSurfVert);
-        freeCUDASafe(instance->cudaSurfFace);
-        freeCUDASafe(instance->cudaSurfEdge);
-        freeCUDASafe(instance->cudaConstraints);
-        freeCUDASafe(instance->cudaRestTetPos);
-        freeCUDASafe(instance->cudaOriginTetPos);
-        freeCUDASafe(instance->cudaCollisionPairs);
-        freeCUDASafe(instance->cudaCCDCollisionPairs);
-        freeCUDASafe(instance->cudaEnvCollisionPairs);
-        freeCUDASafe(instance->cudaCPNum);
-        freeCUDASafe(instance->cudaGPNum);
-        freeCUDASafe(instance->cudaGroundNormal);
-        freeCUDASafe(instance->cudaGroundOffset);
-        freeCUDASafe(instance->cudaMatIndex);
-        freeCUDASafe(instance->cudaMortonCodeHash);
-        freeCUDASafe(instance->cudaSortIndex);
-        freeCUDASafe(instance->cudaSortMapVertIndex);
-        freeCUDASafe(instance->cudaTempDouble);
-        freeCUDASafe(instance->cudaDmInverses);
-        freeCUDASafe(instance->cudaTempMat3x3);
-        freeCUDASafe(instance->cudaBoundaryType);
-        freeCUDASafe(instance->cudaTempBoundaryType);
-        freeCUDASafe(instance->cudaH12x12);
-        freeCUDASafe(instance->cudaH9x9);
-        freeCUDASafe(instance->cudaH6x6);
-        freeCUDASafe(instance->cudaH3x3);
-        freeCUDASafe(instance->cudaD1Index);
-        freeCUDASafe(instance->cudaD3Index);
-        freeCUDASafe(instance->cudaD4Index);
-        freeCUDASafe(instance->cudaD2Index);
+        CUDAFreeSafe(instance->cudaTetPos);
+        CUDAFreeSafe(instance->cudaTetVel);
+        CUDAFreeSafe(instance->cudaTetMass);
+        CUDAFreeSafe(instance->cudaTetElement);
+        CUDAFreeSafe(instance->cudaTriElement);
+        CUDAFreeSafe(instance->cudaTetVolume);
+        CUDAFreeSafe(instance->cudaSurfVert);
+        CUDAFreeSafe(instance->cudaSurfFace);
+        CUDAFreeSafe(instance->cudaSurfEdge);
+        CUDAFreeSafe(instance->cudaConstraints);
+        CUDAFreeSafe(instance->cudaRestTetPos);
+        CUDAFreeSafe(instance->cudaOriginTetPos);
+        CUDAFreeSafe(instance->cudaCollisionPairs);
+        CUDAFreeSafe(instance->cudaCCDCollisionPairs);
+        CUDAFreeSafe(instance->cudaEnvCollisionPairs);
+        CUDAFreeSafe(instance->cudaCPNum);
+        CUDAFreeSafe(instance->cudaGPNum);
+        CUDAFreeSafe(instance->cudaGroundNormal);
+        CUDAFreeSafe(instance->cudaGroundOffset);
+        CUDAFreeSafe(instance->cudaMatIndex);
+        CUDAFreeSafe(instance->cudaMortonCodeHash);
+        CUDAFreeSafe(instance->cudaSortIndex);
+        CUDAFreeSafe(instance->cudaSortMapVertIndex);
+        CUDAFreeSafe(instance->cudaTempDouble);
+        CUDAFreeSafe(instance->cudaDmInverses);
+        CUDAFreeSafe(instance->cudaTempMat3x3);
+        CUDAFreeSafe(instance->cudaBoundaryType);
+        CUDAFreeSafe(instance->cudaTempBoundaryType);
+        CUDAFreeSafe(instance->cudaH12x12);
+        CUDAFreeSafe(instance->cudaH9x9);
+        CUDAFreeSafe(instance->cudaH6x6);
+        CUDAFreeSafe(instance->cudaH3x3);
+        CUDAFreeSafe(instance->cudaD1Index);
+        CUDAFreeSafe(instance->cudaD3Index);
+        CUDAFreeSafe(instance->cudaD4Index);
+        CUDAFreeSafe(instance->cudaD2Index);
     }
 
     static void freeDynamicGeometry() {
@@ -123,6 +126,9 @@ public:
 
     int numVertices;
     int numElements;
+    int numSurfVerts;
+    int numSurfFaces;
+    int numSurfEdges;
 
     Eigen::MatrixX3d tetPos; // numPoints * 3
     double3* cudaTetPos;

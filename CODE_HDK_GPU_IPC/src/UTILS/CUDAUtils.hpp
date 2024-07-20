@@ -40,7 +40,7 @@ __device__ inline void check_index_bounds_(uint32_t idx, uint32_t limit, const c
 }
 
 template<typename T>
-static void freeCUDASafe(T*& cudaData) {
+static void CUDAFreeSafe(T*& cudaData) {
     if (cudaData) {
         CUDA_SAFE_CALL(cudaFree(cudaData));
         cudaData = nullptr;
