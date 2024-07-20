@@ -1,6 +1,7 @@
 #pragma once
 
 #include "UTILS/CUDAUtils.hpp"
+#include "UTILS/MathUtils.cuh"
 
 namespace ACCD {
     
