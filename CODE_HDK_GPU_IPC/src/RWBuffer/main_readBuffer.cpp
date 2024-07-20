@@ -77,10 +77,6 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 		buildSIMCP();
 
-
-
-
-
 		FIRSTFRAME::hou_initialized = true;
 	}
 
@@ -158,9 +154,14 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMallocSafe(instance->cudaConstraints, num_points);
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->constraints.data(), num_points * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
 
-
 	instance->minCorner = make_double3(xmin, ymin, zmin);
 	instance->maxCorner = make_double3(xmax, ymax, zmax);
+
+	instance->vectetPos = MATHUTILS::__convertEigenToVector<double3>(instance->tetPos);
+	instance->vectetVel = MATHUTILS::__convertEigenToVector<double3>(instance->tetVel);
+	CHECK_ERROR(instance->vectetPos.size()==instance->tetPos.rows(), "not init vectetPos correctly");
+	CHECK_ERROR(instance->vectetVel.size()==instance->tetVel.rows(), "not init vectetVel correctly");
+
 
 }
 
@@ -175,7 +176,6 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 	auto &tetEle = instance->tetElement;
 	tetEle.resize(gdp->getNumPrimitives(), Eigen::NoChange);
 
-
 	GA_Offset primoff;
 	GA_FOR_ALL_PRIMOFF(gdp, primoff) {
 		const GA_Primitive* prim = gdp->getPrimitive(primoff);
@@ -189,6 +189,9 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 
 	CUDAMallocSafe(instance->cudaTetElement, tetEle.rows());
 	copyToCUDASafe(instance->tetElement, instance->cudaTetElement);
+
+	instance->vectetElement = MATHUTILS::__convertEigenToUintVector<uint4>(instance->tetElement);
+	CHECK_ERROR(instance->vectetElement.size()==instance->tetElement.rows(), "not init tetElement correctly");
 
 }
 
@@ -328,19 +331,10 @@ void GAS_Read_Buffer::initSIMFEM() {
 		sumMass += mass;
 	}
 	for (int i = 0; i < instance->numElements; i++) {
-		int idx0 = tetele(i, 0);
-        int idx1 = tetele(i, 1);
-        int idx2 = tetele(i, 2);
-        int idx3 = tetele(i, 3);
-        const double3 &v0 = make_double3(tetpos(idx0, 0), tetpos(idx0, 1), tetpos(idx0, 2));
-        const double3 &v1 = make_double3(tetpos(idx1, 0), tetpos(idx1, 1), tetpos(idx1, 2));
-        const double3 &v2 = make_double3(tetpos(idx2, 0), tetpos(idx2, 1), tetpos(idx2, 2));
-        const double3 &v3 = make_double3(tetpos(idx3, 0), tetpos(idx3, 1), tetpos(idx3, 2));
-		double vlm = MATHUTILS::__calculateVolume(v0, v1, v2, v3);
-
+		double vlm = MATHUTILS::__calculateVolume(instance->vectetPos.data(), instance->vectetElement[i]);
 		sumVolume += vlm;
-
 	}
+	
 	instance->meanMass = sumMass / instance->numVertices;
 	instance->meanVolume = sumVolume / instance->numVertices;
 	printf("meanMass: %f\n", instance->meanMass);
@@ -358,12 +352,13 @@ void GAS_Read_Buffer::initSIMFEM() {
 	MATHUTILS::__set_Mat_val(rotationY, cos(angleY), 0, -sin(angleY), 0, 1, 0, sin(angleY), 0, cos(angleY));
 	MATHUTILS::__set_Mat_val(rotationX, 1, 0, 0, 0, cos(angleX), -sin(angleX), 0, sin(angleX), cos(angleX));
 
-
-	// MATHUTILS::Matrix3x3d DM;
-	// MATHUTILS::Matrix3x3d DM_inverse;
-	// FEMENERGY::__calculateDms3D_double(, , DM);
-	// MATHUTILS::__Inverse(DM, DM_inverse);
-
+	for (int i = 0; i < instance->numElements; i++) {
+		MATHUTILS::Matrix3x3d DM;
+		MATHUTILS::Matrix3x3d DM_inverse;
+		FEMENERGY::__calculateDms3D_double(instance->vectetPos.data(), instance->vectetElement[i], DM);
+		MATHUTILS::__Inverse(DM, DM_inverse);
+		instance->DMInverse.push_back(DM_inverse);
+	}
 
 }
 
@@ -377,9 +372,6 @@ void GAS_Read_Buffer::initSIMBVH() {
 	if (!instance->LBVH_E_ptr) {
 		instance->LBVH_E_ptr = std::make_unique<LBVH_E>();
 	}
-
-
-
 
 	instance->LBVH_E_ptr->init(
 		instance->cudaBoundaryType,

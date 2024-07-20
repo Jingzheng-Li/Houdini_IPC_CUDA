@@ -131,9 +131,11 @@ public:
     int numSurfEdges;
 
     Eigen::MatrixX3d tetPos; // numPoints * 3
+    std::vector<double3> vectetPos;
     double3* cudaTetPos;
 
     Eigen::MatrixX3d tetVel; // numPoints * 3
+    std::vector<double3> vectetVel;
     double3* cudaTetVel;
 
     Eigen::VectorXd tetMass; // numPoints * 1
@@ -142,7 +144,10 @@ public:
     std::vector<MATHUTILS::Matrix3x3d> constraints;
     MATHUTILS::Matrix3x3d* cudaConstraints;
 
+    std::vector<MATHUTILS::Matrix3x3d> DMInverse;
+
     Eigen::MatrixX4i tetElement; // numTets * 4
+    std::vector<uint4> vectetElement;
     uint4* cudaTetElement;
 
     Eigen::MatrixX3i triElement; // numTris * 3

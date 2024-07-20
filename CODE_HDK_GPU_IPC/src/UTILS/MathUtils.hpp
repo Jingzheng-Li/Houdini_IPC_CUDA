@@ -98,10 +98,6 @@ namespace MATHUTILS {
 		double m[9][12];
 	};
 
-	//struct Matrix9x12d_v {
-	//	double m[108];
-	//};
-
 	struct Matrix12x9d {
 		double m[12][9];
 	};

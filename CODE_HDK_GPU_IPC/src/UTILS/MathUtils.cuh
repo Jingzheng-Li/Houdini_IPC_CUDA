@@ -321,14 +321,51 @@ namespace MATHUTILS {
 	double __computeEdgeProductNorm(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
 	
 	__device__ __host__ 
-	double __calculateVolume(const double3& v0, const double3& v1, const double3& v2, const double3& v3);
+	double __calculateVolume(const double3* vertexes, const uint4& index);
 
 	__device__ __host__ 
-	double __calculateArea(const double3& v0, const double3& v1, const double3& v2);
+	double __calculateArea(const double3* vertexes, const uint3& index);
 
 	void __getSurface(Eigen::VectorXi &surfVerts, Eigen::MatrixX3i &surfFaces, Eigen::MatrixX2i &surfEdges, Eigen::MatrixX3d &vertexes, Eigen::MatrixX4i &tetrahedras);
 
-}
+	template <typename TargetType, typename ScalarType, int Rows, int Cols>
+	std::vector<TargetType> __convertEigenToVector(const Eigen::Matrix<ScalarType, Rows, Cols>& matrix) {
+		static_assert(Rows == Eigen::Dynamic && (Cols == 2 || Cols == 3 || Cols == 4), 
+					"The matrix must have a dynamic number of rows and 2, 3, or 4 columns.");
+
+		std::vector<TargetType> vector(matrix.rows());
+		for (int i = 0; i < matrix.rows(); ++i) {
+			if constexpr (Cols == 2) {
+				vector[i] = { matrix(i, 0), matrix(i, 1) };
+			} else if constexpr (Cols == 3) {
+				vector[i] = { matrix(i, 0), matrix(i, 1), matrix(i, 2) };
+			} else if constexpr (Cols == 4) {
+				vector[i] = { matrix(i, 0), matrix(i, 1), matrix(i, 2), matrix(i, 3) };
+			}
+		}
+		return vector;
+	}
+
+	template <typename TargetType, typename ScalarType, int Rows, int Cols>
+	std::vector<TargetType> __convertEigenToUintVector(const Eigen::Matrix<ScalarType, Rows, Cols>& matrix) {
+		static_assert(Rows == Eigen::Dynamic && (Cols == 2 || Cols == 3 || Cols == 4), 
+					"The matrix must have a dynamic number of rows and 2, 3, or 4 columns.");
+
+		std::vector<TargetType> vector(matrix.rows());
+		for (int i = 0; i < matrix.rows(); ++i) {
+			if constexpr (Cols == 2) {
+				vector[i] = { static_cast<unsigned int>(matrix(i, 0)), static_cast<unsigned int>(matrix(i, 1)) };
+			} else if constexpr (Cols == 3) {
+				vector[i] = { static_cast<unsigned int>(matrix(i, 0)), static_cast<unsigned int>(matrix(i, 1)), static_cast<unsigned int>(matrix(i, 2)) };
+			} else if constexpr (Cols == 4) {
+				vector[i] = { static_cast<unsigned int>(matrix(i, 0)), static_cast<unsigned int>(matrix(i, 1)), static_cast<unsigned int>(matrix(i, 2)), static_cast<unsigned int>(matrix(i, 3)) };
+			}
+		}
+		return vector;
+	}
+
+
+}; // namespace MATHUTILS
 
 
 
