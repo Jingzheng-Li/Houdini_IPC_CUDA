@@ -4,6 +4,7 @@
 #include "UTILS/GeometryManager.hpp"
 #include "LBVH/SortMesh.cuh"
 #include "LBVH/LBVH.cuh"
+#include "FEMEnergy.cuh"
 
 namespace FIRSTFRAME {
 	static bool hou_initialized = false;
@@ -315,16 +316,17 @@ void GAS_Read_Buffer::initSIMFEM() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
 
+	/////////////////////////////
+	// init meanMass & meanVolume
+	/////////////////////////////
 	double sumMass = 0;
 	double sumVolume = 0;
-
 	auto &tetpos = instance->tetPos;
 	auto &tetele = instance->tetElement;
 	for (int i = 0; i < instance->numVertices; i++) {
 		double mass = instance->tetMass[i];
 		sumMass += mass;
 	}
-
 	for (int i = 0; i < instance->numElements; i++) {
 		int idx0 = tetele(i, 0);
         int idx1 = tetele(i, 1);
@@ -339,12 +341,29 @@ void GAS_Read_Buffer::initSIMFEM() {
 		sumVolume += vlm;
 
 	}
-
 	instance->meanMass = sumMass / instance->numVertices;
 	instance->meanVolume = sumVolume / instance->numVertices;
-
 	printf("meanMass: %f\n", instance->meanMass);
 	printf("meanVolum: %f\n", instance->meanVolume);
+
+
+
+	/////////////////////////////
+	// init meanMass & meanVolume
+	/////////////////////////////
+	float angleX = -MATHUTILS::PI / 4, angleY = -MATHUTILS::PI / 4, angleZ = MATHUTILS::PI / 2;
+	MATHUTILS::Matrix3x3d rotation, rotationZ, rotationY, rotationX, eigenTest;
+	MATHUTILS::__set_Mat_val(rotation, 1, 0, 0, 0, 1, 0, 0, 0, 1);
+	MATHUTILS::__set_Mat_val(rotationZ, cos(angleZ), -sin(angleZ), 0, sin(angleZ), cos(angleZ), 0, 0, 0, 1);
+	MATHUTILS::__set_Mat_val(rotationY, cos(angleY), 0, -sin(angleY), 0, 1, 0, sin(angleY), 0, cos(angleY));
+	MATHUTILS::__set_Mat_val(rotationX, 1, 0, 0, 0, cos(angleX), -sin(angleX), 0, sin(angleX), cos(angleX));
+
+
+	// MATHUTILS::Matrix3x3d DM;
+	// MATHUTILS::Matrix3x3d DM_inverse;
+	// FEMENERGY::__calculateDms3D_double(, , DM);
+	// MATHUTILS::__Inverse(DM, DM_inverse);
+
 
 }
 

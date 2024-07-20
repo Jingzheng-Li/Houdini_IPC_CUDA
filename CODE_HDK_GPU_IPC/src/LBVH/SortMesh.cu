@@ -3,8 +3,6 @@
 #include "UTILS/MathUtils.cuh"
 #include "LBVH.cuh"
 
-
-#include <cmath>
 #include <thrust/sort.h>
 #include <thrust/sequence.h>
 #include <thrust/device_ptr.h>
