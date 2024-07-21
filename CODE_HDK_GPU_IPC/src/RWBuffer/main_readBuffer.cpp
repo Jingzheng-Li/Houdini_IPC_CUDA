@@ -70,14 +70,12 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		transferDTAttribTOCUDA(geo, gdp);
 		transferOtherTOCUDA();
 
-
 		loadSIMParams();
 		initSIMFEM();
 		initSIMBVH();
-		buildSIMBVH();
-		initSIMIPC();
-
-		buildSIMCP();
+		// buildSIMBVH();
+		// initSIMIPC();
+		// buildSIMCP();
 
 		FIRSTFRAME::hou_initialized = true;
 	}
