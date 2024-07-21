@@ -54,7 +54,7 @@ void CUDAMallocSafe(T*& cudaData, int size) {
 
 
 template <typename EigenType, typename CudaType>
-static void copyToCUDASafe(const EigenType& eigenData, CudaType* cudaData) {
+static void CUDAMemcpyHToDSafe(const EigenType& eigenData, CudaType* cudaData) {
     std::vector<CudaType> temp(eigenData.rows());
     for (int i = 0; i < eigenData.rows(); ++i) {
         if constexpr (std::is_same<CudaType, double3>::value) {
@@ -80,7 +80,7 @@ static void copyToCUDASafe(const EigenType& eigenData, CudaType* cudaData) {
 
 
 template <typename EigenType, typename CudaType>
-static void copyFromCUDASafe(EigenType& eigenData, CudaType* cudaData) {
+static void CUDAMemcpyDToHSafe(EigenType& eigenData, CudaType* cudaData) {
     std::vector<CudaType> temp(eigenData.rows());
     CUDA_SAFE_CALL(cudaMemcpy(temp.data(), cudaData, eigenData.rows() * sizeof(CudaType), cudaMemcpyDeviceToHost));
     for (int i = 0; i < eigenData.rows(); ++i) {

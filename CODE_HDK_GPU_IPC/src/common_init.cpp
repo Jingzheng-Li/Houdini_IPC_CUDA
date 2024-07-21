@@ -8,7 +8,6 @@
 
 #include "UTILS/GeometryManager.hpp"
 
-std::unique_ptr<GeometryManager> GeometryManager::instance = nullptr;
 
 
 void initializeSIM(void *) {

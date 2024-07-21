@@ -3,7 +3,9 @@
 
 #include "UTILS/GeometryManager.hpp"
 #include "LBVH/SortMesh.cuh"
+
 #include "LBVH/LBVH.cuh"
+#include "PCG/PCGSolver.cuh"
 #include "FEMEnergy.cuh"
 
 namespace FIRSTFRAME {
@@ -139,17 +141,17 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMallocSafe(instance->cudaTetPos, num_points);
 	CUDAMallocSafe(instance->cudaTetVel, num_points);
 	CUDAMallocSafe(instance->cudaTetMass, num_points);
-	copyToCUDASafe(instance->tetPos, instance->cudaTetPos);
-	copyToCUDASafe(instance->tetVel, instance->cudaTetVel);
-	copyToCUDASafe(instance->tetMass, instance->cudaTetMass);
+	CUDAMemcpyHToDSafe(instance->tetPos, instance->cudaTetPos);
+	CUDAMemcpyHToDSafe(instance->tetVel, instance->cudaTetVel);
+	CUDAMemcpyHToDSafe(instance->tetMass, instance->cudaTetMass);
 
 	CUDAMallocSafe(instance->cudaBoundaryType, num_points);
-	copyToCUDASafe(instance->boundaryTypies, instance->cudaBoundaryType);
+	CUDAMemcpyHToDSafe(instance->boundaryTypies, instance->cudaBoundaryType);
 
 	CUDAMallocSafe(instance->cudaOriginTetPos, num_points);
-	copyToCUDASafe(instance->tetPos, instance->cudaOriginTetPos);
+	CUDAMemcpyHToDSafe(instance->tetPos, instance->cudaOriginTetPos);
 	CUDAMallocSafe(instance->cudaRestTetPos, num_points);
-	copyToCUDASafe(instance->tetPos, instance->cudaRestTetPos);
+	CUDAMemcpyHToDSafe(instance->tetPos, instance->cudaRestTetPos);
 
 	CUDAMallocSafe(instance->cudaConstraints, num_points);
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->constraints.data(), num_points * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
@@ -171,8 +173,6 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferPRIMAttribTOCUDA geoinstance not initialized");
 
-	if (GeometryManager::instance->tetElement.rows() == gdp->getNumPrimitives()) return;
-
 	auto &tetEle = instance->tetElement;
 	tetEle.resize(gdp->getNumPrimitives(), Eigen::NoChange);
 
@@ -188,10 +188,17 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 	CHECK_ERROR(primoff==gdp->getNumPrimitives(), "Failed to get all primitives");
 
 	CUDAMallocSafe(instance->cudaTetElement, tetEle.rows());
-	copyToCUDASafe(instance->tetElement, instance->cudaTetElement);
+	CUDAMemcpyHToDSafe(instance->tetElement, instance->cudaTetElement);
 
 	instance->vectetElement = MATHUTILS::__convertEigenToUintVector<uint4>(instance->tetElement);
 	CHECK_ERROR(instance->vectetElement.size()==instance->tetElement.rows(), "not init tetElement correctly");
+
+	instance->tetVolume.resize(tetEle.rows());
+	for (int i = 0; i < tetEle.rows(); i++) {
+		instance->tetVolume[i] = MATHUTILS::__calculateVolume(instance->vectetPos.data(), instance->vectetElement[i]);
+	}
+	CUDAMallocSafe(instance->cudaTetVolume, instance->tetVolume.rows());
+	CUDAMemcpyHToDSafe(instance->tetVolume, instance->cudaTetVolume);
 
 }
 
@@ -209,9 +216,9 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMallocSafe(instance->cudaSurfVert, surfverts.rows());
 	CUDAMallocSafe(instance->cudaSurfFace, surffaces.rows());
 	CUDAMallocSafe(instance->cudaSurfEdge, surfedges.rows());
-	copyToCUDASafe(instance->surfVert, instance->cudaSurfVert);
-	copyToCUDASafe(instance->surfFace, instance->cudaSurfFace);
-	copyToCUDASafe(instance->surfEdge, instance->cudaSurfEdge);
+	CUDAMemcpyHToDSafe(instance->surfVert, instance->cudaSurfVert);
+	CUDAMemcpyHToDSafe(instance->surfFace, instance->cudaSurfFace);
+	CUDAMemcpyHToDSafe(instance->surfEdge, instance->cudaSurfEdge);
 	instance->numSurfVerts = surfverts.rows();
 	instance->numSurfEdges = surfedges.rows();
 	instance->numSurfFaces = surffaces.rows();
@@ -240,7 +247,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	int triangle_num = 0;
 	CUDAMallocSafe(instance->cudaTriElement, triangle_num);
 
-
 	instance->IPC_dt = 1e-2;
 	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * FIRSTFRAME::collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
 	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * FIRSTFRAME::collision_detection_buff_scale;
@@ -266,9 +272,8 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundOffset, &h_offset, 5 * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundNormal, &H_normal, 5 * sizeof(double3), cudaMemcpyHostToDevice));
 
-	//TODO: DmInverses
-	// copyToCUDASafe(instance->cudaDmInverses, );
-	// copyToCUDASafe(instance->cudaTetVolume, );
+	CUDAMallocSafe(instance->cudaXTilta, instance->numVertices);
+	CUDAMallocSafe(instance->cudaFb, instance->numVertices);
 
 
 	std::cout << "numVerts~~" << numVerts << std::endl;
@@ -309,29 +314,25 @@ void GAS_Read_Buffer::loadSIMParams() {
 	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	instance->shearStiff = 0.03 * instance->stretchStiff;
 
-
-
 }
 
 
 
 void GAS_Read_Buffer::initSIMFEM() {
 	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+	CHECK_ERROR(instance, "initSIMFEM geoinstance not initialized");
 
 	/////////////////////////////
 	// init meanMass & meanVolume
 	/////////////////////////////
 	double sumMass = 0;
 	double sumVolume = 0;
-	auto &tetpos = instance->tetPos;
-	auto &tetele = instance->tetElement;
 	for (int i = 0; i < instance->numVertices; i++) {
 		double mass = instance->tetMass[i];
 		sumMass += mass;
 	}
 	for (int i = 0; i < instance->numElements; i++) {
-		double vlm = MATHUTILS::__calculateVolume(instance->vectetPos.data(), instance->vectetElement[i]);
+		double vlm = instance->tetVolume[i];
 		sumVolume += vlm;
 	}
 	
@@ -340,12 +341,10 @@ void GAS_Read_Buffer::initSIMFEM() {
 	printf("meanMass: %f\n", instance->meanMass);
 	printf("meanVolum: %f\n", instance->meanVolume);
 
-
-
 	/////////////////////////////
 	// init meanMass & meanVolume
 	/////////////////////////////
-	float angleX = -MATHUTILS::PI / 4, angleY = -MATHUTILS::PI / 4, angleZ = MATHUTILS::PI / 2;
+	double angleX = -MATHUTILS::PI / 4, angleY = -MATHUTILS::PI / 4, angleZ = MATHUTILS::PI / 2;
 	MATHUTILS::Matrix3x3d rotation, rotationZ, rotationY, rotationX, eigenTest;
 	MATHUTILS::__set_Mat_val(rotation, 1, 0, 0, 0, 1, 0, 0, 0, 1);
 	MATHUTILS::__set_Mat_val(rotationZ, cos(angleZ), -sin(angleZ), 0, sin(angleZ), cos(angleZ), 0, 0, 0, 1);
@@ -359,7 +358,11 @@ void GAS_Read_Buffer::initSIMFEM() {
 		MATHUTILS::__Inverse(DM, DM_inverse);
 		instance->DMInverse.push_back(DM_inverse);
 	}
-
+	std::cout << "DMInverse0: " 
+			<< instance->DMInverse[0].m[0][0] << " "
+			<< instance->DMInverse[0].m[0][1] << " "
+			<< instance->DMInverse[0].m[0][2] << " "
+			<< std::endl;
 }
 
 void GAS_Read_Buffer::initSIMBVH() {
@@ -463,5 +466,19 @@ void GAS_Read_Buffer::buildSIMCP() {
 		instance->cudaGPNum,
 		instance->dHat,
 		instance->surfVert.rows());
+
+
+	if (!instance->PCGData_ptr) {
+		instance->PCGData_ptr = std::make_unique<PCGData>();
+	}
+
+	instance->PCGData_ptr->m_b = instance->cudaFb;
+	instance->cudaMoveDir = instance->PCGData_ptr->m_dx;
+	FEMENERGY::computeXTilta(instance, 1);
+
+	std::vector<AABB> boundVolumes(2 * instance->numSurfEdges - 1);
+	std::vector<Node> Nodes(2 * instance->numSurfEdges - 1);
+	CUDA_SAFE_CALL(cudaMemcpy(&boundVolumes[0], instance->LBVH_E_ptr->mc_boundVolumes, (2 * instance->numSurfEdges - 1) * sizeof(AABB), cudaMemcpyDeviceToHost));
+	CUDA_SAFE_CALL(cudaMemcpy(&Nodes[0], instance->LBVH_E_ptr->mc_nodes, (2 * instance->numSurfEdges - 1) * sizeof(Node), cudaMemcpyDeviceToHost));
 
 }

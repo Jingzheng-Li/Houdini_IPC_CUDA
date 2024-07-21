@@ -47,8 +47,8 @@ void GAS_Write_Buffer::transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detai
     auto &instance = GeometryManager::instance;
     CHECK_ERROR(instance, "PT geoinstance to Houdini not initialized");
 
-    copyFromCUDASafe(instance->tetPos, instance->cudaTetPos);
-    copyFromCUDASafe(instance->tetVel, instance->cudaTetVel);
+    CUDAMemcpyDToHSafe(instance->tetPos, instance->cudaTetPos);
+    CUDAMemcpyDToHSafe(instance->tetVel, instance->cudaTetVel);
 
     Eigen::MatrixX3d &tetpos = GeometryManager::instance->tetPos;
     Eigen::MatrixX3d &tetvel = GeometryManager::instance->tetVel;

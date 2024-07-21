@@ -2,6 +2,7 @@
 
 #include "UTILS/CUDAUtils.hpp"
 #include "UTILS/MathUtils.cuh"
+#include "UTILS/GeometryManager.hpp"
 
 namespace FEMENERGY {
 
@@ -96,6 +97,11 @@ namespace FEMENERGY {
     __global__
     void _calculate_triangle_fem_gradient(MATHUTILS::Matrix2x2d* trimInverses, const double3* vertexes, const uint3* triangles,
         const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearhStiff, double IPC_dt);
+
+    __global__
+    void _computeXTilta(int* _btype, double3* _velocities, double3* _o_vertexes, double3* _xTilta, double ipc_dt, double rate, int numbers);
+
+    void computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate);
 
 } // namespace FEMENERGY
 

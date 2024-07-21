@@ -341,15 +341,15 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_
 	// Eigen::MatrixXi tempsurfface(numSurfFaces, 3);
 	// Eigen::MatrixXi tempsurfedge(numSurfEdges, 2);
 	// Eigen::VectorXi tempsurfvert(numSurfVerts);
-	// copyFromCUDASafe(tempsurfface, instance->cudaSurfFace);
-	// copyFromCUDASafe(tempsurfedge, instance->cudaSurfEdge);
-	// copyFromCUDASafe(tempsurfvert, instance->cudaSurfVert);
+	// CUDAMemcpyDToHSafe(tempsurfface, instance->cudaSurfFace);
+	// CUDAMemcpyDToHSafe(tempsurfedge, instance->cudaSurfEdge);
+	// CUDAMemcpyDToHSafe(tempsurfvert, instance->cudaSurfVert);
 	// std::cout << "gettempsurfface~" << tempsurfface.row(0) << std::endl;
 	// std::cout << "gettempsurfedge~" << tempsurfedge.row(0) << std::endl;
 	// std::cout << "gettempsurfvert~" << tempsurfvert(0) << std::endl;
 
 	// Eigen::VectorXi tempsortmapvertindex(numVerts);
-	// copyFromCUDASafe(tempsortmapvertindex, instance->cudaSortMapVertIndex);
+	// CUDAMemcpyDToHSafe(tempsortmapvertindex, instance->cudaSortMapVertIndex);
 	// for (int i = 0; i< numVerts; i++) {
 	// 	std::cout << tempsortmapvertindex(i) << ", ";
 	// }
