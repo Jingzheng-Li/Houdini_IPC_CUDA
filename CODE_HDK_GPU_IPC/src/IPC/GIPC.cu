@@ -5379,17 +5379,33 @@ void _calFrictionLastH_DistAndTan(const double3* _vertexes, const const int4* _c
 
 
 
-// GIPC::GIPC() {
-
-// }
-
-// GIPC::~GIPC() {
-
-// }
 
 
-// void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
-// }
+
+
+
+
+
+
+
+
+///////////////////////////////////////////
+// GPU IPC 
+///////////////////////////////////////////
+
+
+GIPC::GIPC() {
+
+}
+
+GIPC::~GIPC() {
+
+}
+
+
+void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
+
+}
 
 
