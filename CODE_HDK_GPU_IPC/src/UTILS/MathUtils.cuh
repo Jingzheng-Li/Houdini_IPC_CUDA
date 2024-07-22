@@ -330,8 +330,7 @@ namespace MATHUTILS {
 
 	template <typename TargetType, typename ScalarType, int Rows, int Cols>
 	std::vector<TargetType> __convertEigenToVector(const Eigen::Matrix<ScalarType, Rows, Cols>& matrix) {
-		static_assert(Rows == Eigen::Dynamic && (Cols == 2 || Cols == 3 || Cols == 4), 
-					"The matrix must have a dynamic number of rows and 2, 3, or 4 columns.");
+		static_assert(Rows == Eigen::Dynamic && (Cols == 2 || Cols == 3 || Cols == 4), "The matrix must have a dynamic number of rows and 2, 3, or 4 columns.");
 
 		std::vector<TargetType> vector(matrix.rows());
 		for (int i = 0; i < matrix.rows(); ++i) {

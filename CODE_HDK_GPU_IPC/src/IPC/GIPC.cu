@@ -1,19 +1,19 @@
 #include "GIPC.cuh"
 
-// #include <thrust/sort.h>
-// #include <thrust/sequence.h>
-// #include <thrust/device_ptr.h>
+#include <thrust/sort.h>
+#include <thrust/sequence.h>
+#include <thrust/device_ptr.h>
 
-// #include "zensim/math/Complex.hpp"
-// #include "zensim/geometry/Distance.hpp"
-// #include "zensim/geometry/SpatialQuery.hpp"
-// #include "zensim/math/matrix/Eigen.hpp"
-// #include "zensim/math/MathUtils.h"
+#include "zensim/math/Complex.hpp"
+#include "zensim/geometry/Distance.hpp"
+#include "zensim/geometry/SpatialQuery.hpp"
+#include "zensim/math/matrix/Eigen.hpp"
+#include "zensim/math/MathUtils.h"
 
-// #include "ACCD/ACCD.cuh"
-// #include "FEM/FEMEnergy.cuh"
-// #include "IPCFriction.cuh"
-// #include "GIPCPDerivative.cuh"
+#include "ACCD/ACCD.cuh"
+#include "FEM/FEMEnergy.cuh"
+#include "IPCFriction.cuh"
+#include "GIPCPDerivative.cuh"
 
 // __global__
 // void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {

@@ -102,6 +102,8 @@ static void CUDAMemcpyDToHSafe(EigenType& eigenData, CudaType* cudaData) {
             eigenData(i, 1) = temp[i].y;
         } else if constexpr (std::is_same<CudaType, double>::value) {
             eigenData(i) = temp[i];
+        } else if constexpr (std::is_same<CudaType, uint32_t>::value) {
+            eigenData(i) = temp[i];
         }
     }
 }

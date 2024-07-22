@@ -73,9 +73,9 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		loadSIMParams();
 		initSIMFEM();
 		initSIMBVH();
-		// buildSIMBVH();
-		// initSIMIPC();
-		// buildSIMCP();
+		buildSIMBVH();
+		initSIMIPC();
+		buildSIMCP();
 
 		FIRSTFRAME::hou_initialized = true;
 	}
@@ -416,7 +416,6 @@ void GAS_Read_Buffer::buildSIMBVH() {
 
 	instance->LBVH_F_ptr->Construct();
 	instance->LBVH_E_ptr->Construct();
-
 
 }
 

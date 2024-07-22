@@ -247,20 +247,7 @@ void sortGeometry(std::unique_ptr<GeometryManager>& instance, const AABB* _MaxBv
 	thrust::sequence(thrust::device_ptr<uint32_t>(instance->cudaSortIndex), thrust::device_ptr<uint32_t>(instance->cudaSortIndex) + vertex_num);
     thrust::sort_by_key(thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash), thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash) + vertex_num, thrust::device_ptr<uint32_t>(instance->cudaSortIndex));
 
-	// std::vector<uint32_t> tempsortvertindex(vertex_num);
-    // cudaMemcpy(tempsortvertindex.data(), instance->cudaSortIndex, vertex_num*sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    // for (int i = 0; i< vertex_num; i++) {
-    //     std::cout << tempsortvertindex[i] << ",, ";
-    // }
-
     updateVertexes(instance->cudaOriginTetPos, instance->cudaTetPos, instance->cudaTempDouble, instance->cudaTetMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraints, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
-
-	// std::cout << "arrived here~~~~~~~~~" << std::endl;
-	// std::vector<uint32_t> tempsortmapvertindex(vertex_num);
-    // cudaMemcpy(tempsortmapvertindex.data(), instance->cudaSortMapVertIndex, vertex_num*sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    // for (int i = 0; i< vertex_num; i++) {
-    //     std::cout << tempsortmapvertindex[i] << ",, ";
-    // }
 	
 
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTetPos, instance->cudaOriginTetPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
@@ -269,14 +256,6 @@ void sortGeometry(std::unique_ptr<GeometryManager>& instance, const AABB* _MaxBv
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaBoundaryType, instance->cudaTempBoundaryType, vertex_num * sizeof(int), cudaMemcpyDeviceToDevice));
 
     updateTopology(instance->cudaTetElement, instance->cudaTriElement, instance->cudaSortMapVertIndex, tetradedra_num, triangle_num);
-
-	// std::cout << "arrived here~~~~~~~~~" << std::endl;
-	// std::vector<uint32_t> tempsortmapvertindex(vertex_num);
-    // cudaMemcpy(tempsortmapvertindex.data(), instance->cudaSortMapVertIndex, vertex_num*sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    // for (int i = 0; i< vertex_num; i++) {
-    //     std::cout << tempsortmapvertindex[i] << ",, ";
-    // }
-
 
 }
 
@@ -334,6 +313,7 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_
 
     updateSurfaceVerts(instance->cudaSortMapVertIndex, instance->cudaSurfVert, numVerts, numSurfVerts);
 	CUDA_KERNEL_CHECK();
+
 
 	//////////////////////
 	// check the result //
