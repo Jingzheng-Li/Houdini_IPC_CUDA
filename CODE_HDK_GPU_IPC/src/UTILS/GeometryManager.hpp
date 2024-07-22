@@ -128,11 +128,15 @@ public:
     double Newton_solver_threshold;
     double pcg_threshold;
 
+    double animation_subRate;
+    double animation_fullRate;
+
     uint64_t* cudaMortonCodeHash;
     uint32_t* cudaSortIndex;
     uint32_t* cudaSortMapVertIndex;
 
     double* cudaTempDouble;
+    double3* cudaTempDouble3Mem;
     MATHUTILS::Matrix3x3d* cudaDmInverses;
     MATHUTILS::Matrix3x3d* cudaTempMat3x3;
 
@@ -140,6 +144,7 @@ public:
     int* cudaBoundaryType;
     int* cudaTempBoundaryType;
 
+    double Kappa;
     double bboxDiagSize2;
     double dTol;
     double minKappaCoef;
@@ -156,6 +161,18 @@ public:
     uint4* cudaD4Index;
     uint2* cudaD2Index;
 
+    uint32_t historyCPNum_last[5];
+    uint32_t historyGPNum_last;
+    uint32_t historyCPNum[5];
+	uint32_t historyCCD_CPNum;
+	uint32_t historyGPNum;
+    uint32_t historycloseCPNum;
+	uint32_t historycloseGPNum;
+
+    uint32_t softNum;
+    double3* cudaTargetVert;
+    uint32_t* cudaTargetInd;
+    MATHUTILS::Matrix2x2d* cudaTriDmInverses;
 
 };
 

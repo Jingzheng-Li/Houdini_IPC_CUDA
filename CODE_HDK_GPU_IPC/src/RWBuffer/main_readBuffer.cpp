@@ -273,6 +273,18 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaXTilta, instance->numVertices);
 	CUDAMallocSafe(instance->cudaFb, instance->numVertices);
 
+	CUDAMallocSafe(instance->cudaTempDouble3Mem, instance->numVertices);
+
+
+	instance->softNum = 0;
+	CUDAMallocSafe(instance->cudaTargetVert, instance->softNum);
+	CUDAMallocSafe(instance->cudaTargetInd, instance->softNum);
+	CUDAMallocSafe(instance->cudaTriDmInverses, instance->triElement.rows());
+
+
+
+
+
 
 	std::cout << "numVerts~~" << numVerts << std::endl;
 	std::cout << "numElems~~" << numElems << std::endl;
@@ -311,6 +323,8 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->relative_dhat = 1e-3;
 	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	instance->shearStiff = 0.03 * instance->stretchStiff;
+
+	instance->Kappa = 0.0;
 
 }
 

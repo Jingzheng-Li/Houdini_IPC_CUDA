@@ -39,6 +39,12 @@ bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,
 }
 
 void GAS_CUDA_GIPC::IPC_Solver() {
-
+    auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "IPC_Solver geoinstance not initialized");
+    auto &pcgdata = instance->PCGData_ptr;
+	CHECK_ERROR(instance, "IPC_Solver pcgdata_ptr not initialized");
+    
+    // GIPC::IPC_Solver(instance, pcgdata);
+    
 }
 
