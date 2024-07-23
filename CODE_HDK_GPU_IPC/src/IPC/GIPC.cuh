@@ -12,17 +12,11 @@ class GIPC {
 
 public:
 
-	GIPC();
+	GIPC(std::unique_ptr<GeometryManager>& instance);
 	~GIPC();
-
-	void MALLOC_DEVICE_MEM();
 
 	void tempMalloc_closeConstraint();
 	void tempFree_closeConstraint();
-
-	void FREE_DEVICE_MEM();
-	void initBVH(int* _btype);
-	void init(double m_meanMass, double m_meanVolumn, double3 minConer, double3 maxConer);
 
 	void buildCP();
 	void buildFullCP(const double& alpha);
@@ -31,7 +25,6 @@ public:
 	AABB* calcuMaxSceneSize();
 
 	void buildBVH_FULLCCD(const double& alpha);
-
 
 	void GroundCollisionDetect();
 	
@@ -84,22 +77,30 @@ public:
 	void initKappa(std::unique_ptr<GeometryManager>& instance);
 	void suggestKappa(double& kappa);
 	void upperBoundKappa(double& kappa);
+
 	int solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0, double& time1, double& time2, double& time3, double& time4);
-	void IPC_Solver(std::unique_ptr<GeometryManager>& instance);
-	void sortMesh(std::unique_ptr<GeometryManager>& instance, int updateVertNum);
 	void buildFrictionSets();
-
-
 	bool Inverse_Physics(std::unique_ptr<GeometryManager>& instance);
+
 	void computeInverseHessian(std::unique_ptr<GeometryManager>& instance);
 	void computeGroundHessian(double3* _gradient);
 	void computeInverseGradient(std::unique_ptr<GeometryManager>& instance);
 	void computeFldm(double3* _deltaPos, double3* fldm);
 
+	void IPC_Solver(std::unique_ptr<GeometryManager>& instance);
+
 
 public:
 
+	std::unique_ptr<GeometryManager>& instance;
+	LBVH_F bvh_f;
+	LBVH_E bvh_e;
+	PCGData pcg_data;
+	BHessian BH;
+	AABB SceneSize;
+
 	bool animation;
+
 	double3* _vertexes;
 	double3* _rest_vertexes;
 	uint3* _faces;
@@ -112,12 +113,7 @@ public:
 	uint32_t softNum;
 	uint32_t triangleNum;
 
-
 	double3* _moveDir;
-	// lbvh_f bvh_f;
-	// lbvh_e bvh_e;
-
-	PCGData pcg_data;
 
 	int4* _collisonPairs;
 	int4* _ccd_collisonPairs;
@@ -129,19 +125,20 @@ public:
 
 	uint32_t* _closeConstraintID;
 	double* _closeConstraintVal;
-
 	int4* _closeMConstraintID;
 	double* _closeMConstraintVal;
 
 	uint32_t* _gpNum;
 	uint32_t* _close_gpNum;
-	//uint32_t* _cpNum;
+
 	uint32_t h_cpNum[5];
 	uint32_t h_ccd_cpNum;
 	uint32_t h_gpNum;
-	
 	uint32_t h_close_cpNum;
 	uint32_t h_close_gpNum;
+	uint32_t h_gpNum_last;
+	uint32_t h_cpNum_last[5];
+
 
 	double IPCKappa;
 	double dHat;
@@ -151,7 +148,6 @@ public:
 	double dTol;
     double minKappaCoef;
 	double IPC_dt;
-	double Step;
 	double meanMass;
 	double meanVolumn;
 	double3* _groundNormal;
@@ -162,12 +158,10 @@ public:
 	double2* distCoord;
 	MATHUTILS::Matrix3x2d* tanBasis;
 	int4* _collisonPairs_lastH;
-	uint32_t h_cpNum_last[5];
 	int* _MatIndex_last;
-
 	double* lambda_lastH_scalar_gd;
 	uint32_t* _collisonPairs_lastH_gd;
-	uint32_t h_gpNum_last;
+
 
 	uint32_t vertexNum;
 	uint32_t surf_vertexNum;
@@ -176,18 +170,14 @@ public:
 	uint32_t surf_faceNum;
 	uint32_t tetrahedraNum;
 
-	BHessian BH;
-	AABB SceneSize;
+
 	int MAX_COLLITION_PAIRS_NUM;
 	int MAX_CCD_COLLITION_PAIRS_NUM;
 
-	double RestNHEnergy;
 	double animation_subRate;
 	double animation_fullRate;
 
-
 	double bendStiff;
-
 	double density;
 	double YoungModulus;
 	double PoissonRate;

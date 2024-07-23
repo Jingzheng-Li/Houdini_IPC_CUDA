@@ -16,12 +16,10 @@
 #include "GIPCPDerivative.cuh"
 
 
-
 #define RANK 2
 #define NEWF
 #define MAKEPD2
 #define OLDBARRIER2
-
 
 __global__
 void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {
@@ -452,9 +450,9 @@ bool segTriIntersect(const double3& ve0, const double3& ve1,
 __device__ __host__
 inline bool _overlap(const AABB& lhs, const AABB& rhs, const double& gapL) noexcept
 {
-    if ((rhs.lower.x - lhs.upper.x) >= gapL || (lhs.lower.x - rhs.upper.x) >= gapL) return false;
-    if ((rhs.lower.y - lhs.upper.y) >= gapL || (lhs.lower.y - rhs.upper.y) >= gapL) return false;
-    if ((rhs.lower.z - lhs.upper.z) >= gapL || (lhs.lower.z - rhs.upper.z) >= gapL) return false;
+    if ((rhs.m_lower.x - lhs.m_upper.x) >= gapL || (lhs.m_lower.x - rhs.m_upper.x) >= gapL) return false;
+    if ((rhs.m_lower.y - lhs.m_upper.y) >= gapL || (lhs.m_lower.y - rhs.m_upper.y) >= gapL) return false;
+    if ((rhs.m_lower.z - lhs.m_upper.z) >= gapL || (lhs.m_lower.z - rhs.m_upper.z) >= gapL) return false;
     return true;
 }
 
@@ -5395,9 +5393,79 @@ void _calFrictionLastH_DistAndTan(const double3* _vertexes, const const int4* _c
 ///////////////////////////////////////////
 
 
-GIPC::GIPC() {
+GIPC::GIPC(std::unique_ptr<GeometryManager>& geomanager) 
+    : instance(geomanager) {
+
+    _vertexes = instance->cudaTetPos;
+    _rest_vertexes = instance->cudaRestTetPos;
+    _faces = instance->cudaSurfFace;
+    _edges = instance->cudaSurfEdge;
+    _surfVerts = instance->cudaSurfVert;
+
+    targetVert = instance->cudaTargetVert;
+    targetInd = instance->cudaTargetInd;
+    softNum = instance->softNum;
+    triangleNum = instance->triElement.rows();
+
+    _moveDir = instance->cudaMoveDir;
+
+    _collisonPairs = instance->cudaCollisionPairs;
+    _ccd_collisonPairs = instance->cudaCCDCollisionPairs;
+    _cpNum = instance->cudaCPNum;
+    _MatIndex = instance->cudaMatIndex;
+    _close_cpNum = instance->cudaCloseCPNum;
+
+    _environment_collisionPair = instance->cudaEnvCollisionPairs;
+
+    _gpNum = instance->cudaGPNum;
+    _close_gpNum = instance->cudaCloseGPNum;
+
+    IPCKappa = instance->Kappa;
+    dHat = instance->dHat;
+    fDhat = instance->fDhat;
+	bboxDiagSize2 = instance->bboxDiagSize2;
+	relative_dhat = instance->relative_dhat;
+    dTol = instance->dTol;
+    minKappaCoef = instance->minKappaCoef;
+    IPC_dt = instance->IPC_dt;
+    meanMass = instance->meanMass;
+    meanVolumn = instance->meanVolume;
+    _groundNormal = instance->cudaGroundNormal;
+    _groundOffset = instance->cudaGroundOffset;
+
+    vertexNum = instance->numVertices;
+    surf_vertexNum = instance->numSurfVerts;
+    surf_edgeNum = instance->numSurfEdges;
+    tri_edge_num = instance->triEdges.rows();
+    surf_faceNum = instance->numSurfFaces;
+    tetrahedraNum = instance->numElements;
+
+    MAX_COLLITION_PAIRS_NUM = instance->MAX_COLLITION_PAIRS_NUM;
+    MAX_CCD_COLLITION_PAIRS_NUM = instance->MAX_CCD_COLLITION_PAIRS_NUM;
+
+    animation_subRate = instance->animation_subRate;
+    animation_fullRate = instance->animation_fullRate;
+
+    bendStiff = instance->bendStiff;
+    density = instance->density;
+    YoungModulus = instance->YoungModulus;
+    PoissonRate = instance->PoissonRate;
+    lengthRateLame = instance->lengthRateLame;
+    volumeRateLame = instance->volumeRateLame;
+    lengthRate = instance->lengthRate;
+    volumeRate = instance->volumeRate;
+    frictionRate = instance->frictionRate;
+    clothThickness = instance->clothThickness;
+    clothYoungModulus = instance->clothYoungModulus;
+    stretchStiff = instance->stretchStiff;
+    shearStiff = instance->shearStiff;
+    clothDensity = instance->clothDensity;
+    softMotionRate = instance->softMotionRate;
+    Newton_solver_threshold = instance->Newton_solver_threshold;
+    pcg_threshold = instance->pcg_threshold;
 
 }
+
 
 GIPC::~GIPC() {
 
@@ -5405,6 +5473,9 @@ GIPC::~GIPC() {
 
 
 void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
+
+    // std::cout << "IPCSolver~~~~" << std::endl;
+
 
 }
 

@@ -63,9 +63,9 @@ __global__
 void _calcVertMChash(uint64_t* _MChash, const double3* _vertexes, const AABB* _MaxBv, int number) {
 	uint32_t idx = threadIdx.x + blockIdx.x * blockDim.x;
 	if (idx >= number) return;
-	double3 SceneSize = make_double3((*_MaxBv).upper.x - (*_MaxBv).lower.x, (*_MaxBv).upper.y - (*_MaxBv).lower.y, (*_MaxBv).upper.z - (*_MaxBv).lower.z);
+	double3 SceneSize = make_double3((*_MaxBv).m_upper.x - (*_MaxBv).m_lower.x, (*_MaxBv).m_upper.y - (*_MaxBv).m_lower.y, (*_MaxBv).m_upper.z - (*_MaxBv).m_lower.z);
 	double3 centerP = _vertexes[idx];
-	double3 offset = make_double3(centerP.x - (*_MaxBv).lower.x, centerP.y - (*_MaxBv).lower.y, centerP.z - (*_MaxBv).lower.z);
+	double3 offset = make_double3(centerP.x - (*_MaxBv).m_lower.x, centerP.y - (*_MaxBv).m_lower.y, centerP.z - (*_MaxBv).m_lower.z);
 	int type = -1;
 	if (type >= 0) {
 		if (SceneSize.x > SceneSize.y && SceneSize.y > SceneSize.z) {

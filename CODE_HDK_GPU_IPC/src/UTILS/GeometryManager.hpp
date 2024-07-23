@@ -10,11 +10,13 @@
 #include "MathUtils.hpp"
 #include "MathUtils.cuh"
 
+class Node;
 class AABB;
 class LBVH_E;
 class LBVH_F;
 class BHessian;
 class PCGData;
+class GIPC;
 
 class GeometryManager {
 public:
@@ -34,6 +36,7 @@ public:
     std::unique_ptr<LBVH_F> LBVH_F_ptr;
     std::unique_ptr<LBVH_E> LBVH_E_ptr;
     std::unique_ptr<PCGData> PCGData_ptr;
+    std::unique_ptr<GIPC> GIPC_ptr;
 
 public:
     static std::unique_ptr<GeometryManager> instance;
@@ -67,9 +70,6 @@ public:
     std::vector<uint4> vectetElement;
     uint4* cudaTetElement;
 
-    Eigen::MatrixX3i triElement; // numTris * 3
-    uint3* cudaTriElement;
-
     Eigen::VectorXd tetVolume; // numTets
     double* cudaTetVolume;
 
@@ -81,6 +81,12 @@ public:
 
     Eigen::MatrixX2i surfEdge; // num surfEdges * 2
     uint2* cudaSurfEdge;
+
+    Eigen::MatrixX3i triElement; // numTris * 3
+    uint3* cudaTriElement;
+
+    Eigen::MatrixX2i triEdges; //
+
 
     double meanMass;
     double meanVolume;
@@ -100,6 +106,8 @@ public:
 
     uint32_t* cudaCPNum; // collision pair
     uint32_t* cudaGPNum; // ground pair
+    uint32_t* cudaCloseGPNum; // close ground pair
+    uint32_t* cudaCloseCPNum; // close collision pair
 
     double* cudaGroundOffset;
     double3* cudaGroundNormal;
@@ -125,6 +133,7 @@ public:
     double shearStiff;
     double clothDensity;
     double softMotionRate;
+    double bendStiff;
     double Newton_solver_threshold;
     double pcg_threshold;
 
@@ -160,14 +169,6 @@ public:
     uint3* cudaD3Index;
     uint4* cudaD4Index;
     uint2* cudaD2Index;
-
-    uint32_t historyCPNum_last[5];
-    uint32_t historyGPNum_last;
-    uint32_t historyCPNum[5];
-	uint32_t historyCCD_CPNum;
-	uint32_t historyGPNum;
-    uint32_t historycloseCPNum;
-	uint32_t historycloseGPNum;
 
     uint32_t softNum;
     double3* cudaTargetVert;

@@ -13,14 +13,19 @@ struct Node {
 };
 
 
-struct AABB {
-    double3 upper;
-    double3 lower;
+class AABB {
+public:
+
     __host__ __device__ AABB();
     __host__ __device__ void combines(const double& x, const double& y, const double& z);
     __host__ __device__  void combines(const double& x, const double& y, const double& z, const double& xx, const double& yy, const double& zz);
     __host__ __device__  void combines(const AABB& aabb);
     __host__ __device__  double3 center();
+
+public:
+    double3 m_upper;
+    double3 m_lower;
+    
 };
 
 
@@ -85,10 +90,5 @@ public:
     uint32_t m_edge_number;
 
 };
-
-
-
-
-
 
 

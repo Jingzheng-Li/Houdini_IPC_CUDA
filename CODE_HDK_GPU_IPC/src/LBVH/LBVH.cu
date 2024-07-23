@@ -7,27 +7,25 @@
 
 #include "UTILS/MathUtils.cuh"
 
-
-
 // merge two AABB boundaries
 __device__ __host__ 
 inline AABB merge(const AABB& lhs, const AABB& rhs) noexcept {
 	AABB merged;
-	merged.upper.x = MATHUTILS::__m_max(lhs.upper.x, rhs.upper.x);
-	merged.upper.y = MATHUTILS::__m_max(lhs.upper.y, rhs.upper.y);
-	merged.upper.z = MATHUTILS::__m_max(lhs.upper.z, rhs.upper.z);
-	merged.lower.x = MATHUTILS::__m_min(lhs.lower.x, rhs.lower.x);
-	merged.lower.y = MATHUTILS::__m_min(lhs.lower.y, rhs.lower.y);
-	merged.lower.z = MATHUTILS::__m_min(lhs.lower.z, rhs.lower.z);
+	merged.m_upper.x = MATHUTILS::__m_max(lhs.m_upper.x, rhs.m_upper.x);
+	merged.m_upper.y = MATHUTILS::__m_max(lhs.m_upper.y, rhs.m_upper.y);
+	merged.m_upper.z = MATHUTILS::__m_max(lhs.m_upper.z, rhs.m_upper.z);
+	merged.m_lower.x = MATHUTILS::__m_min(lhs.m_lower.x, rhs.m_lower.x);
+	merged.m_lower.y = MATHUTILS::__m_min(lhs.m_lower.y, rhs.m_lower.y);
+	merged.m_lower.z = MATHUTILS::__m_min(lhs.m_lower.z, rhs.m_lower.z);
 	return merged;
 }
 
 // calculate whether AABB are overlapped
 __device__ __host__ 
 inline bool overlap(const AABB& lhs, const AABB& rhs, const double& gapL) noexcept {
-	if ((rhs.lower.x - lhs.upper.x) >= gapL || (lhs.lower.x - rhs.upper.x) >= gapL) return false;
-	if ((rhs.lower.y - lhs.upper.y) >= gapL || (lhs.lower.y - rhs.upper.y) >= gapL) return false;
-	if ((rhs.lower.z - lhs.upper.z) >= gapL || (lhs.lower.z - rhs.upper.z) >= gapL) return false;
+	if ((rhs.m_lower.x - lhs.m_upper.x) >= gapL || (lhs.m_lower.x - rhs.m_upper.x) >= gapL) return false;
+	if ((rhs.m_lower.y - lhs.m_upper.y) >= gapL || (lhs.m_lower.y - rhs.m_upper.y) >= gapL) return false;
+	if ((rhs.m_lower.z - lhs.m_upper.z) >= gapL || (lhs.m_lower.z - rhs.m_upper.z) >= gapL) return false;
 	return true;
 }
 
@@ -35,9 +33,9 @@ inline bool overlap(const AABB& lhs, const AABB& rhs, const double& gapL) noexce
 __device__ __host__ 
 inline double3 centroid(const AABB& box) noexcept {
 	return make_double3(
-		(box.upper.x + box.lower.x) * 0.5,
-		(box.upper.y + box.lower.y) * 0.5,
-		(box.upper.z + box.lower.z) * 0.5
+		(box.m_upper.x + box.m_lower.x) * 0.5,
+		(box.m_upper.y + box.m_lower.y) * 0.5,
+		(box.m_upper.z + box.m_lower.z) * 0.5
 	);
 }
 
@@ -151,31 +149,31 @@ inline unsigned int find_split(const uint64_t* node_code, const unsigned int num
 
 __device__ __host__
 void AABB::combines(const double& x, const double&y, const double& z) {
-	lower = make_double3(MATHUTILS::__m_min(lower.x, x), MATHUTILS::__m_min(lower.y, y), MATHUTILS::__m_min(lower.z, z));
-	upper = make_double3(MATHUTILS::__m_max(upper.x, x), MATHUTILS::__m_max(upper.y, y), MATHUTILS::__m_max(upper.z, z));
+	m_lower = make_double3(MATHUTILS::__m_min(m_lower.x, x), MATHUTILS::__m_min(m_lower.y, y), MATHUTILS::__m_min(m_lower.z, z));
+	m_upper = make_double3(MATHUTILS::__m_max(m_upper.x, x), MATHUTILS::__m_max(m_upper.y, y), MATHUTILS::__m_max(m_upper.z, z));
 }
 
 __device__ __host__
 void AABB::combines(const double& x, const double& y, const double& z, const double& xx, const double& yy, const double& zz) {
-	lower = make_double3(MATHUTILS::__m_min(lower.x, x), MATHUTILS::__m_min(lower.y, y), MATHUTILS::__m_min(lower.z, z));
-	upper = make_double3(MATHUTILS::__m_max(upper.x, xx), MATHUTILS::__m_max(upper.y, yy), MATHUTILS::__m_max(upper.z, zz));
+	m_lower = make_double3(MATHUTILS::__m_min(m_lower.x, x), MATHUTILS::__m_min(m_lower.y, y), MATHUTILS::__m_min(m_lower.z, z));
+	m_upper = make_double3(MATHUTILS::__m_max(m_upper.x, xx), MATHUTILS::__m_max(m_upper.y, yy), MATHUTILS::__m_max(m_upper.z, zz));
 }
 
 __device__ __host__
 void AABB::combines(const AABB& aabb) {
-	lower = make_double3(MATHUTILS::__m_min(lower.x, aabb.lower.x), MATHUTILS::__m_min(lower.y, aabb.lower.y), MATHUTILS::__m_min(lower.z, aabb.lower.z));
-	upper = make_double3(MATHUTILS::__m_max(upper.x, aabb.upper.x), MATHUTILS::__m_max(upper.y, aabb.upper.y), MATHUTILS::__m_max(upper.z, aabb.upper.z));
+	m_lower = make_double3(MATHUTILS::__m_min(m_lower.x, aabb.m_lower.x), MATHUTILS::__m_min(m_lower.y, aabb.m_lower.y), MATHUTILS::__m_min(m_lower.z, aabb.m_lower.z));
+	m_upper = make_double3(MATHUTILS::__m_max(m_upper.x, aabb.m_upper.x), MATHUTILS::__m_max(m_upper.y, aabb.m_upper.y), MATHUTILS::__m_max(m_upper.z, aabb.m_upper.z));
 }
 
 __device__ __host__
 double3 AABB::center() {
-	return make_double3((upper.x + lower.x) * 0.5, (upper.y + lower.y) * 0.5, (upper.z + lower.z) * 0.5);
+	return make_double3((m_upper.x + m_lower.x) * 0.5, (m_upper.y + m_lower.y) * 0.5, (m_upper.z + m_lower.z) * 0.5);
 }
 
 __device__ __host__
 AABB::AABB() {
-	lower = make_double3(1e32, 1e32, 1e32);
-	upper = make_double3(-1e32, -1e32, -1e32);
+	m_lower = make_double3(1e32, 1e32, 1e32);
+	m_upper = make_double3(-1e32, -1e32, -1e32);
 }
 
 
@@ -748,8 +746,8 @@ void _reduct_max_box(AABB* _leafBoxes, int number) {
 
 	__threadfence();
 
-	double xmin = temp.lower.x, ymin = temp.lower.y, zmin = temp.lower.z;
-	double xmax = temp.upper.x, ymax = temp.upper.y, zmax = temp.upper.z;
+	double xmin = temp.m_lower.x, ymin = temp.m_lower.y, zmin = temp.m_lower.z;
+	double xmax = temp.m_upper.x, ymax = temp.m_upper.y, zmax = temp.m_upper.z;
 	//printf("%f   %f    %f   %f   %f    %f\n", xmin, ymin, zmin, xmax, ymax, zmax);
 	//printf("%f   %f    %f\n", xmax, ymax, zmax);
 	int warpTid = threadIdx.x % 32;
@@ -770,8 +768,8 @@ void _reduct_max_box(AABB* _leafBoxes, int number) {
 		temp.combines(__shfl_down_sync(0xFFFFFFFF, xmin, i), __shfl_down_sync(0xFFFFFFFF, ymin, i), __shfl_down_sync(0xFFFFFFFF, zmin, i),
 			__shfl_down_sync(0xFFFFFFFF, xmax, i), __shfl_down_sync(0xFFFFFFFF, ymax, i), __shfl_down_sync(0xFFFFFFFF, zmax, i));
 		if (warpTid + i < tidNum) {
-			xmin = temp.lower.x, ymin = temp.lower.y, zmin = temp.lower.z;
-			xmax = temp.upper.x, ymax = temp.upper.y, zmax = temp.upper.z;
+			xmin = temp.m_lower.x, ymin = temp.m_lower.y, zmin = temp.m_lower.z;
+			xmax = temp.m_upper.x, ymax = temp.m_upper.y, zmax = temp.m_upper.z;
 		}
 	}
 	if (warpTid == 0) {
@@ -782,15 +780,15 @@ void _reduct_max_box(AABB* _leafBoxes, int number) {
 	if (warpNum > 1) {
 		//	tidNum = warpNum;
 		temp = tep[threadIdx.x];
-		xmin = temp.lower.x, ymin = temp.lower.y, zmin = temp.lower.z;
-		xmax = temp.upper.x, ymax = temp.upper.y, zmax = temp.upper.z;
+		xmin = temp.m_lower.x, ymin = temp.m_lower.y, zmin = temp.m_lower.z;
+		xmax = temp.m_upper.x, ymax = temp.m_upper.y, zmax = temp.m_upper.z;
 		//	warpNum = ((tidNum + 31) >> 5);
 		for (int i = 1; i < warpNum; i = (i << 1)) {
 			temp.combines(__shfl_down_sync(0xFFFFFFFF, xmin, i), __shfl_down_sync(0xFFFFFFFF, ymin, i), __shfl_down_sync(0xFFFFFFFF, zmin, i),
 				__shfl_down_sync(0xFFFFFFFF, xmax, i), __shfl_down_sync(0xFFFFFFFF, ymax, i), __shfl_down_sync(0xFFFFFFFF, zmax, i));
 			if (threadIdx.x + i < warpNum) {
-				xmin = temp.lower.x, ymin = temp.lower.y, zmin = temp.lower.z;
-				xmax = temp.upper.x, ymax = temp.upper.y, zmax = temp.upper.z;
+				xmin = temp.m_lower.x, ymin = temp.m_lower.y, zmin = temp.m_lower.z;
+				xmax = temp.m_upper.x, ymax = temp.m_upper.y, zmax = temp.m_upper.z;
 			}
 		}
 	}
@@ -850,9 +848,9 @@ void _calcMChash(uint64_t* _MortonHash, AABB* _boundVolumes, int number) {
 	uint32_t idx = threadIdx.x + blockIdx.x * blockDim.x;
 	if (idx >= number) return;
 	AABB maxBv = _boundVolumes[0];
-	double3 SceneSize = make_double3(maxBv.upper.x - maxBv.lower.x, maxBv.upper.y - maxBv.lower.y, maxBv.upper.z - maxBv.lower.z);
+	double3 SceneSize = make_double3(maxBv.m_upper.x - maxBv.m_lower.x, maxBv.m_upper.y - maxBv.m_lower.y, maxBv.m_upper.z - maxBv.m_lower.z);
 	double3 centerP = _boundVolumes[idx + number - 1].center();
-	double3 offset = make_double3(centerP.x - maxBv.lower.x, centerP.y - maxBv.lower.y, centerP.z - maxBv.lower.z);
+	double3 offset = make_double3(centerP.x - maxBv.m_lower.x, centerP.y - maxBv.m_lower.y, centerP.z - maxBv.m_lower.z);
 	
 	//printf("%d   %f     %f     %f\n", offset.x, offset.y, offset.z);
 	uint64_t mc32 = morton_code(offset.x / SceneSize.x, offset.y / SceneSize.y, offset.z / SceneSize.z);
@@ -948,8 +946,8 @@ void _selfQuery_vf(const int* _btype, const double3* _vertexes, const uint3* _fa
 	  
 	AABB _bv;
 	idx = _surfVerts[idx];
-	_bv.upper = _vertexes[idx];
-	_bv.lower = _vertexes[idx];
+	_bv.m_upper = _vertexes[idx];
+	_bv.m_lower = _vertexes[idx];
 	//double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(_boundVolumes[0].upper, _boundVolumes[0].lower));
 	//printf("%f\n", bboxDiagSize2);
 	double gapl = sqrt(dHat);//0.001 * sqrt(bboxDiagSize2);
@@ -1007,8 +1005,8 @@ void _selfQuery_vf_ccd(const int* _btype, const double3* _vertexes, const double
 	idx = _surfVerts[idx];
 	double3 current_vertex = _vertexes[idx];
 	double3 mvD = moveDir[idx];
-	_bv.upper = current_vertex;
-	_bv.lower = current_vertex;
+	_bv.m_upper = current_vertex;
+	_bv.m_lower = current_vertex;
 	_bv.combines(current_vertex.x - mvD.x * alpha, current_vertex.y - mvD.y * alpha, current_vertex.z - mvD.z * alpha);
 	//double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(_boundVolumes[0].upper, _boundVolumes[0].lower));
 	//printf("%f\n", bboxDiagSize2);
@@ -1521,4 +1519,5 @@ void LBVH::CUDA_FREE_LBVH() {
 	CUDAFreeSafe(mc_tempLeafBox);
 	CUDAFreeSafe(mc_flags);
 }
+
 

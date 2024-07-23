@@ -281,7 +281,10 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaTargetInd, instance->softNum);
 	CUDAMallocSafe(instance->cudaTriDmInverses, instance->triElement.rows());
 
-
+	CUDAMallocSafe(instance->cudaCloseCPNum, 1);
+	CUDAMallocSafe(instance->cudaCloseGPNum, 1);
+	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseCPNum, 0, sizeof(uint32_t)));
+	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseGPNum, 0, sizeof(uint32_t)));
 
 
 
@@ -317,14 +320,12 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->shearStiff = instance->stretchStiff * 0.05;
 	instance->clothDensity = 2e2;
 	instance->softMotionRate = 1e0;
-	// instance->bendStiff = 3e-4;
+	instance->bendStiff = 3e-4;
 	instance->Newton_solver_threshold = 1e-1;
 	instance->pcg_threshold = 1e-3;
 	instance->relative_dhat = 1e-3;
-	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
+	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	instance->shearStiff = 0.03 * instance->stretchStiff;
-
-	instance->Kappa = 0.0;
 
 }
 
@@ -445,12 +446,12 @@ void GAS_Read_Buffer::initSIMIPC() {
 	}
 	*(instance->AABB_SceneSize_ptr) = instance->LBVH_F_ptr->m_scene;
 	auto &AABBScene = instance->AABB_SceneSize_ptr;
-	double3 &upper = AABBScene->upper;
-	double3 &lower = AABBScene->lower;
+	double3 &upper = AABBScene->m_upper;
+	double3 &lower = AABBScene->m_lower;
 	CHECK_ERROR((upper.x >= lower.x) && (upper.y >= lower.y) && (upper.z >= lower.z), "AABB maybe error, please check again");
     std::cout << "SceneSize upper/lower: ~~" << upper.x << " " << lower.x << std::endl;
 
-	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene->upper, AABBScene->lower));
+	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene->m_upper, AABBScene->m_lower));
 	instance->dTol = 1e-18 * instance->bboxDiagSize2;
 	instance->minKappaCoef = 1e11;
 	instance->dHat = instance->relative_dhat * instance->relative_dhat * instance->bboxDiagSize2;

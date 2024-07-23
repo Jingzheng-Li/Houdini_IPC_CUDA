@@ -1,7 +1,9 @@
+
 #include "GeometryManager.hpp"
 
 #include "LBVH/LBVH.cuh"
 #include "PCG/PCGSolver.cuh"
+#include "IPC/GIPC.cuh"
 
 std::unique_ptr<GeometryManager> GeometryManager::instance = nullptr;
 
