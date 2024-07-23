@@ -5394,7 +5394,12 @@ void _calFrictionLastH_DistAndTan(const double3* _vertexes, const const int4* _c
 
 
 GIPC::GIPC(std::unique_ptr<GeometryManager>& geomanager) 
-    : instance(geomanager) {
+    : instance(geomanager),
+    SceneSize(instance->AABB_SceneSize_ptr),
+    bvh_f(instance->LBVH_F_ptr),
+    bvh_e(instance->LBVH_E_ptr),
+    pcg_data(instance->PCGData_ptr),
+    BH(instance->BH_ptr) {
 
     _vertexes = instance->cudaTetPos;
     _rest_vertexes = instance->cudaRestTetPos;
@@ -5464,18 +5469,43 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& geomanager)
     Newton_solver_threshold = instance->Newton_solver_threshold;
     pcg_threshold = instance->pcg_threshold;
 
+    h_cpNum_last[0] = 0;
+    h_cpNum_last[1] = 0;
+    h_cpNum_last[2] = 0;
+    h_cpNum_last[3] = 0;
+    h_cpNum_last[4] = 0;
+
+
+
+
+
 }
 
 
-GIPC::~GIPC() {
-
-}
+GIPC::~GIPC() { }
 
 
 void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
-    // std::cout << "IPCSolver~~~~" << std::endl;
-
+    std::cout << "IPCSolver~~~~" << std::endl;
+    
+    std::cout << "bendStiff~~" << bendStiff << std::endl;
+    std::cout << "density~~" << density << std::endl;
+    std::cout << "YoungModulus~~" << YoungModulus << std::endl;
+    std::cout << "PoissonRate~~" << PoissonRate << std::endl;
+    std::cout << "lengthRateLame~~" << lengthRateLame << std::endl;
+    std::cout << "volumeRateLame~~" << volumeRateLame << std::endl;
+    std::cout << "lengthRate~~" << lengthRate << std::endl;
+    std::cout << "volumeRate~~" << volumeRate << std::endl;
+    std::cout << "frictionRate~~" << frictionRate << std::endl;
+    std::cout << "clothThickness~~" << clothThickness << std::endl;
+    std::cout << "clothYoungModulus~~" << clothYoungModulus << std::endl;
+    std::cout << "stretchStiff~~" << stretchStiff << std::endl;
+    std::cout << "shearStiff~~" << shearStiff << std::endl;
+    std::cout << "clothDensity~~" << clothDensity << std::endl;
+    std::cout << "softMotionRate~~" << softMotionRate << std::endl;
+    std::cout << "Newton_solver_threshold~~" << Newton_solver_threshold << std::endl;
+    std::cout << "pcg_threshold~~" << pcg_threshold << std::endl;
 
 }
 

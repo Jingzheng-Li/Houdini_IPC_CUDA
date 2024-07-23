@@ -486,6 +486,9 @@ void GAS_Read_Buffer::buildSIMCP() {
 
 	instance->PCGData_ptr->m_b = instance->cudaFb;
 	instance->cudaMoveDir = instance->PCGData_ptr->m_dx;
+
+	double motion_rate = 1.0;
+	instance->animation_subRate = 1.0 / motion_rate;
 	FEMENERGY::computeXTilta(instance, 1);
 
 	std::vector<AABB> boundVolumes(2 * instance->numSurfEdges - 1);
