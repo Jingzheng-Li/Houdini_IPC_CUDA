@@ -60,7 +60,7 @@ public:
 	double3* m_dx;
 	double3* m_tempDx;
 
-    // int P_type;
+    int m_P_type;
 	// double3* m_filterTempVec3;
 	// double3* m_preconditionTempVec3;
 

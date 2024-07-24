@@ -277,9 +277,15 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 
 
 	instance->softNum = 0;
+	instance->numTriElements = 0;
+	instance->numTriEdges = 0;
 	CUDAMallocSafe(instance->cudaTargetVert, instance->softNum);
-	CUDAMallocSafe(instance->cudaTargetInd, instance->softNum);
-	CUDAMallocSafe(instance->cudaTriDmInverses, instance->triElement.rows());
+	CUDAMallocSafe(instance->cudaTargetIndex, instance->softNum);
+	CUDAMallocSafe(instance->cudaTriDmInverses, instance->numTriElements);
+	CUDAMallocSafe(instance->cudaTriArea, instance->numTriElements);
+	CUDAMallocSafe(instance->cudaTriEdgeAdjVertex, instance->numTriEdges);
+	CUDAMallocSafe(instance->cudaTriEdges, instance->numTriEdges);
+
 
 	CUDAMallocSafe(instance->cudaCloseCPNum, 1);
 	CUDAMallocSafe(instance->cudaCloseGPNum, 1);
@@ -484,6 +490,7 @@ void GAS_Read_Buffer::buildSIMCP() {
 		instance->PCGData_ptr = std::make_unique<PCGData>();
 	}
 
+	instance->PCGData_ptr->m_P_type = 0;
 	instance->PCGData_ptr->m_b = instance->cudaFb;
 	instance->cudaMoveDir = instance->PCGData_ptr->m_dx;
 

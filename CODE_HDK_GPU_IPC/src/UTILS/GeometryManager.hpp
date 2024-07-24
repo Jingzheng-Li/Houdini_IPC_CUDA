@@ -52,6 +52,9 @@ public:
     int numSurfFaces;
     int numSurfEdges;
 
+    int numTriElements;
+    int numTriEdges;
+
     Eigen::MatrixX3d tetPos; // numPoints * 3
     std::vector<double3> vectetPos;
     double3* cudaTetPos;
@@ -88,6 +91,10 @@ public:
     uint3* cudaTriElement;
 
     Eigen::MatrixX2i triEdges; //
+    uint2* cudaTriEdges;
+
+    Eigen::MatrixX2i triEdgeAdjVertex;
+    uint2* cudaTriEdgeAdjVertex;
 
 
     double meanMass;
@@ -174,8 +181,9 @@ public:
 
     uint32_t softNum;
     double3* cudaTargetVert;
-    uint32_t* cudaTargetInd;
+    uint32_t* cudaTargetIndex;
     MATHUTILS::Matrix2x2d* cudaTriDmInverses;
+    double* cudaTriArea;
 
 };
 

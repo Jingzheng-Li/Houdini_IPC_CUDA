@@ -114,8 +114,8 @@ public:
 	uint32_t* _surfVerts;
 
 
-	double3* targetVert;	
-	uint32_t* targetInd;	
+	double3* _targetVert;	
+	uint32_t* _targetInd;	
 	uint32_t softNum;
 	uint32_t triangleNum;
 
