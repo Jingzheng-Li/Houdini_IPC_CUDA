@@ -245,7 +245,7 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	int triangle_num = 0;
 	CUDAMallocSafe(instance->cudaTriElement, triangle_num);
 
-	instance->IPC_dt = 1e-2;
+	instance->IPC_dt = 0.01;
 	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * FIRSTFRAME::collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
 	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * FIRSTFRAME::collision_detection_buff_scale;
 
@@ -490,6 +490,8 @@ void GAS_Read_Buffer::buildSIMCP() {
 		instance->PCGData_ptr = std::make_unique<PCGData>();
 	}
 
+	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numElements);
+
 	instance->PCGData_ptr->m_P_type = 0;
 	instance->PCGData_ptr->m_b = instance->cudaFb;
 	instance->cudaMoveDir = instance->PCGData_ptr->m_dx;
@@ -502,5 +504,14 @@ void GAS_Read_Buffer::buildSIMCP() {
 	std::vector<Node> Nodes(2 * instance->numSurfEdges - 1);
 	CUDA_SAFE_CALL(cudaMemcpy(&boundVolumes[0], instance->LBVH_E_ptr->mc_boundVolumes, (2 * instance->numSurfEdges - 1) * sizeof(AABB), cudaMemcpyDeviceToHost));
 	CUDA_SAFE_CALL(cudaMemcpy(&Nodes[0], instance->LBVH_E_ptr->mc_nodes, (2 * instance->numSurfEdges - 1) * sizeof(Node), cudaMemcpyDeviceToHost));
+
+	if (instance->BH_ptr) {
+		instance->BH_ptr = std::make_unique<BHessian>();
+	}
+	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
+
+	std::cout << "BH Malloc Nums~~ " << instance->numElements << " " << instance->numSurfVerts << " " << instance->numSurfFaces << " " << instance->numSurfEdges << " " << instance->numTriElements << " " << instance->numTriEdges << std::endl;
+
+
 
 }

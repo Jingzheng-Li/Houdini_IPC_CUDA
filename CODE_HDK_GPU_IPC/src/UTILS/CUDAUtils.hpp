@@ -9,6 +9,12 @@
 
 const static int default_threads = 256;
 
+#define CHECK_ERROR(cond, msg) \
+    if (!(cond)) { \
+        std::cerr << msg << std::endl; \
+        return; \
+    }
+
 #define CUDA_SAFE_CALL(err) cuda_safe_call_(err, __FILE__, __LINE__)
 inline void cuda_safe_call_(cudaError_t err, const char* file_name, const int num_line) {
     if (cudaSuccess != err) {

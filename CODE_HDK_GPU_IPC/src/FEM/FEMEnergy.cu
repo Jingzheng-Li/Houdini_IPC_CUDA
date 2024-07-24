@@ -1128,10 +1128,8 @@ namespace FEMENERGY {
         MATHUTILS::SVD(F, U, V, Sigma);
 
     #ifdef USE_SNK
-        printf("calculate with STABLE NEO HOOKEAN");
         MATHUTILS::Matrix3x3d Iso_PEPF = __computePEPF_StableNHK3D_double(F, Sigma, U, V, lenRate, volRate);
     #else
-        printf("calculate with ARAP");
         MATHUTILS::Matrix3x3d Iso_PEPF = computePEPF_ARAP_double(F, Sigma, U, V, lenRate);
     #endif
 

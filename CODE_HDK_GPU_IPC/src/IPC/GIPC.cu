@@ -6045,21 +6045,25 @@ void updateNeighborInfo(unsigned int* _neighborList, unsigned int* d_neighborLis
 
 
 
-void compute_H_b(double d, double dHat, double& H)
-{
+void compute_H_b(double d, double dHat, double& H) {
     double t = d - dHat;
     H = (std::log(d / dHat) * -2.0 - t * 4.0 / d) + 1.0 / (d * d) * (t * t);
 }
 
-void GIPC::suggestKappa(double& kappa)
-{
+void GIPC::suggestKappa(double& kappa) {
     double H_b;
     //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(bvh_f->scene.upper, bvh_f->scene.lower));
     compute_H_b(1.0e-16 * bboxDiagSize2, dHat, H_b);
+
+    std::cout << "bboxDiagSize2: " << bboxDiagSize2 << std::endl;
+    std::cout << "dHat: " << dHat << std::endl;
+
     if (meanMass == 0.0) {
         kappa = minKappaCoef / (4.0e-16 * bboxDiagSize2 * H_b);
     }
     else {
+        std::cout << "minKappaCoef: " << minKappaCoef << std::endl;
+        std::cout << "meanMass: " << meanMass << std::endl;
         kappa = minKappaCoef * meanMass / (4.0e-16 * bboxDiagSize2 * H_b);
     }
 
@@ -6478,6 +6482,7 @@ void GIPC::tempFree_closeConstraint() {
     CUDA_SAFE_CALL(cudaFree(_closeMConstraintID));
     CUDA_SAFE_CALL(cudaFree(_closeMConstraintVal));
 }
+
 double maxCOllisionPairNum = 0;
 double totalCollisionPairs = 0;
 double total_Cg_count = 0;
@@ -6503,24 +6508,38 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         cudaEventCreate(&end3);
         cudaEventCreate(&end4);
 
+        std::cout << "maxCOllisionPairNum~~~" << totalCollisionPairs << " " << maxCOllisionPairNum << std::endl;
+
 
         BH->updateDNum(triangleNum, tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, tri_edge_num);
+
+        std::cout << "triangleNum: " << triangleNum << std::endl;
+        std::cout << "tetrahedraNum: " << tetrahedraNum << std::endl;
+        std::cout << "h_cpNum: " << h_cpNum[0] << std::endl;
+        std::cout << "h_cpNum_last: " << h_cpNum_last[0] << std::endl;
+        std::cout << "tri_edge_num: " << tri_edge_num << std::endl;
 
         //printf("collision num  %d\n", h_cpNum[0]);
 
         cudaEventRecord(start);
-        timemakePd+=computeGradientAndHessian(instance);
-        
-
+        timemakePd += computeGradientAndHessian(instance);
 
         double distToOpt_PN = calcMinMovement(_moveDir, pcg_data->m_squeue, vertexNum);
+        std::cout << "distToOpt_PN: " << distToOpt_PN << std::endl;
 
-        bool gradVanish = (distToOpt_PN < sqrt(Newton_solver_threshold*Newton_solver_threshold * bboxDiagSize2 * IPC_dt * IPC_dt));
+        bool gradVanish = (distToOpt_PN < sqrt(Newton_solver_threshold * Newton_solver_threshold * bboxDiagSize2 * IPC_dt * IPC_dt));
         if (k && gradVanish) {
             break;
         }
         cudaEventRecord(end0);
         total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], pcg_data->m_P_type);
+
+        std::cout << "gradVanish: " << gradVanish << std::endl;
+        std::cout << "Newton_solver_threshold: " << Newton_solver_threshold << std::endl;
+        std::cout << "IPC_dt: " << IPC_dt << std::endl;
+        std::cout << "total_Cg_count: " << total_Cg_count << std::endl;
+        std::cout << "m_P_type: " << pcg_data->m_P_type << std::endl;
+
 
         cudaEventRecord(end1);
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
@@ -6530,6 +6549,8 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, pcg_data->m_squeue, h_cpNum[0]));
         double temp_alpha = alpha;
         double alpha_CFL = alpha;
+
+        std::cout << "alpha1: " << alpha << std::endl;
 
         double ccd_size = 1.0;
 #ifdef USE_FRICTION
@@ -6548,6 +6569,9 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
                 alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
             }
         }
+
+        std::cout << "alpha2: " << alpha << std::endl;
+
 
         cudaEventRecord(end2);
         //printf("alpha:  %f\n", alpha);
@@ -6588,7 +6612,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
     //    outiter << iterV[ii] << std::endl;
     //}
     //outiter.close();
-    printf("\n\n      Kappa: %f                               iteration k:  %d\n\n\n", IPCKappa, k);
+    printf("\n\n Kappa: %f  iteration k:  %d\n\n\n", IPCKappa, k);
     return k;
    
 }
@@ -6652,7 +6676,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& geomanager)
     _faces = instance->cudaSurfFace;
     _edges = instance->cudaSurfEdge;
     _surfVerts = instance->cudaSurfVert;
-
 
 
     _targetVert = instance->cudaTargetVert;
@@ -6729,6 +6752,19 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& geomanager)
 GIPC::~GIPC() { }
 
 
+
+int totalNT = 0;
+double totalTime = 0;
+int total_Frames = 0;
+double ttime0 = 0;
+double ttime1 = 0;
+double ttime2 = 0;
+double ttime3 = 0;
+double ttime4 = 0;
+bool isRotate = false;
+
+
+
 void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
     std::cout << "IPCSolver~~~~" << std::endl;
@@ -6799,7 +6835,220 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
     // }
 
 
+    CHECK_ERROR(instance, "not initialize instance");
+    CHECK_ERROR(SceneSize, "not initialize SceneSize");
+    CHECK_ERROR(bvh_f, "not initialize bvh_f");
+    CHECK_ERROR(bvh_e, "not initialize bvh_e");
+    CHECK_ERROR(pcg_data, "not initialize pcg_data");
+    CHECK_ERROR(BH, "not initialize BH");
 
+
+    //double animation_fullRate = 0;
+    cudaEvent_t start, end0;
+    cudaEventCreate(&start);
+    cudaEventCreate(&end0);
+    double alpha = 1;
+    cudaEventRecord(start);
+//    if(isRotate&&total_Frames*IPC_dt>=2.2){
+//        isRotate = false;
+//        updateBoundary2(TetMesh);
+//    }
+
+    if (isRotate) {
+        std::cout << "isRotate~~~~~~~~~" << std::endl;
+    } else {
+        std::cout << "not isRotate~~~~~~~~~" << std::endl;
+    }
+
+
+    // if (isRotate)
+    // {
+    //     updateBoundaryMoveDir(instance, alpha);
+    //     buildBVH_FULLCCD(alpha);
+    //     buildFullCP(alpha);
+    //     if (h_ccd_cpNum > 0) {
+    //         double slackness_m = 0.8;
+    //         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, pcg_data->m_squeue, h_ccd_cpNum));
+    //     }
+    //     //updateBoundary(TetMesh, alpha);
+
+    //     CUDA_SAFE_CALL(cudaMemcpy(TetMesh.temp_double3Mem, TetMesh.vertexes, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
+    //     updateBoundaryMoveDir(TetMesh, alpha);
+    //     stepForward(TetMesh.vertexes, TetMesh.temp_double3Mem, _moveDir, TetMesh.BoundaryType, 1, true, vertexNum);
+
+    //     bool rehash = true;
+
+    //     buildBVH();
+    //     int numOfIntersect = 0;
+    //     while (isIntersected(TetMesh)) {
+    //         //printf("type 0 intersection happened\n");
+    //         alpha /= 2.0;
+    //         updateBoundaryMoveDir(TetMesh, alpha);
+    //         numOfIntersect++;
+    //         stepForward(TetMesh.vertexes, TetMesh.temp_double3Mem, _moveDir, TetMesh.BoundaryType, 1, true, vertexNum);
+    //         buildBVH();
+    //     }
+
+    //     buildCP();
+    // }
+
+
+    std::cout << "Kappa~~~~~~1: " << IPCKappa << std::endl;
+    upperBoundKappa(IPCKappa);
+    std::cout << "Kappa~~~~~~2: " << IPCKappa << std::endl;
+    if (IPCKappa < 1e-16) {
+        suggestKappa(IPCKappa);
+        std::cout << "Kappa~~~~~~3: " << IPCKappa << std::endl;
+    }
+    initKappa(instance);
+    std::cout << "Kappa~~~~~~: 4" << IPCKappa << std::endl;
+
+
+
+#ifdef USE_FRICTION
+    CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&distCoord, h_cpNum[0] * sizeof(double2)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&_MatIndex_last, h_cpNum[0] * sizeof(int)));
+
+    CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
+    buildFrictionSets();
+#endif
+    animation_fullRate = animation_subRate;
+    int k = 0;
+    double time0 = 0;
+    double time1 = 0;
+    double time2 = 0;
+    double time3 = 0;
+    double time4 = 0;
+
+    // while (true) {
+    for (int i = 0; i < 1; i++) {
+        //if (h_cpNum[0] > 0) return;
+        tempMalloc_closeConstraint();
+        CUDA_SAFE_CALL(cudaMemset(_close_cpNum, 0, sizeof(uint32_t)));
+        CUDA_SAFE_CALL(cudaMemset(_close_gpNum, 0, sizeof(uint32_t)));
+
+        totalNT += solve_subIP(instance, time0, time1, time2,time3, time4);
+
+        // double2 minMaxDist1 = minMaxGroundDist();
+        // double2 minMaxDist2 = minMaxSelfDist();
+
+        // double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
+        // double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
+        
+        // bool finishMotion = animation_fullRate > 0.99 ? true : false;
+
+        //std::cout << "minDist:  " << minDist << "       maxDist:  " << maxDist << std::endl;
+        //std::cout << "dTol:  " << dTol << "       1e-6 * bboxDiagSize2:  " << 1e-6 * bboxDiagSize2 << std::endl;
+
+//         if (finishMotion) {
+//             if ((h_cpNum[0] + h_gpNum) > 0) {
+
+//                 if (minDist < dTol) {
+//                     tempFree_closeConstraint();
+//                     break;
+//                 }
+//                 else if (maxDist < dHat) {
+//                     tempFree_closeConstraint();
+//                     break;
+//                 }
+//                 else {
+//                     tempFree_closeConstraint();
+//                 }
+//             }
+//             else {
+//                 tempFree_closeConstraint();
+//                 break;
+//             }
+//         }
+//         else {
+//             tempFree_closeConstraint();
+//         }
+
+//         animation_fullRate += animation_subRate;
+//         //updateVelocities(TetMesh);
+
+//         //computeXTilta(TetMesh, 1);
+// #ifdef USE_FRICTION
+//         CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
+//         CUDA_SAFE_CALL(cudaFree(distCoord));
+//         CUDA_SAFE_CALL(cudaFree(tanBasis));
+//         CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
+//         CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
+
+//         CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
+//         CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
+
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&distCoord, h_cpNum[0] * sizeof(double2)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&_MatIndex_last, h_cpNum[0] * sizeof(int)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
+//         buildFrictionSets();
+// #endif
+    }
+
+
+
+
+
+
+
+
+
+
+// #ifdef USE_FRICTION
+//     CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
+//     CUDA_SAFE_CALL(cudaFree(distCoord));
+//     CUDA_SAFE_CALL(cudaFree(tanBasis));
+//     CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
+//     CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
+
+//     CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
+//     CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
+// #endif
+
+//     updateVelocities(instance);
+
+//     computeXTilta(instance, 1);
+//     cudaEventRecord(end0);
+//     CUDA_SAFE_CALL(cudaDeviceSynchronize());
+//     float tttime;
+//     cudaEventElapsedTime(&tttime, start, end0);
+//     totalTime += tttime;
+//     total_Frames++;
+//     printf("average time cost:     %f,    frame id:   %d\n", totalTime / totalNT, total_Frames);
+//     printf("boundary alpha: %f\n  finished a step\n", alpha);
+
+
+//     ttime0 += time0;
+//     ttime1 += time1;
+//     ttime2 += time2;
+//     ttime3 += time3;
+//     ttime4 += time4;
+
+//     std::ofstream outTime("timeCost.txt");
+
+//     outTime << "time0: " << ttime0 / 1000.0 << std::endl;
+//     outTime << "time1: " << ttime1 / 1000.0 << std::endl;
+//     outTime << "time2: " << ttime2 / 1000.0 << std::endl;
+//     outTime << "time3: " << ttime3 / 1000.0 << std::endl;
+//     outTime << "time4: " << ttime4 / 1000.0 << std::endl;
+//     outTime << "time_makePD: " << timemakePd / 1000.0 << std::endl;
+
+//     outTime << "totalTime: " << totalTime / 1000.0 << std::endl;
+//     outTime << "total iter: " << totalNT << std::endl;
+//     outTime << "frames: " << total_Frames << std::endl;
+//     outTime << "totalCollisionNum: " << totalCollisionPairs << std::endl;
+//     outTime << "averageCollision: " << totalCollisionPairs/totalNT << std::endl;
+//     outTime << "maxCOllisionPairNum: " << maxCOllisionPairNum << std::endl;
+//     outTime << "totalCgTime: " << total_Cg_count << std::endl;
+//     outTime.close();
 
 
 }
