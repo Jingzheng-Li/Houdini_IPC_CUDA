@@ -113,16 +113,17 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	double xmax = -DBL_MAX, ymax = -DBL_MAX, zmax = -DBL_MAX;
 
 	GA_Offset ptoff;
+	int ptidx = 0;
 	GA_FOR_ALL_PTOFF(gdp, ptoff) {
 		UT_Vector3D pos3 = gdp->getPos3D(ptoff);
 		UT_Vector3D vel3 = velHandle.get(ptoff);
-		tetpos.row(ptoff) << pos3.x(), pos3.y(), pos3.z();
-		tetvel.row(ptoff) << vel3.x(), vel3.y(), vel3.z();
-		tetmass(ptoff) = massHandle.get(ptoff);
+		tetpos.row(ptidx) << pos3.x(), pos3.y(), pos3.z();
+		tetvel.row(ptidx) << vel3.x(), vel3.y(), vel3.z();
+		tetmass(ptidx) = massHandle.get(ptoff);
 
 		MATHUTILS::Matrix3x3d constraint;
 		MATHUTILS::__set_Mat_val(constraint, 1, 0, 0, 0, 1, 0, 0, 0, 1);
-		cons[ptoff] = constraint;
+		cons[ptidx] = constraint;
 
 		if (xmin > pos3.x()) xmin = pos3.x();
 		if (ymin > pos3.y()) ymin = pos3.y();
@@ -131,10 +132,11 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 		if (ymax < pos3.y()) ymax = pos3.y();
 		if (zmax < pos3.z()) zmax = pos3.z();
 
-		boundarytype(ptoff) = 0;
+		boundarytype(ptidx) = 0;
+		ptidx++;
 
 	}
-	CHECK_ERROR(ptoff==num_points, "Failed to get all points");
+	CHECK_ERROR(ptidx==num_points, "Failed to get all points");
 
 	CUDAMallocSafe(instance->cudaTetPos, num_points);
 	CUDAMallocSafe(instance->cudaTetVel, num_points);
@@ -175,15 +177,17 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 	tetEle.resize(gdp->getNumPrimitives(), Eigen::NoChange);
 
 	GA_Offset primoff;
+	int primidx = 0;
 	GA_FOR_ALL_PRIMOFF(gdp, primoff) {
 		const GA_Primitive* prim = gdp->getPrimitive(primoff);
 		for (int i = 0; i < prim->getVertexCount(); ++i) {
 			GA_Offset vtxoff = prim->getVertexOffset(i);
 			GA_Offset ptoff = gdp->vertexPoint(vtxoff);
-			tetEle(primoff, i) = static_cast<int>(gdp->pointIndex(ptoff));
+			tetEle(primidx, i) = static_cast<int>(gdp->pointIndex(ptoff));
 		}
+		primidx++;
 	}
-	CHECK_ERROR(primoff==gdp->getNumPrimitives(), "Failed to get all primitives");
+	CHECK_ERROR(primidx==gdp->getNumPrimitives(), "Failed to get all primitives");
 
 	CUDAMallocSafe(instance->cudaTetElement, tetEle.rows());
 	CUDAMemcpyHToDSafe(instance->tetElement, instance->cudaTetElement);

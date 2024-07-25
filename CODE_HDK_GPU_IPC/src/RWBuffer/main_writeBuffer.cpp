@@ -64,14 +64,14 @@ void GAS_Write_Buffer::transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detai
     CHECK_ERROR((velHandle.isValid() || massHandle.isValid()), "Failed to get velocity or mass attribute handle");
 
     GA_Offset ptoff;
-    int idx = 0;
+    int ptidx = 0;
     GA_FOR_ALL_PTOFF(gdp, ptoff) {
-        int sortidx = sortmapvertindex(idx);
-        gdp->setPos3(idx, UT_Vector3(tetpos(sortidx, 0), tetpos(sortidx, 1), tetpos(sortidx, 2)));
+        int sortidx = sortmapvertindex(ptidx);
+        gdp->setPos3(ptoff, UT_Vector3(tetpos(sortidx, 0), tetpos(sortidx, 1), tetpos(sortidx, 2)));
         // TODO: 写回速度需要小心一些 注意一下tetvel有没有速度变换的行为
         // velHandle.set(sortidx, UT_Vector3(tetvel(sortidx, 0), tetvel(sortidx, 1), tetvel(sortidx, 2)));
-        idx++;
+        ptidx++;
     }
-    CHECK_ERROR(idx == instance->numVertices, "num vertices not match with writeback");
+    CHECK_ERROR(ptidx == instance->numVertices, "num vertices not match with writeback");
 
 }

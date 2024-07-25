@@ -6932,7 +6932,7 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
         std::cout << "Kappa~~~~~~3: " << IPCKappa << std::endl;
     }
     initKappa(instance);
-    std::cout << "Kappa~~~~~~: 4" << IPCKappa << std::endl;
+    std::cout << "Kappa~~~~~~: 4: " << IPCKappa << std::endl;
 
 
 
@@ -6969,13 +6969,13 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
 
 
-
+        // std::cout << " can arrive here1~~~ " << std::endl;
 
 
 
         totalNT += solve_subIP(instance, time0, time1, time2, time3, time4);
 
-
+        // std::cout << " can arrive here2~~~ " << std::endl;
         // std::cout << "debugtestprint~~~~~~~!!~~~~~" << std::endl;
         // debugtestprintH12x12(BH);
 
