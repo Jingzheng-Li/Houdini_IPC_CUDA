@@ -387,7 +387,6 @@ void GAS_Read_Buffer::initSIMFEM() {
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaDmInverses, instance->DMInverse.data(), instance->numElements * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
 
 
-
 }
 
 void GAS_Read_Buffer::initSIMBVH() {
