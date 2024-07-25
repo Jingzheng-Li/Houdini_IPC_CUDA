@@ -378,10 +378,16 @@ void GAS_Read_Buffer::initSIMFEM() {
 		instance->DMInverse.push_back(DM_inverse);
 	}
 	std::cout << "DMInverse0: " 
-			<< instance->DMInverse[0].m[0][0] << " "
-			<< instance->DMInverse[0].m[0][1] << " "
-			<< instance->DMInverse[0].m[0][2] << " "
-			<< std::endl;
+		<< instance->DMInverse[0].m[0][0] << " "
+		<< instance->DMInverse[0].m[0][1] << " "
+		<< instance->DMInverse[0].m[0][2] << " "
+		<< std::endl;
+
+
+	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaDmInverses, instance->DMInverse.data(), instance->numElements * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
+
+
+
 }
 
 void GAS_Read_Buffer::initSIMBVH() {

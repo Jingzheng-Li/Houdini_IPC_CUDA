@@ -1,5 +1,6 @@
 
 #include "FEMEnergy.cuh"
+#include <iostream>
 
 namespace FEMENERGY {
 
@@ -1111,13 +1112,34 @@ namespace FEMENERGY {
     }
 
     __global__
-    void _calculate_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
+    void _calculate_fem_gradient_hessian(
+        MATHUTILS::Matrix3x3d* DmInverses, 
+        const double3* vertexes, 
+        const uint4* tetrahedras,
         MATHUTILS::Matrix12x12d* Hessians, uint32_t offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt)
     {
+
+
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= tetrahedraNum) return;
 
         MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_double(DmInverses[idx]);
+
+        // if (idx >= 0 && idx <= 10) {
+        //     printf("%i \n", idx);
+        //     printf("%f \n", DmInverses[idx].m[0][0]);
+        //     printf("%f \n", vertexes[idx].x);
+        //     printf("%i \n", tetrahedras[idx].x);
+        //     printf("%f \n", Hessians[idx].m[0][0]);
+        //     printf("%f \n", offset);
+        //     printf("%f \n", volume);
+        //     printf("%f \n", gradient[idx].x);
+        //     printf("%f \n", tetrahedraNum);
+        //     printf("%f \n", lenRate);
+        //     printf("%f \n", volRate);
+        //     printf("%f \n", IPC_dt);
+        //     printf("%f \n", PFPX);
+        // }
 
         MATHUTILS::Matrix3x3d Ds;
         __calculateDms3D_double(vertexes, tetrahedras[idx], Ds);

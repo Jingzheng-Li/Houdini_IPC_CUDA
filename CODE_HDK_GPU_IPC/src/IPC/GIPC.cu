@@ -21,6 +21,34 @@
 #define MAKEPD2
 #define OLDBARRIER2
 
+
+void debugtestprintH12x12 (std::unique_ptr<BHessian>& BH) {
+
+    std::vector<MATHUTILS::Matrix12x12d> mh12(3);
+    std::vector<MATHUTILS::Matrix9x9d> mh9(3);
+    std::vector<MATHUTILS::Matrix6x6d> mh6(3);
+    std::vector<MATHUTILS::Matrix3x3d> mh3(3);
+    std::vector<uint4> md4(3);
+    std::vector<uint3> md3(3);
+    std::vector<uint2> md2(3);
+    std::vector<uint32_t> md1(3);
+    cudaError_t err = cudaMemcpy(mh12.data(), BH->m_H12x12, 3 * sizeof(MATHUTILS::Matrix12x12d), cudaMemcpyDeviceToHost);
+    err = cudaMemcpy(mh9.data(), BH->m_H9x9, 3 * sizeof(MATHUTILS::Matrix9x9d), cudaMemcpyDeviceToHost);
+    err = cudaMemcpy(mh6.data(), BH->m_H6x6, 3 * sizeof(MATHUTILS::Matrix6x6d), cudaMemcpyDeviceToHost);
+    err = cudaMemcpy(mh3.data(), BH->m_H3x3, 3 * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
+    std::cout << "m3m6m9m12 begin~~~~~~~" << std::endl;
+    for (int k = 0; k < 3; k++) {
+        std::cout << mh12[k].m[0][0] << " " << mh12[k].m[2][2] << std::endl;
+        std::cout << mh9[k].m[0][0] << " " << mh9[k].m[2][2] << std::endl;
+        std::cout << mh6[k].m[0][0] << " " << mh6[k].m[2][2] << std::endl;
+        std::cout << mh3[k].m[0][0] << " " << mh3[k].m[2][2] << std::endl;
+    }
+    std::cout << "m3m6m9m12 end~~~~~~~" << std::endl;
+
+    
+}
+
+
 __global__
 void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {
     int idof = blockIdx.x * blockDim.x;
@@ -5758,6 +5786,8 @@ void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
 
 
     _calBarrierGradientAndHessian << <blockNum, threadNum >> > (_vertexes, _rest_vertexes, _collisonPairs, _gradient, BH->m_H12x12, BH->m_H9x9, BH->m_H6x6, BH->m_D4Index, BH->m_D3Index, BH->m_D2Index, _cpNum, _MatIndex, dHat, mKappa, numbers);
+
+
 }
 
 
@@ -5941,7 +5971,7 @@ void calculate_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const dou
     if (numbers < 1) return;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    FEMENERGY::_calculate_fem_gradient_hessian << <blockNum, threadNum >> > (DmInverses, vertexes, tetrahedras,
+    FEMENERGY::_calculate_fem_gradient_hessian <<<blockNum, threadNum>>> (DmInverses, vertexes, tetrahedras,
         Hessians, offset, volume, gradient, tetrahedraNum, lenRate, volRate, IPC_dt);
 }
 
@@ -6288,17 +6318,18 @@ double GIPC::computeEnergy(std::unique_ptr<GeometryManager>& instance) {
 }
 
 int GIPC::calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type) {
-    if (!preconditioner_type) {
-        return PCGSOLVER::PCG_Process(instance, pcg_data.get(), *BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
+    if (preconditioner_type == 0) {
+        return PCGSOLVER::PCG_Process(instance, pcg_data, BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
     }
-    // else if (preconditioner_type == 1) {
-    //     int cgCount = MASPCG_Process(&instance, &pcg_data, BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, cpNum, pcg_threshold);
-    //     if (cgCount == 3000) {
-    //         printf("MASPCG fail, turn to PCG\n");
-    //         cgCount = PCG_Process(&instance, &pcg_data, BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
-    //         printf("PCG finish:  %d\n", cgCount);
-    //     }
-    // }
+    else if (preconditioner_type == 1) {
+        std::cout << "not support preconditioner type right now!" << std::endl;
+        // int cgCount = MASPCG_Process(&instance, &pcg_data, BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, cpNum, pcg_threshold);
+        // if (cgCount == 3000) {
+        //     printf("MASPCG fail, turn to PCG\n");
+        //     cgCount = PCG_Process(&instance, &pcg_data, BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
+        //     printf("PCG finish:  %d\n", cgCount);
+        // }
+    }
 
 }
 
@@ -6924,73 +6955,95 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
     double time3 = 0;
     double time4 = 0;
 
-    // while (true) {
-    for (int i = 0; i < 1; i++) {
+    while (true) {
+    // for (int i = 0; i < 1; i++) {
         //if (h_cpNum[0] > 0) return;
         tempMalloc_closeConstraint();
         CUDA_SAFE_CALL(cudaMemset(_close_cpNum, 0, sizeof(uint32_t)));
         CUDA_SAFE_CALL(cudaMemset(_close_gpNum, 0, sizeof(uint32_t)));
 
-        totalNT += solve_subIP(instance, time0, time1, time2,time3, time4);
 
-        // double2 minMaxDist1 = minMaxGroundDist();
-        // double2 minMaxDist2 = minMaxSelfDist();
 
-        // double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
-        // double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
+
+
+
+
+
+
+
+
+
+        totalNT += solve_subIP(instance, time0, time1, time2, time3, time4);
+
+
+        // std::cout << "debugtestprint~~~~~~~!!~~~~~" << std::endl;
+        // debugtestprintH12x12(BH);
+
+
+
+
+
+
+
+
+
+        double2 minMaxDist1 = minMaxGroundDist();
+        double2 minMaxDist2 = minMaxSelfDist();
+
+        double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
+        double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
         
-        // bool finishMotion = animation_fullRate > 0.99 ? true : false;
+        bool finishMotion = animation_fullRate > 0.99 ? true : false;
+        std::cout << "minDist:  " << minDist << "       maxDist:  " << maxDist << std::endl;
+        std::cout << "dTol:  " << dTol << "       1e-6 * bboxDiagSize2:  " << 1e-6 * bboxDiagSize2 << std::endl;
 
-        //std::cout << "minDist:  " << minDist << "       maxDist:  " << maxDist << std::endl;
-        //std::cout << "dTol:  " << dTol << "       1e-6 * bboxDiagSize2:  " << 1e-6 * bboxDiagSize2 << std::endl;
+        if (finishMotion) {
+            if ((h_cpNum[0] + h_gpNum) > 0) {
 
-//         if (finishMotion) {
-//             if ((h_cpNum[0] + h_gpNum) > 0) {
+                if (minDist < dTol) {
+                    tempFree_closeConstraint();
+                    break;
+                }
+                else if (maxDist < dHat) {
+                    tempFree_closeConstraint();
+                    break;
+                }
+                else {
+                    tempFree_closeConstraint();
+                }
+            }
+            else {
+                tempFree_closeConstraint();
+                break;
+            }
+        }
+        else {
+            tempFree_closeConstraint();
+        }
 
-//                 if (minDist < dTol) {
-//                     tempFree_closeConstraint();
-//                     break;
-//                 }
-//                 else if (maxDist < dHat) {
-//                     tempFree_closeConstraint();
-//                     break;
-//                 }
-//                 else {
-//                     tempFree_closeConstraint();
-//                 }
-//             }
-//             else {
-//                 tempFree_closeConstraint();
-//                 break;
-//             }
-//         }
-//         else {
-//             tempFree_closeConstraint();
-//         }
+        animation_fullRate += animation_subRate;
+        //updateVelocities(TetMesh);
 
-//         animation_fullRate += animation_subRate;
-//         //updateVelocities(TetMesh);
+        //computeXTilta(TetMesh, 1);
+#ifdef USE_FRICTION
+        CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
+        CUDA_SAFE_CALL(cudaFree(distCoord));
+        CUDA_SAFE_CALL(cudaFree(tanBasis));
+        CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
+        CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
 
-//         //computeXTilta(TetMesh, 1);
-// #ifdef USE_FRICTION
-//         CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
-//         CUDA_SAFE_CALL(cudaFree(distCoord));
-//         CUDA_SAFE_CALL(cudaFree(tanBasis));
-//         CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
-//         CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
+        CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
+        CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
 
-//         CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
-//         CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
-
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&distCoord, h_cpNum[0] * sizeof(double2)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&_MatIndex_last, h_cpNum[0] * sizeof(int)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
-//         buildFrictionSets();
-// #endif
+        CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&distCoord, h_cpNum[0] * sizeof(double2)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&_MatIndex_last, h_cpNum[0] * sizeof(int)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
+        buildFrictionSets();
+#endif
     }
 
 
@@ -7002,53 +7055,53 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
 
 
-// #ifdef USE_FRICTION
-//     CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
-//     CUDA_SAFE_CALL(cudaFree(distCoord));
-//     CUDA_SAFE_CALL(cudaFree(tanBasis));
-//     CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
-//     CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
+#ifdef USE_FRICTION
+    CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
+    CUDA_SAFE_CALL(cudaFree(distCoord));
+    CUDA_SAFE_CALL(cudaFree(tanBasis));
+    CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
+    CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
 
-//     CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
-//     CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
-// #endif
+    CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
+    CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
+#endif
 
-//     updateVelocities(instance);
+    updateVelocities(instance);
 
-//     computeXTilta(instance, 1);
-//     cudaEventRecord(end0);
-//     CUDA_SAFE_CALL(cudaDeviceSynchronize());
-//     float tttime;
-//     cudaEventElapsedTime(&tttime, start, end0);
-//     totalTime += tttime;
-//     total_Frames++;
-//     printf("average time cost:     %f,    frame id:   %d\n", totalTime / totalNT, total_Frames);
-//     printf("boundary alpha: %f\n  finished a step\n", alpha);
+    computeXTilta(instance, 1);
+    cudaEventRecord(end0);
+    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    float tttime;
+    cudaEventElapsedTime(&tttime, start, end0);
+    totalTime += tttime;
+    total_Frames++;
+    printf("average time cost:     %f,    frame id:   %d\n", totalTime / totalNT, total_Frames);
+    printf("boundary alpha: %f\n  finished a step\n", alpha);
 
 
-//     ttime0 += time0;
-//     ttime1 += time1;
-//     ttime2 += time2;
-//     ttime3 += time3;
-//     ttime4 += time4;
+    ttime0 += time0;
+    ttime1 += time1;
+    ttime2 += time2;
+    ttime3 += time3;
+    ttime4 += time4;
 
-//     std::ofstream outTime("timeCost.txt");
+    std::ofstream outTime("timeCost.txt");
 
-//     outTime << "time0: " << ttime0 / 1000.0 << std::endl;
-//     outTime << "time1: " << ttime1 / 1000.0 << std::endl;
-//     outTime << "time2: " << ttime2 / 1000.0 << std::endl;
-//     outTime << "time3: " << ttime3 / 1000.0 << std::endl;
-//     outTime << "time4: " << ttime4 / 1000.0 << std::endl;
-//     outTime << "time_makePD: " << timemakePd / 1000.0 << std::endl;
+    outTime << "time0: " << ttime0 / 1000.0 << std::endl;
+    outTime << "time1: " << ttime1 / 1000.0 << std::endl;
+    outTime << "time2: " << ttime2 / 1000.0 << std::endl;
+    outTime << "time3: " << ttime3 / 1000.0 << std::endl;
+    outTime << "time4: " << ttime4 / 1000.0 << std::endl;
+    outTime << "time_makePD: " << timemakePd / 1000.0 << std::endl;
 
-//     outTime << "totalTime: " << totalTime / 1000.0 << std::endl;
-//     outTime << "total iter: " << totalNT << std::endl;
-//     outTime << "frames: " << total_Frames << std::endl;
-//     outTime << "totalCollisionNum: " << totalCollisionPairs << std::endl;
-//     outTime << "averageCollision: " << totalCollisionPairs/totalNT << std::endl;
-//     outTime << "maxCOllisionPairNum: " << maxCOllisionPairNum << std::endl;
-//     outTime << "totalCgTime: " << total_Cg_count << std::endl;
-//     outTime.close();
+    outTime << "totalTime: " << totalTime / 1000.0 << std::endl;
+    outTime << "total iter: " << totalNT << std::endl;
+    outTime << "frames: " << total_Frames << std::endl;
+    outTime << "totalCollisionNum: " << totalCollisionPairs << std::endl;
+    outTime << "averageCollision: " << totalCollisionPairs/totalNT << std::endl;
+    outTime << "maxCOllisionPairNum: " << maxCOllisionPairNum << std::endl;
+    outTime << "totalCgTime: " << total_Cg_count << std::endl;
+    outTime.close();
 
 
 }
