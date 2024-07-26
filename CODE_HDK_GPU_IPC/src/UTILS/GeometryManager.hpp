@@ -53,9 +53,9 @@ public:
     int numTriElements;
     int numTriEdges;
 
-    Eigen::MatrixX3d tetPos; // numPoints * 3
-    std::vector<double3> vectetPos;
-    double3* cudaTetPos;
+    Eigen::MatrixX3d vertPos; // numPoints * 3
+    std::vector<double3> vecVertPos;
+    double3* cudaVertPos;
 
     Eigen::MatrixX3d tetVel; // numPoints * 3
     std::vector<double3> vectetVel;

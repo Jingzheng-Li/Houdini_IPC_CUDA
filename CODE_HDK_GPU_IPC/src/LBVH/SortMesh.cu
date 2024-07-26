@@ -241,16 +241,16 @@ void updateTopology(uint4* tets, uint3* tris, const uint32_t* sortMapVertIndex, 
 
 void sortGeometry(std::unique_ptr<GeometryManager>& instance, const AABB* _MaxBv, const int& vertex_num, const int& tetradedra_num, const int& triangle_num) {
 
-    calcVertMChash(instance->cudaMortonCodeHash, instance->cudaTetPos, _MaxBv, vertex_num);
+    calcVertMChash(instance->cudaMortonCodeHash, instance->cudaVertPos, _MaxBv, vertex_num);
     
 	// generate cudaSortIndex from 0 to vertex_num - 1
 	thrust::sequence(thrust::device_ptr<uint32_t>(instance->cudaSortIndex), thrust::device_ptr<uint32_t>(instance->cudaSortIndex) + vertex_num);
     thrust::sort_by_key(thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash), thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash) + vertex_num, thrust::device_ptr<uint32_t>(instance->cudaSortIndex));
 
-    updateVertexes(instance->cudaOriginTetPos, instance->cudaTetPos, instance->cudaTempDouble, instance->cudaTetMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraints, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
+    updateVertexes(instance->cudaOriginTetPos, instance->cudaVertPos, instance->cudaTempDouble, instance->cudaTetMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraints, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
 	
 
-    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTetPos, instance->cudaOriginTetPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertPos, instance->cudaOriginTetPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTetMass, instance->cudaTempDouble, vertex_num * sizeof(double), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->cudaTempMat3x3, vertex_num * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaBoundaryType, instance->cudaTempBoundaryType, vertex_num * sizeof(int), cudaMemcpyDeviceToDevice));
@@ -292,7 +292,7 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_
 	int triangleNum = 0;
 	int triangleedgeNum = 0;
 
-	int numVerts = instance->tetPos.rows();
+	int numVerts = instance->vertPos.rows();
 	int numTetEles = instance->tetElement.rows();
 	int numSurfVerts = instance->surfVert.rows();
 	int numSurfFaces = instance->surfFace.rows();

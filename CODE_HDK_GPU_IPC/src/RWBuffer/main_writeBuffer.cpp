@@ -50,10 +50,10 @@ void GAS_Write_Buffer::transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detai
     Eigen::Matrix<uint32_t, Eigen::Dynamic, 1> sortmapvertindex;
     sortmapvertindex.resize(instance->numVertices);
     CUDAMemcpyDToHSafe(sortmapvertindex, instance->cudaSortMapVertIndex);
-    CUDAMemcpyDToHSafe(instance->tetPos, instance->cudaTetPos);
+    CUDAMemcpyDToHSafe(instance->vertPos, instance->cudaVertPos);
     CUDAMemcpyDToHSafe(instance->tetVel, instance->cudaTetVel);
 
-    Eigen::MatrixX3d &tetpos = GeometryManager::instance->tetPos;
+    Eigen::MatrixX3d &tetpos = GeometryManager::instance->vertPos;
     Eigen::MatrixX3d &tetvel = GeometryManager::instance->tetVel;
     CHECK_ERROR((tetpos.rows() == gdp->getNumPoints()), "Number of particles does not match");
     CHECK_ERROR((tetvel.rows() == gdp->getNumPoints()), "Number of velocities does not match");
