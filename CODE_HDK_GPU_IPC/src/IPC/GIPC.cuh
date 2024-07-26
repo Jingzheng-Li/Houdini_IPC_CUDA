@@ -99,11 +99,6 @@ public:
     std::unique_ptr<PCGData>& pcg_data;
     std::unique_ptr<BHessian>& BH;
 
-	// LBVH_F bvh_f;
-	// LBVH_E bvh_e;
-	// PCGData pcg_data;
-	// AABB SceneSize;
-	// BHessian BH;
 
 	bool animation;
 

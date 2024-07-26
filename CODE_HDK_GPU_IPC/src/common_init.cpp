@@ -1,4 +1,16 @@
 
+/*
+TODO:
+1. 解决cuda内存报错的问题
+2. 整理一下代码，把主函数分离出来
+3. 构造各个节点 
+4. 
+
+*/
+
+
+
+
 #include <UT/UT_DSOVersion.h>
 
 #include "RWBuffer/main_readBuffer.hpp"

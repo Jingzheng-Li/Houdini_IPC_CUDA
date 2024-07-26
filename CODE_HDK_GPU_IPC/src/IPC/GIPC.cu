@@ -6708,6 +6708,9 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& geomanager)
     _edges = instance->cudaSurfEdge;
     _surfVerts = instance->cudaSurfVert;
 
+    std::cout << "Address of instance->cudaTetPos: " << instance->cudaTetPos << std::endl;
+    std::cout << "Address of _vertexes: " << _vertexes << std::endl;
+
 
     _targetVert = instance->cudaTargetVert;
     _targetInd = instance->cudaTargetIndex;
@@ -6799,72 +6802,6 @@ bool isRotate = false;
 void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
     std::cout << "IPCSolver~~~~" << std::endl;
-
-    // std::cout << "bendStiff~~" << bendStiff << std::endl;
-    // std::cout << "density~~" << density << std::endl;
-    // std::cout << "YoungModulus~~" << YoungModulus << std::endl;
-    // std::cout << "PoissonRate~~" << PoissonRate << std::endl;
-    // std::cout << "lengthRateLame~~" << lengthRateLame << std::endl;
-    // std::cout << "volumeRateLame~~" << volumeRateLame << std::endl;
-    // std::cout << "lengthRate~~" << lengthRate << std::endl;
-    // std::cout << "volumeRate~~" << volumeRate << std::endl;
-    // std::cout << "frictionRate~~" << frictionRate << std::endl;
-    // std::cout << "clothThickness~~" << clothThickness << std::endl;
-    // std::cout << "clothYoungModulus~~" << clothYoungModulus << std::endl;
-    // std::cout << "stretchStiff~~" << stretchStiff << std::endl;
-    // std::cout << "shearStiff~~" << shearStiff << std::endl;
-    // std::cout << "clothDensity~~" << clothDensity << std::endl;
-    // std::cout << "softMotionRate~~" << softMotionRate << std::endl;
-    // std::cout << "Newton_solver_threshold~~" << Newton_solver_threshold << std::endl;
-    // std::cout << "pcg_threshold~~" << pcg_threshold << std::endl;
-
-
-    // std::cout << "IPCKappa~~~" << IPCKappa << std::endl; 
-    // std::cout << "dHat~~~" << dHat << std::endl; 
-    // std::cout << "fDhat~~~" << fDhat << std::endl; 
-    // std::cout << "bboxDiagSize2~~~" << bboxDiagSize2 << std::endl; 
-    // std::cout << "relative_dhat~~~" << relative_dhat << std::endl; 
-    // std::cout << "dTol~~~" << dTol << std::endl; 
-    // std::cout << "minKappaCoef~~~" << minKappaCoef << std::endl; 
-    // std::cout << "IPC_dt~~~" << IPC_dt << std::endl; 
-    // std::cout << "meanMass~~~" << meanMass << std::endl; 
-    // std::cout << "meanVolumn~~~" << meanVolumn << std::endl; 
-    // std::cout << "softNum~~~" << softNum << std::endl; 
-    // std::cout << "triangleNum~~~" << triangleNum << std::endl; 
-    // std::cout << "vertexNum~~~" << vertexNum << std::endl; 
-    // std::cout << "surf_vertexNum~~~" << surf_vertexNum << std::endl; 
-    // std::cout << "surf_edgeNum~~~" << surf_edgeNum << std::endl; 
-    // std::cout << "tri_edge_num~~~" << tri_edge_num << std::endl; 
-    // std::cout << "surf_faceNum~~~" << surf_faceNum << std::endl; 
-    // std::cout << "tetrahedraNum~~~" << tetrahedraNum << std::endl; 
-    // std::cout << "MAX_COLLITION_PAIRS_NUM~~~" << MAX_COLLITION_PAIRS_NUM << std::endl; 
-    // std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~~~" << MAX_CCD_COLLITION_PAIRS_NUM << std::endl; 
-    // std::cout << "animation_subRate~~~" << animation_subRate << std::endl; 
-    // std::cout << "animation_fullRate~~~" << animation_fullRate << std::endl; 
-
-    // Eigen::MatrixX3d vertexes;
-    // vertexes.resize(vertexNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(vertexes, _vertexes);
-    // Eigen::MatrixX3d rest_vertexes;
-    // rest_vertexes.resize(vertexNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(rest_vertexes, _rest_vertexes);
-    // Eigen::MatrixX3i faces;
-    // faces.resize(surf_faceNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(faces, _faces);
-    // Eigen::MatrixX2i edges;
-    // edges.resize(surf_edgeNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(edges, _edges);
-    // Eigen::VectorXi surfVerts;
-    // surfVerts.resize(surf_vertexNum);
-    // CUDAMemcpyDToHSafe(surfVerts, _surfVerts);
-    // for(int i = 0; i < 10; i++) {
-    //     std::cout << "vertexes~~" << vertexes.row(i) << std::endl;
-    //     std::cout << "rest_vertexes~~" << rest_vertexes.row(i) << std::endl;
-    //     std::cout << "faces~~" << faces.row(i) << std::endl;
-    //     std::cout << "edges~~" << edges.row(i) << std::endl;
-    //     std::cout << "surfVerts~~" << surfVerts.row(i) << std::endl;
-    // }
-
 
     CHECK_ERROR(instance, "not initialize instance");
     CHECK_ERROR(SceneSize, "not initialize SceneSize");
@@ -6970,7 +6907,6 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
 
         // std::cout << " can arrive here1~~~ " << std::endl;
-
 
 
         totalNT += solve_subIP(instance, time0, time1, time2, time3, time4);

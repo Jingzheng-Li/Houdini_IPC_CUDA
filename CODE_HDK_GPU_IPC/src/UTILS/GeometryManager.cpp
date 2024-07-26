@@ -54,6 +54,10 @@ void GeometryManager::totallyfree() {
     if (instance) {
         instance->LBVH_E_ptr->CUDA_FREE_LBVH();
         instance->LBVH_F_ptr->CUDA_FREE_LBVH();
+        // instance->AABB_SceneSize_ptr->;
+        // instance->PCGData_ptr->CUDA_FREE_PCGDATA();
+        // instance->BH_ptr->CUDA_FREE_BHESSIAN();
+        // instance->GIPC_ptr->;
 
         instance.reset();
     }
@@ -96,18 +100,4 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaD3Index);
     CUDAFreeSafe(instance->cudaD4Index);
     CUDAFreeSafe(instance->cudaD2Index);
-}
-
-void GeometryManager::freeDynamicGeometry() {
-    instance->tetPos.resize(0, 0);
-    instance->tetVel.resize(0, 0);
-}
-
-void GeometryManager::freeAllGeometry() {
-    instance->tetPos.resize(0, 0);
-    instance->tetVel.resize(0, 0);
-    instance->tetMass.resize(0);
-    instance->surfVert.resize(0);
-    instance->surfFace.resize(0, 0);
-    instance->surfEdge.resize(0, 0);
 }

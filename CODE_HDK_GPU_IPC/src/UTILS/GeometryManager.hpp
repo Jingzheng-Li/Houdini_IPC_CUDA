@@ -28,8 +28,6 @@ public:
 
 private:
     static void freeCUDA();
-    static void freeDynamicGeometry();
-    static void freeAllGeometry();
 
 public:
 
