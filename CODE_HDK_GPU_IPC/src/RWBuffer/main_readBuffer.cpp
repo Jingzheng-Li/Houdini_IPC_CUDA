@@ -92,7 +92,7 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 
 	// position velocity mass
 	auto &tetpos = instance->vertPos;
-	auto &tetvel = instance->tetVel;
+	auto &tetvel = instance->vertVel;
 	auto &tetmass = instance->tetMass;
 	tetpos.resize(num_points, Eigen::NoChange);
 	tetvel.resize(num_points, Eigen::NoChange);
@@ -139,10 +139,10 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CHECK_ERROR(ptidx==num_points, "Failed to get all points");
 
 	CUDAMallocSafe(instance->cudaVertPos, num_points);
-	CUDAMallocSafe(instance->cudaTetVel, num_points);
+	CUDAMallocSafe(instance->cudaVertVel, num_points);
 	CUDAMallocSafe(instance->cudaTetMass, num_points);
 	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaVertPos);
-	CUDAMemcpyHToDSafe(instance->tetVel, instance->cudaTetVel);
+	CUDAMemcpyHToDSafe(instance->vertVel, instance->cudaVertVel);
 	CUDAMemcpyHToDSafe(instance->tetMass, instance->cudaTetMass);
 
 	CUDAMallocSafe(instance->cudaBoundaryType, num_points);
@@ -160,9 +160,9 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	instance->maxCorner = make_double3(xmax, ymax, zmax);
 
 	instance->vecVertPos = MATHUTILS::__convertEigenToVector<double3>(instance->vertPos);
-	instance->vectetVel = MATHUTILS::__convertEigenToVector<double3>(instance->tetVel);
+	instance->vecVertVel = MATHUTILS::__convertEigenToVector<double3>(instance->vertVel);
 	CHECK_ERROR(instance->vecVertPos.size()==instance->vertPos.rows(), "not init vecVertPos correctly");
-	CHECK_ERROR(instance->vectetVel.size()==instance->tetVel.rows(), "not init vectetVel correctly");
+	CHECK_ERROR(instance->vecVertVel.size()==instance->vertVel.rows(), "not init vecVertVel correctly");
 
 
 }

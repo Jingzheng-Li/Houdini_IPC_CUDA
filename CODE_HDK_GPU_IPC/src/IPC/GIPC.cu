@@ -6652,7 +6652,7 @@ void GIPC::updateVelocities(std::unique_ptr<GeometryManager>& instance) {
     int numbers = vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateVelocities << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaOriginTetPos, instance->cudaTetVel, instance->cudaBoundaryType, IPC_dt, numbers);
+    _updateVelocities << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaOriginTetPos, instance->cudaVertVel, instance->cudaBoundaryType, IPC_dt, numbers);
 }
 
 void GIPC::updateBoundary(std::unique_ptr<GeometryManager>& instance, double alpha) {
@@ -6680,7 +6680,7 @@ void GIPC::computeXTilta(std::unique_ptr<GeometryManager>& instance, const doubl
     int numbers = vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _computeXTilta << <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaTetVel, instance->cudaOriginTetPos, instance->cudaXTilta, IPC_dt, rate, numbers);
+    _computeXTilta << <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginTetPos, instance->cudaXTilta, IPC_dt, rate, numbers);
 }
 
 

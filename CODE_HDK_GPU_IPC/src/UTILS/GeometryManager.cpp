@@ -10,7 +10,7 @@ std::unique_ptr<GeometryManager> GeometryManager::instance = nullptr;
 
 GeometryManager::GeometryManager() : 
     cudaVertPos(nullptr), 
-    cudaTetVel(nullptr), 
+    cudaVertVel(nullptr), 
     cudaTetMass(nullptr), 
     cudaTetElement(nullptr),
     cudaTriElement(nullptr),
@@ -65,7 +65,7 @@ void GeometryManager::totallyfree() {
 
 void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaVertPos);
-    CUDAFreeSafe(instance->cudaTetVel);
+    CUDAFreeSafe(instance->cudaVertVel);
     CUDAFreeSafe(instance->cudaTetMass);
     CUDAFreeSafe(instance->cudaTetElement);
     CUDAFreeSafe(instance->cudaTriElement);

@@ -57,9 +57,9 @@ public:
     std::vector<double3> vecVertPos;
     double3* cudaVertPos;
 
-    Eigen::MatrixX3d tetVel; // numPoints * 3
-    std::vector<double3> vectetVel;
-    double3* cudaTetVel;
+    Eigen::MatrixX3d vertVel; // numPoints * 3
+    std::vector<double3> vecVertVel;
+    double3* cudaVertVel;
 
     Eigen::VectorXd tetMass; // numPoints * 1
     double* cudaTetMass;
