@@ -6694,8 +6694,8 @@ void GIPC::computeXTilta(std::unique_ptr<GeometryManager>& instance, const doubl
 ///////////////////////////////////////////
 
 
-GIPC::GIPC(std::unique_ptr<GeometryManager>& geomanager) 
-    : instance(geomanager),
+GIPC::GIPC(std::unique_ptr<GeometryManager>& instance) 
+    : m_instance(instance),
     SceneSize(instance->AABB_SceneSize_ptr),
     bvh_f(instance->LBVH_F_ptr),
     bvh_e(instance->LBVH_E_ptr),

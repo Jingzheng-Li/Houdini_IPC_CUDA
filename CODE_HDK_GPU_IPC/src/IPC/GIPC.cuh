@@ -92,7 +92,7 @@ public:
 
 public:
 
-	std::unique_ptr<GeometryManager>& instance;
+	std::unique_ptr<GeometryManager>& m_instance;
 	std::unique_ptr<AABB>& SceneSize;
     std::unique_ptr<LBVH_F>& bvh_f;
     std::unique_ptr<LBVH_E>& bvh_e;
