@@ -1334,7 +1334,7 @@ void Solve_PCG_AX_B(const std::unique_ptr<GeometryManager>& instance, const doub
     int numbers = vertNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaTetMass, c, q, numbers);
+    __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaVertMass, c, q, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     numbers = BH->m_DNum[3];
     if (numbers > 0) {
@@ -1396,7 +1396,7 @@ void Solve_PCG_AX_B2(const std::unique_ptr<GeometryManager>& instance, const dou
     int numbers = vertNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaTetMass, c, q, numbers);
+    __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaVertMass, c, q, numbers);
 
     int offset4 = (BH->m_DNum[3] * 144 + threadNum - 1) / threadNum;
     int offset3 = (BH->m_DNum[2] * 81 + threadNum - 1) / threadNum;
@@ -1411,7 +1411,7 @@ void construct_P(const std::unique_ptr<GeometryManager>& instance, MATHUTILS::Ma
     int numbers = vertNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    __PCG_mass_P << <blockNum, threadNum >> > (instance->cudaTetMass, P, numbers);
+    __PCG_mass_P << <blockNum, threadNum >> > (instance->cudaVertMass, P, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     numbers = BH->m_DNum[3] * 12;
     if (numbers > 0) {
@@ -1435,7 +1435,7 @@ void construct_P(const std::unique_ptr<GeometryManager>& instance, MATHUTILS::Ma
     }
     blockNum = (vertNum + threadNum - 1) / threadNum;
     //__PCG_inverse_P << <blockNum, threadNum >> > (P, vertNum);
-    __PCG_init_P << <blockNum, threadNum >> > (instance->cudaTetMass, P, vertNum);
+    __PCG_init_P << <blockNum, threadNum >> > (instance->cudaVertMass, P, vertNum);
 }
 
 void construct_P2(
@@ -1447,11 +1447,11 @@ void construct_P2(
     int numbers = vertNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    __PCG_mass_P <<<blockNum, threadNum >>> (instance->cudaTetMass, pcg_data->m_P, numbers);
+    __PCG_mass_P <<<blockNum, threadNum >>> (instance->cudaVertMass, pcg_data->m_P, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     // Eigen::VectorXd tetmass(vertNum);
-    // CUDAMemcpyDToHSafe(tetmass, instance->cudaTetMass);
+    // CUDAMemcpyDToHSafe(tetmass, instance->cudaVertMass);
     // std::vector<MATHUTILS::Matrix3x3d> mpvec(vertNum);
     // cudaError_t err = cudaMemcpy(mpvec.data(), pcg_data->m_P, vertNum * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
     // for (int k = 0; k < 5; k++) {

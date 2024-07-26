@@ -6130,7 +6130,7 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
         //CUDA_SAFE_CALL(cudaMalloc((void**)&_GE, vertexNum * sizeof(double3)));
         CUDA_SAFE_CALL(cudaMemset(_gc, 0, vertexNum * sizeof(double3)));
         CUDA_SAFE_CALL(cudaMemset(_GE, 0, vertexNum * sizeof(double3)));
-        calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, _GE, instance->cudaTetMass, vertexNum);
+        calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, _GE, instance->cudaVertMass, vertexNum);
         calculate_fem_gradient(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, instance->cudaTetVolume,
             _GE, tetrahedraNum, lengthRate, volumeRate, IPC_dt);
         //calculate_triangle_fem_gradient(instance->triDmInverses, instance->cudaVertPos, instance->triangles, instance->area, _GE, triangleNum, stretchStiff, shearStiff, IPC_dt);
@@ -6158,7 +6158,7 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
 
 
 float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
-    calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, instance->cudaFb, instance->cudaTetMass, vertexNum);
+    calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, instance->cudaFb, instance->cudaVertMass, vertexNum);
     CUDA_SAFE_CALL(cudaMemset(_cpNum, 0, 5 * sizeof(uint32_t)));
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     //calBarrierHessian();
@@ -6243,7 +6243,7 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
     unsigned int sharedMsize = sizeof(double) * (threadNum >> 5);
     switch (type) {
     case 0:
-        _getKineticEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (instance->cudaVertPos, instance->cudaXTilta, queue, instance->cudaTetMass, numbers);
+        _getKineticEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (instance->cudaVertPos, instance->cudaXTilta, queue, instance->cudaVertMass, numbers);
         break;
     case 1:
         _getFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTetElement, instance->cudaDmInverses, instance->cudaTetVolume, numbers, lengthRate, volumeRate);

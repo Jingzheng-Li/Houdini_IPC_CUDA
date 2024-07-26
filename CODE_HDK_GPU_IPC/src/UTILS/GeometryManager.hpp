@@ -61,8 +61,8 @@ public:
     std::vector<double3> vecVertVel;
     double3* cudaVertVel;
 
-    Eigen::VectorXd tetMass; // numPoints * 1
-    double* cudaTetMass;
+    Eigen::VectorXd vertMass; // numPoints * 1
+    double* cudaVertMass;
 
     std::vector<MATHUTILS::Matrix3x3d> constraints;
     MATHUTILS::Matrix3x3d* cudaConstraints;

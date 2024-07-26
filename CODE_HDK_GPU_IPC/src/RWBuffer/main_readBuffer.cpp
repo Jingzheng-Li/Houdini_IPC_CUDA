@@ -93,7 +93,7 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	// position velocity mass
 	auto &tetpos = instance->vertPos;
 	auto &tetvel = instance->vertVel;
-	auto &tetmass = instance->tetMass;
+	auto &tetmass = instance->vertMass;
 	tetpos.resize(num_points, Eigen::NoChange);
 	tetvel.resize(num_points, Eigen::NoChange);
 	tetmass.resize(num_points);
@@ -140,10 +140,10 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 
 	CUDAMallocSafe(instance->cudaVertPos, num_points);
 	CUDAMallocSafe(instance->cudaVertVel, num_points);
-	CUDAMallocSafe(instance->cudaTetMass, num_points);
+	CUDAMallocSafe(instance->cudaVertMass, num_points);
 	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaVertPos);
 	CUDAMemcpyHToDSafe(instance->vertVel, instance->cudaVertVel);
-	CUDAMemcpyHToDSafe(instance->tetMass, instance->cudaTetMass);
+	CUDAMemcpyHToDSafe(instance->vertMass, instance->cudaVertMass);
 
 	CUDAMallocSafe(instance->cudaBoundaryType, num_points);
 	CUDAMemcpyHToDSafe(instance->boundaryTypies, instance->cudaBoundaryType);
@@ -351,7 +351,7 @@ void GAS_Read_Buffer::initSIMFEM() {
 	double sumMass = 0;
 	double sumVolume = 0;
 	for (int i = 0; i < instance->numVertices; i++) {
-		double mass = instance->tetMass[i];
+		double mass = instance->vertMass[i];
 		sumMass += mass;
 	}
 	for (int i = 0; i < instance->numElements; i++) {
