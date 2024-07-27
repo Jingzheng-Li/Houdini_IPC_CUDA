@@ -326,7 +326,9 @@ namespace MATHUTILS {
 	__device__ __host__ 
 	double __calculateArea(const double3* vertexes, const uint3& index);
 
-	void __getSurface(Eigen::VectorXi &surfVerts, Eigen::MatrixX3i &surfFaces, Eigen::MatrixX2i &surfEdges, Eigen::MatrixX3d &vertexes, Eigen::MatrixX4i &tetrahedras);
+	void __getTriSurface(Eigen::MatrixX3i& triElems, Eigen::MatrixX2i& tri_edges, Eigen::MatrixX2i& tri_edges_adj_points);
+
+	void __getTetSurface(Eigen::VectorXi &surfVerts, Eigen::MatrixX3i &surfFaces, Eigen::MatrixX2i &surfEdges, Eigen::MatrixX3d &vertexes, Eigen::MatrixX4i &tetrahedras);
 
 	template <typename TargetType, typename ScalarType, int Rows, int Cols>
 	std::vector<TargetType> __convertEigenToVector(const Eigen::Matrix<ScalarType, Rows, Cols>& matrix) {

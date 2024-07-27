@@ -45,7 +45,7 @@ public:
     double3 maxCorner;
 
     int numVertices;
-    int numElements;
+    int numTetElements;
     int numSurfVerts;
     int numSurfFaces;
     int numSurfEdges;
@@ -68,6 +68,11 @@ public:
     MATHUTILS::Matrix3x3d* cudaConstraints;
 
     std::vector<MATHUTILS::Matrix3x3d> DMInverse;
+    MATHUTILS::Matrix3x3d* cudaDmInverses;
+
+    std::vector<MATHUTILS::Matrix2x2d> TriDMInverse;
+    MATHUTILS::Matrix2x2d* cudaTriDmInverses;
+
 
     Eigen::MatrixX4i tetElement; // numTets * 4
     std::vector<uint4> vectetElement;
@@ -75,6 +80,11 @@ public:
 
     Eigen::VectorXd tetVolume; // numTets
     double* cudaTetVolume;
+    Eigen::VectorXd triArea; // numTris
+    double* cudaTriArea;
+
+    double meanMass;
+    double meanVolume;
 
     Eigen::VectorXi surfVert; // num SurfPoints
     uint32_t* cudaSurfVert;
@@ -86,6 +96,7 @@ public:
     uint2* cudaSurfEdge;
 
     Eigen::MatrixX3i triElement; // numTris * 3
+    std::vector<uint3> vectriElement;
     uint3* cudaTriElement;
 
     Eigen::MatrixX2i triEdges; //
@@ -94,9 +105,6 @@ public:
     Eigen::MatrixX2i triEdgeAdjVertex;
     uint2* cudaTriEdgeAdjVertex;
 
-
-    double meanMass;
-    double meanVolume;
 
     double3* cudaOriginTetPos;
     double3* cudaRestTetPos;
@@ -153,7 +161,6 @@ public:
 
     double* cudaTempDouble;
     double3* cudaTempDouble3Mem;
-    MATHUTILS::Matrix3x3d* cudaDmInverses;
     MATHUTILS::Matrix3x3d* cudaTempMat3x3;
 
     Eigen::VectorXi boundaryTypies;
@@ -180,8 +187,6 @@ public:
     uint32_t softNum;
     double3* cudaTargetVert;
     uint32_t* cudaTargetIndex;
-    MATHUTILS::Matrix2x2d* cudaTriDmInverses;
-    double* cudaTriArea;
 
 };
 

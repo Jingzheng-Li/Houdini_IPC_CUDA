@@ -185,6 +185,9 @@ namespace FEMENERGY {
         double2 u0 = MATHUTILS::__minus_v2(uv1, uv0);
         double2 u1 = MATHUTILS::__minus_v2(uv2, uv0);
 
+        printf("%d, %d \n", u0.x, u0.y);
+        printf("%d, %d \n", u1.x, u1.y);
+
         MATHUTILS::__set_Mat2x2_val_column(M, u0, u1);
     }
 

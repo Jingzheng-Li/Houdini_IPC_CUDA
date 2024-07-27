@@ -10,6 +10,8 @@
 #include <vector>
 #include <set>
 #include <iostream>
+#include <map>
+// #include <utility>
 
 
 namespace MATHUTILS {
@@ -1557,7 +1559,81 @@ namespace MATHUTILS {
 		return 0.5 * area;
 	}
 
-	void __getSurface(Eigen::VectorXi &surfVerts, Eigen::MatrixX3i &surfFaces, Eigen::MatrixX2i &surfEdges, Eigen::MatrixX3d &vertexes, Eigen::MatrixX4i &tetrahedras) {
+
+	void __getTriSurface(Eigen::MatrixX3i& triElems, Eigen::MatrixX2i& tri_edges, Eigen::MatrixX2i& tri_edges_adj_points) {
+		std::set<std::pair<int, int>> edge_set;
+		std::map<std::pair<int, int>, std::vector<int>> edge_map;
+		std::vector<Eigen::Vector2i> my_edges;
+
+		for (int i = 0; i < triElems.rows(); i++) {
+			auto tri = triElems.row(i);
+			auto x = tri.x();
+			auto y = tri.y();
+			auto z = tri.z();
+
+			if (x < y) {
+				edge_set.insert(std::make_pair(x, y));
+				edge_map[std::make_pair(x, y)].emplace_back(z);
+			}
+			else {
+				edge_set.insert(std::make_pair(y, x));
+				edge_map[std::make_pair(y, x)].emplace_back(z);
+			}
+
+			if (y < z) {
+				edge_set.insert(std::make_pair(y, z));
+				edge_map[std::make_pair(y, z)].emplace_back(x);
+			}
+			else {
+				edge_set.insert(std::make_pair(z, y));
+				edge_map[std::make_pair(z, y)].emplace_back(x);
+			}
+
+			if (x < z) {
+				edge_set.insert(std::make_pair(x, z));
+				edge_map[std::make_pair(x, z)].emplace_back(y);
+			}
+			else {
+				edge_set.insert(std::make_pair(z, x));
+				edge_map[std::make_pair(z, x)].emplace_back(y);
+			}
+		}
+
+		std::vector<std::vector<int>> temp_edges_adj_points;
+		for (auto p : edge_set) {
+			if (edge_map[p].size() != 2)continue;
+			my_edges.emplace_back(p.first, p.second);
+			temp_edges_adj_points.emplace_back(edge_map[std::make_pair(p.first, p.second)]);
+		}
+
+		tri_edges.resize(my_edges.size(), Eigen::NoChange);
+		tri_edges_adj_points.resize(temp_edges_adj_points.size(), Eigen::NoChange);
+		
+		for (int i = 0; i < my_edges.size(); i++) {
+			tri_edges(i, 0) = my_edges[i].x();
+			tri_edges(i, 1) = my_edges[i].y();
+			if (temp_edges_adj_points[i].size() == 2) {
+				tri_edges_adj_points(i, 0) = temp_edges_adj_points[i][0];
+				tri_edges_adj_points(i, 1) = temp_edges_adj_points[i][1];
+			} else {
+				tri_edges_adj_points(i, 0) = temp_edges_adj_points[i][0];
+				tri_edges_adj_points(i, 1) = -1;
+			}
+		}
+		
+		// for (int i = 0; i < temp_edges_adj_points.size(); i++) {
+		// 	tri_edges.emplace_back(make_uint2(my_edges[i].x(), my_edges[i].y()));
+		// 	if (temp_edges_adj_points[i].size() == 2)
+		// 		tri_edges_adj_points.emplace_back(make_uint2(temp_edges_adj_points[i][0], temp_edges_adj_points[i][1]));
+		// 	else
+		// 		tri_edges_adj_points.emplace_back(make_uint2(temp_edges_adj_points[i][0], -1));
+		// }
+
+	}
+
+
+
+	void __getTetSurface(Eigen::VectorXi &surfVerts, Eigen::MatrixX3i &surfFaces, Eigen::MatrixX2i &surfEdges, Eigen::MatrixX3d &vertexes, Eigen::MatrixX4i &tetrahedras) {
 		uint64_t length = vertexes.rows();
 		uint64_t tetrahedraNum = tetrahedras.rows();
 		std::vector<uint32_t> surfId2TetId;

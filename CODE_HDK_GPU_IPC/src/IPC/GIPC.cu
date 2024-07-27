@@ -6746,7 +6746,7 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     surf_edgeNum = instance->numSurfEdges;
     tri_edge_num = instance->triEdges.rows();
     surf_faceNum = instance->numSurfFaces;
-    tetrahedraNum = instance->numElements;
+    tetrahedraNum = instance->numTetElements;
 
     MAX_COLLITION_PAIRS_NUM = instance->MAX_COLLITION_PAIRS_NUM;
     MAX_CCD_COLLITION_PAIRS_NUM = instance->MAX_CCD_COLLITION_PAIRS_NUM;
