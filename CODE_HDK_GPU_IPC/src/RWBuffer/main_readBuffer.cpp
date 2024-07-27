@@ -438,16 +438,6 @@ void GAS_Read_Buffer::initSIMFEM() {
 		MATHUTILS::Matrix2x2d DM;
 		MATHUTILS::Matrix2x2d DM_inverse;
 		FEMENERGY::__calculateDm2D_double(instance->vecVertPos.data(), instance->vectriElement[i], DM);
-
-		std::cout << "vecvertpos: " << instance->vecVertPos[i].x << std::endl;
-		std::cout << "vectriElement: " << instance->vectriElement[i].x << std::endl;
-
-		std::cout << "DMLocal: " << DM.m[0][0] << " "
-								<< DM.m[0][1] << " "
-								<< DM.m[1][0] << " "
-								<< DM.m[1][1] << std::endl;
-		
-		
 		MATHUTILS::__Inverse2x2(DM, DM_inverse);
 		instance->TriDMInverse.push_back(DM_inverse);
 	}

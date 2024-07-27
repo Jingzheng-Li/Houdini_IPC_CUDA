@@ -159,11 +159,18 @@ namespace FEMENERGY {
         double3 v01 = MATHUTILS::__minus(vertexes[index.y], vertexes[index.x]);
         double3 v02 = MATHUTILS::__minus(vertexes[index.z], vertexes[index.x]);
         double3 normal = MATHUTILS::__normalized(MATHUTILS::__v_vec_cross(v01, v02));
+
+        // printf("index: x=%u, y=%u, z=%u\n", index.x, index.y, index.z);
+        // printf("v01.x = %f, v02.x = %f, normal.x = %f\n", v01.x, v02.x, normal.x);
+
+
         double3 target; target.x = 0; target.y = 0; target.z = 1;
         double3 vec = MATHUTILS::__v_vec_cross(normal, target);
         double cos = MATHUTILS::__v_vec_dot(normal, target);
         MATHUTILS::Matrix3x3d rotation;
         MATHUTILS::__set_Mat_val(rotation, 1, 0, 0, 0, 1, 0, 0, 0, 1);
+
+        // printf("%f~~~~~\n", cos);
 
         if (cos + 1 == 0) {
             rotation.m[0][0] = -1; rotation.m[1][1] = -1;
@@ -185,8 +192,8 @@ namespace FEMENERGY {
         double2 u0 = MATHUTILS::__minus_v2(uv1, uv0);
         double2 u1 = MATHUTILS::__minus_v2(uv2, uv0);
 
-        printf("%d, %d \n", u0.x, u0.y);
-        printf("%d, %d \n", u1.x, u1.y);
+        // printf("%d, %d \n", u0.x, u0.y);
+        // printf("%d, %d \n", u1.x, u1.y);
 
         MATHUTILS::__set_Mat2x2_val_column(M, u0, u1);
     }
