@@ -1460,7 +1460,7 @@ namespace FEMENERGY {
         int numbers = instance->numVertices;
         const unsigned int threadNum = default_threads;
         int blockNum = (numbers + threadNum - 1) / threadNum;//
-        _computeXTilta << <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginTetPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
+        _computeXTilta << <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
     }
 
 

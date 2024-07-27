@@ -152,10 +152,10 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMallocSafe(instance->cudaBoundaryType, num_points);
 	CUDAMemcpyHToDSafe(instance->boundaryTypies, instance->cudaBoundaryType);
 
-	CUDAMallocSafe(instance->cudaOriginTetPos, num_points);
-	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaOriginTetPos);
-	CUDAMallocSafe(instance->cudaRestTetPos, num_points);
-	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaRestTetPos);
+	CUDAMallocSafe(instance->cudaOriginVertPos, num_points);
+	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaOriginVertPos);
+	CUDAMallocSafe(instance->cudaRestVertPos, num_points);
+	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaRestVertPos);
 
 	CUDAMallocSafe(instance->cudaConstraints, num_points);
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->constraints.data(), num_points * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
@@ -256,6 +256,8 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	Eigen::MatrixX2i &surfedges = instance->surfEdge;
 	MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement);
 
+	CUDAMallocSafe(instance->cudaDmInverses, instance->numTetElements);
+
 	CUDAMallocSafe(instance->cudaSurfVert, surfverts.rows());
 	CUDAMallocSafe(instance->cudaSurfFace, surffaces.rows());
 	CUDAMallocSafe(instance->cudaSurfEdge, surfedges.rows());
@@ -263,8 +265,9 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMemcpyHToDSafe(instance->surfFace, instance->cudaSurfFace);
 	CUDAMemcpyHToDSafe(instance->surfEdge, instance->cudaSurfEdge);
 	instance->numSurfVerts = surfverts.rows();
-	instance->numSurfEdges = surfedges.rows();
 	instance->numSurfFaces = surffaces.rows();
+	instance->numSurfEdges = surfedges.rows();
+
 
 	MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex);
 	instance->numTriEdges = instance->triEdges.rows();
@@ -298,7 +301,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaMortonCodeHash, maxNumbers);
 	CUDAMallocSafe(instance->cudaSortIndex, maxNumbers);
 	CUDAMallocSafe(instance->cudaSortMapVertIndex, numVerts);
-	CUDAMallocSafe(instance->cudaDmInverses, numTetElems);
 	
 	CUDAMallocSafe(instance->cudaTempBoundaryType, numVerts);
 	CUDAMallocSafe(instance->cudaTempDouble, maxNumbers);
@@ -354,6 +356,13 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
 	std::cout << "numTriEdges~~" << instance->triEdges.rows() << std::endl;
 	std::cout << "masslast~~" << instance->vertMass.row(numVerts-1) << std::endl;
+	std::cout << "min coner~~" << instance->minCorner.x << " " 
+								<< instance->minCorner.y << " " 
+								<< instance->minCorner.z << " " << std::endl;
+	std::cout << "max coner~~" << instance->maxCorner.x << " " 
+								<< instance->maxCorner.y << " " 
+								<< instance->maxCorner.z << " " << std::endl;
+
 
 }
 
@@ -463,7 +472,7 @@ void GAS_Read_Buffer::initSIMBVH() {
 	instance->LBVH_E_ptr->init(
 		instance->cudaBoundaryType,
 		instance->cudaVertPos,
-		instance->cudaRestTetPos,
+		instance->cudaRestVertPos,
 		instance->cudaSurfEdge,
 		instance->cudaCollisionPairs,
 		instance->cudaCCDCollisionPairs,
@@ -510,7 +519,7 @@ void GAS_Read_Buffer::initSIMIPC() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
-	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestTetPos, instance->cudaOriginTetPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
+	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestVertPos, instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
 
 	if (!instance->AABB_SceneSize_ptr) {
 		instance->AABB_SceneSize_ptr = std::make_unique<AABB>();

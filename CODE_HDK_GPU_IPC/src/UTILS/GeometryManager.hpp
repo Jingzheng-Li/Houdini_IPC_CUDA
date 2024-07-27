@@ -106,8 +106,8 @@ public:
     uint2* cudaTriEdgeAdjVertex;
 
 
-    double3* cudaOriginTetPos;
-    double3* cudaRestTetPos;
+    double3* cudaOriginVertPos;
+    double3* cudaRestVertPos;
 
     int* cudaMatIndex;
 

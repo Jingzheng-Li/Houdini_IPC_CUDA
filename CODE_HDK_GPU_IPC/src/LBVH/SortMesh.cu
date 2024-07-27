@@ -247,10 +247,10 @@ void sortGeometry(std::unique_ptr<GeometryManager>& instance, const AABB* _MaxBv
 	thrust::sequence(thrust::device_ptr<uint32_t>(instance->cudaSortIndex), thrust::device_ptr<uint32_t>(instance->cudaSortIndex) + vertex_num);
     thrust::sort_by_key(thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash), thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash) + vertex_num, thrust::device_ptr<uint32_t>(instance->cudaSortIndex));
 
-    updateVertexes(instance->cudaOriginTetPos, instance->cudaVertPos, instance->cudaTempDouble, instance->cudaVertMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraints, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
+    updateVertexes(instance->cudaOriginVertPos, instance->cudaVertPos, instance->cudaTempDouble, instance->cudaVertMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraints, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
 	
 
-    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertPos, instance->cudaOriginTetPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertPos, instance->cudaOriginVertPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertMass, instance->cudaTempDouble, vertex_num * sizeof(double), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->cudaTempMat3x3, vertex_num * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaBoundaryType, instance->cudaTempBoundaryType, vertex_num * sizeof(int), cudaMemcpyDeviceToDevice));

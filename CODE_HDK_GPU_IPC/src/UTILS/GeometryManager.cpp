@@ -21,8 +21,8 @@ GeometryManager::GeometryManager() :
     cudaBoundaryType(nullptr),
     cudaTempBoundaryType(nullptr),
     cudaConstraints(nullptr),
-    cudaRestTetPos(nullptr),
-    cudaOriginTetPos(nullptr),
+    cudaRestVertPos(nullptr),
+    cudaOriginVertPos(nullptr),
     cudaCollisionPairs(nullptr),
     cudaCCDCollisionPairs(nullptr),
     cudaEnvCollisionPairs(nullptr),
@@ -74,8 +74,8 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaSurfFace);
     CUDAFreeSafe(instance->cudaSurfEdge);
     CUDAFreeSafe(instance->cudaConstraints);
-    CUDAFreeSafe(instance->cudaRestTetPos);
-    CUDAFreeSafe(instance->cudaOriginTetPos);
+    CUDAFreeSafe(instance->cudaRestVertPos);
+    CUDAFreeSafe(instance->cudaOriginVertPos);
     CUDAFreeSafe(instance->cudaCollisionPairs);
     CUDAFreeSafe(instance->cudaCCDCollisionPairs);
     CUDAFreeSafe(instance->cudaEnvCollisionPairs);
