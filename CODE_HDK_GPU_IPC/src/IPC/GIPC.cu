@@ -22,32 +22,6 @@
 #define OLDBARRIER2
 
 
-void debugtestprintH12x12 (std::unique_ptr<BHessian>& BH) {
-
-    std::vector<MATHUTILS::Matrix12x12d> mh12(3);
-    std::vector<MATHUTILS::Matrix9x9d> mh9(3);
-    std::vector<MATHUTILS::Matrix6x6d> mh6(3);
-    std::vector<MATHUTILS::Matrix3x3d> mh3(3);
-    std::vector<uint4> md4(3);
-    std::vector<uint3> md3(3);
-    std::vector<uint2> md2(3);
-    std::vector<uint32_t> md1(3);
-    cudaError_t err = cudaMemcpy(mh12.data(), BH->m_H12x12, 3 * sizeof(MATHUTILS::Matrix12x12d), cudaMemcpyDeviceToHost);
-    err = cudaMemcpy(mh9.data(), BH->m_H9x9, 3 * sizeof(MATHUTILS::Matrix9x9d), cudaMemcpyDeviceToHost);
-    err = cudaMemcpy(mh6.data(), BH->m_H6x6, 3 * sizeof(MATHUTILS::Matrix6x6d), cudaMemcpyDeviceToHost);
-    err = cudaMemcpy(mh3.data(), BH->m_H3x3, 3 * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
-    std::cout << "m3m6m9m12 begin~~~~~~~" << std::endl;
-    for (int k = 0; k < 3; k++) {
-        std::cout << mh12[k].m[0][0] << " " << mh12[k].m[2][2] << std::endl;
-        std::cout << mh9[k].m[0][0] << " " << mh9[k].m[2][2] << std::endl;
-        std::cout << mh6[k].m[0][0] << " " << mh6[k].m[2][2] << std::endl;
-        std::cout << mh3[k].m[0][0] << " " << mh3[k].m[2][2] << std::endl;
-    }
-    std::cout << "m3m6m9m12 end~~~~~~~" << std::endl;
-
-    
-}
-
 
 __global__
 void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {
@@ -5451,8 +5425,6 @@ void GIPC::GroundCollisionDetect() {
 
 
 void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
-
-    // std::cout << "numbers_softNum~~~" << softNum << std::endl;
     
     int numbers = softNum;
     if (numbers < 1) {
@@ -5560,9 +5532,6 @@ void GIPC::computeSoftConstraintGradient(double3* _gradient) {
         softMotionRate, 
         animation_fullRate, 
         softNum);
-
-    std::cout << "softMotionRate~~~~" << softMotionRate << std::endl;
-    std::cout << "animationfullRage~~~~" << animation_fullRate << std::endl;
 }
 
 double GIPC::self_largestFeasibleStepSize(double slackness, double* mqueue, int numbers) {
@@ -6085,22 +6054,12 @@ void GIPC::suggestKappa(double& kappa) {
     //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(bvh_f->scene.upper, bvh_f->scene.lower));
     compute_H_b(1.0e-16 * bboxDiagSize2, dHat, H_b);
 
-    std::cout << "bboxDiagSize2: " << bboxDiagSize2 << std::endl;
-    std::cout << "dHat: " << dHat << std::endl;
-
     if (meanMass == 0.0) {
         kappa = minKappaCoef / (4.0e-16 * bboxDiagSize2 * H_b);
     }
     else {
-        std::cout << "minKappaCoef: " << minKappaCoef << std::endl;
-        std::cout << "meanMass: " << meanMass << std::endl;
         kappa = minKappaCoef * meanMass / (4.0e-16 * bboxDiagSize2 * H_b);
     }
-
-    printf("bboxDiagSize2: %f\n", bboxDiagSize2);
-    printf("H_b: %f\n", H_b);
-    printf("sug Kappa: %f\n", kappa);
-
 }
 
 void GIPC::upperBoundKappa(double& kappa)
@@ -6540,16 +6499,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         cudaEventCreate(&end3);
         cudaEventCreate(&end4);
 
-        std::cout << "maxCOllisionPairNum~~~" << totalCollisionPairs << " " << maxCOllisionPairNum << std::endl;
-
-
         BH->updateDNum(triangleNum, tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, tri_edge_num);
-
-        std::cout << "triangleNum: " << triangleNum << std::endl;
-        std::cout << "tetrahedraNum: " << tetrahedraNum << std::endl;
-        std::cout << "h_cpNum: " << h_cpNum[0] << std::endl;
-        std::cout << "h_cpNum_last: " << h_cpNum_last[0] << std::endl;
-        std::cout << "tri_edge_num: " << tri_edge_num << std::endl;
 
         //printf("collision num  %d\n", h_cpNum[0]);
 
@@ -6560,7 +6510,6 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
 
 
         double distToOpt_PN = calcMinMovement(_moveDir, pcg_data->m_squeue, vertexNum);
-        std::cout << "distToOpt_PN: " << distToOpt_PN << std::endl;
 
         bool gradVanish = (distToOpt_PN < sqrt(Newton_solver_threshold * Newton_solver_threshold * bboxDiagSize2 * IPC_dt * IPC_dt));
         if (k && gradVanish) {
@@ -6568,13 +6517,6 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         }
         cudaEventRecord(end0);
         total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], pcg_data->m_P_type);
-
-        std::cout << "gradVanish: " << gradVanish << std::endl;
-        std::cout << "Newton_solver_threshold: " << Newton_solver_threshold << std::endl;
-        std::cout << "IPC_dt: " << IPC_dt << std::endl;
-        std::cout << "total_Cg_count: " << total_Cg_count << std::endl;
-        std::cout << "m_P_type: " << pcg_data->m_P_type << std::endl;
-
 
         cudaEventRecord(end1);
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
@@ -6584,8 +6526,6 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, pcg_data->m_squeue, h_cpNum[0]));
         double temp_alpha = alpha;
         double alpha_CFL = alpha;
-
-        std::cout << "alpha1: " << alpha << std::endl;
 
         double ccd_size = 1.0;
 #ifdef USE_FRICTION
@@ -6604,9 +6544,6 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
                 alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
             }
         }
-
-        std::cout << "alpha2: " << alpha << std::endl;
-
 
         cudaEventRecord(end2);
         //printf("alpha:  %f\n", alpha);
@@ -6712,9 +6649,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     _edges = instance->cudaSurfEdge;
     _surfVerts = instance->cudaSurfVert;
 
-    std::cout << "Address of instance->cudaVertPos: " << instance->cudaVertPos << std::endl;
-    std::cout << "Address of _vertexes: " << _vertexes << std::endl;
-
 
     _targetVert = instance->cudaTargetVert;
     _targetInd = instance->cudaTargetIndex;
@@ -6729,7 +6663,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     _close_gpNum = instance->cudaCloseGPNum;
     _groundNormal = instance->cudaGroundNormal;
     _groundOffset = instance->cudaGroundOffset;
-
 
 
     IPCKappa = instance->Kappa;
@@ -6806,8 +6739,6 @@ bool isRotate = false;
 
 void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
-    std::cout << "IPCSolver~~~~" << std::endl;
-
     CHECK_ERROR(instance, "not initialize instance");
     CHECK_ERROR(SceneSize, "not initialize SceneSize");
     CHECK_ERROR(bvh_f, "not initialize bvh_f");
@@ -6826,12 +6757,6 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 //        isRotate = false;
 //        updateBoundary2(TetMesh);
 //    }
-
-    if (isRotate) {
-        std::cout << "isRotate~~~~~~~~~" << std::endl;
-    } else {
-        std::cout << "not isRotate~~~~~~~~~" << std::endl;
-    }
 
 
     // if (isRotate)
@@ -6866,91 +6791,11 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
     // }
 
 
-    // std::cout << "bendStiff~~" << bendStiff << std::endl;
-    // std::cout << "density~~" << density << std::endl;
-    // std::cout << "YoungModulus~~" << YoungModulus << std::endl;
-    // std::cout << "PoissonRate~~" << PoissonRate << std::endl;
-    // std::cout << "lengthRateLame~~" << lengthRateLame << std::endl;
-    // std::cout << "volumeRateLame~~" << volumeRateLame << std::endl;
-    // std::cout << "lengthRate~~" << lengthRate << std::endl;
-    // std::cout << "volumeRate~~" << volumeRate << std::endl;
-    // std::cout << "frictionRate~~" << frictionRate << std::endl;
-    // std::cout << "clothThickness~~" << clothThickness << std::endl;
-    // std::cout << "clothYoungModulus~~" << clothYoungModulus << std::endl;
-    // std::cout << "stretchStiff~~" << stretchStiff << std::endl;
-    // std::cout << "shearStiff~~" << shearStiff << std::endl;
-    // std::cout << "clothDensity~~" << clothDensity << std::endl;
-    // std::cout << "softMotionRate~~" << softMotionRate << std::endl;
-    // std::cout << "Newton_solver_threshold~~" << Newton_solver_threshold << std::endl;
-    // std::cout << "pcg_threshold~~" << pcg_threshold << std::endl;
-
-    // std::cout << "IPCKappa~~~" << IPCKappa << std::endl; 
-    // std::cout << "dHat~~~" << dHat << std::endl; 
-    // std::cout << "fDhat~~~" << fDhat << std::endl; 
-    // std::cout << "bboxDiagSize2~~~" << bboxDiagSize2 << std::endl; 
-    // std::cout << "relative_dhat~~~" << relative_dhat << std::endl; 
-    // std::cout << "dTol~~~" << dTol << std::endl; 
-    // std::cout << "minKappaCoef~~~" << minKappaCoef << std::endl; 
-    // std::cout << "IPC_dt~~~" << IPC_dt << std::endl; 
-    // std::cout << "meanMass~~~" << meanMass << std::endl; 
-    // std::cout << "meanVolumn~~~" << meanVolumn << std::endl; 
-    // std::cout << "softNum~~~" << softNum << std::endl; 
-    // std::cout << "triangleNum~~~" << triangleNum << std::endl; 
-    // std::cout << "vertexNum~~~" << vertexNum << std::endl; 
-    // std::cout << "surf_vertexNum~~~" << surf_vertexNum << std::endl; 
-    // std::cout << "surf_edgeNum~~~" << surf_edgeNum << std::endl; 
-    // std::cout << "tri_edge_num~~~" << tri_edge_num << std::endl; 
-    // std::cout << "surf_faceNum~~~" << surf_faceNum << std::endl; 
-    // std::cout << "tetrahedraNum~~~" << tetrahedraNum << std::endl; 
-    // std::cout << "MAX_COLLITION_PAIRS_NUM~~~" << MAX_COLLITION_PAIRS_NUM << std::endl; 
-    // std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~~~" << MAX_CCD_COLLITION_PAIRS_NUM << std::endl; 
-    // std::cout << "animation_subRate~~~" << animation_subRate << std::endl; 
-    // std::cout << "animation_fullRate~~~" << animation_fullRate << std::endl; 
-
-
-    // Eigen::MatrixX3d vertexes;
-    // vertexes.resize(vertexNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(vertexes, _vertexes);
-    // Eigen::MatrixX3d rest_vertexes;
-    // rest_vertexes.resize(vertexNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(rest_vertexes, _rest_vertexes);
-    // Eigen::MatrixX3i faces;
-    // faces.resize(surf_faceNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(faces, _faces);
-    // Eigen::MatrixX2i edges;
-    // edges.resize(surf_edgeNum, Eigen::NoChange);
-    // CUDAMemcpyDToHSafe(edges, _edges);
-    // Eigen::VectorXi surfVerts;
-    // surfVerts.resize(surf_vertexNum);
-    // CUDAMemcpyDToHSafe(surfVerts, _surfVerts);
-    // for(int i = 0; i < 10; i++) {
-    //     std::cout << "vertexes~~" << vertexes.row(i) << std::endl;
-    //     std::cout << "rest_vertexes~~" << rest_vertexes.row(i) << std::endl;
-    //     std::cout << "faces~~" << faces.row(i) << std::endl;
-    //     std::cout << "edges~~" << edges.row(i) << std::endl;
-    //     std::cout << "surfVerts~~" << surfVerts.row(i) << std::endl;
-    // }
-
-
-
-
-
-
-
-
-
-
-
-
-    std::cout << "Kappa~~~~~~1: " << IPCKappa << std::endl;
     upperBoundKappa(IPCKappa);
-    std::cout << "Kappa~~~~~~2: " << IPCKappa << std::endl;
     if (IPCKappa < 1e-16) {
         suggestKappa(IPCKappa);
-        std::cout << "Kappa~~~~~~3: " << IPCKappa << std::endl;
     }
     initKappa(instance);
-    std::cout << "Kappa~~~~~~: 4: " << IPCKappa << std::endl;
 
 
 
@@ -6980,29 +6825,7 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
         CUDA_SAFE_CALL(cudaMemset(_close_cpNum, 0, sizeof(uint32_t)));
         CUDA_SAFE_CALL(cudaMemset(_close_gpNum, 0, sizeof(uint32_t)));
 
-
-
-
-
-
-
-
-        // std::cout << " can arrive here1~~~ " << std::endl;
-
-
         totalNT += solve_subIP(instance, time0, time1, time2, time3, time4);
-
-        // std::cout << " can arrive here2~~~ " << std::endl;
-        // std::cout << "debugtestprint~~~~~~~!!~~~~~" << std::endl;
-        // debugtestprintH12x12(BH);
-
-
-
-
-
-
-
-
 
         double2 minMaxDist1 = minMaxGroundDist();
         double2 minMaxDist2 = minMaxSelfDist();
@@ -7011,8 +6834,6 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
         double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
         
         bool finishMotion = animation_fullRate > 0.99 ? true : false;
-        std::cout << "minDist:  " << minDist << "       maxDist:  " << maxDist << std::endl;
-        std::cout << "dTol:  " << dTol << "       1e-6 * bboxDiagSize2:  " << 1e-6 * bboxDiagSize2 << std::endl;
 
         if (finishMotion) {
             if ((h_cpNum[0] + h_gpNum) > 0) {
@@ -7064,14 +6885,6 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
     }
 
 
-
-
-
-
-
-
-
-
 #ifdef USE_FRICTION
     CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
     CUDA_SAFE_CALL(cudaFree(distCoord));
@@ -7119,7 +6932,6 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
     outTime << "maxCOllisionPairNum: " << maxCOllisionPairNum << std::endl;
     outTime << "totalCgTime: " << total_Cg_count << std::endl;
     outTime.close();
-
 
 }
 

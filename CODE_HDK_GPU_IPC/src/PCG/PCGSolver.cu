@@ -1450,26 +1450,8 @@ void construct_P2(
     __PCG_mass_P <<<blockNum, threadNum >>> (instance->cudaVertMass, pcg_data->m_P, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-    // Eigen::VectorXd tetmass(vertNum);
-    // CUDAMemcpyDToHSafe(tetmass, instance->cudaVertMass);
-    // std::vector<MATHUTILS::Matrix3x3d> mpvec(vertNum);
-    // cudaError_t err = cudaMemcpy(mpvec.data(), pcg_data->m_P, vertNum * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
-    // for (int k = 0; k < 5; k++) {
-    //     std::cout << "masses before1: " << tetmass.row(k) << std::endl;
-    //     for (int i = 0; i < 3; ++i) {
-    //         for (int j = 0; j < 3; ++j) {
-    //             std::cout << "mpvec before1: "<< mpvec[k].m[i][j] << " ";
-    //         }
-    //     }
-    //     std::cout << std::endl;
-    // }
-
-
-
     numbers = BH->m_DNum[3] * 12 + BH->m_DNum[2] * 9 + BH->m_DNum[1] * 6 + BH->m_DNum[0] * 3;
     blockNum = (numbers + threadNum - 1) / threadNum;
-
-    std::cout << "BH_numbers: " << numbers << std::endl;
 
     __PCG_AXALL_P <<<blockNum, threadNum>>> (
         BH->m_H12x12, 
@@ -1485,55 +1467,6 @@ void construct_P2(
         BH->m_DNum[2] * 9, 
         BH->m_DNum[1] * 6, 
         BH->m_DNum[0] * 3);
-
-    
-
-
-
-    std::cout << "BH_m_DNum begin~~" << std::endl;
-    std::cout << BH->m_DNum[3] << std::endl;
-    std::cout << BH->m_DNum[2] << std::endl;
-    std::cout << BH->m_DNum[1] << std::endl;
-    std::cout << BH->m_DNum[0] << std::endl;
-    std::cout << "BH_m_DNum end~~" << std::endl;
-
-    // std::vector<MATHUTILS::Matrix12x12d> mh12(3);
-    // std::vector<MATHUTILS::Matrix9x9d> mh9(3);
-    // std::vector<MATHUTILS::Matrix6x6d> mh6(3);
-    // std::vector<MATHUTILS::Matrix3x3d> mh3(3);
-    // std::vector<uint4> md4(3);
-    // std::vector<uint3> md3(3);
-    // std::vector<uint2> md2(3);
-    // std::vector<uint32_t> md1(3);
-    // cudaError_t err = cudaMemcpy(mh12.data(), BH->m_H12x12, 3 * sizeof(MATHUTILS::Matrix12x12d), cudaMemcpyDeviceToHost);
-    // err = cudaMemcpy(mh9.data(), BH->m_H9x9, 3 * sizeof(MATHUTILS::Matrix9x9d), cudaMemcpyDeviceToHost);
-    // err = cudaMemcpy(mh6.data(), BH->m_H6x6, 3 * sizeof(MATHUTILS::Matrix6x6d), cudaMemcpyDeviceToHost);
-    // err = cudaMemcpy(mh3.data(), BH->m_H3x3, 3 * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
-    // std::cout << "m3m6m9m12 begin~~~~~~~" << std::endl;
-    // for (int k = 0; k < 3; k++) {
-    //     std::cout << mh12[k].m[0][0] << " " << mh12[k].m[2][2] << std::endl;
-    //     std::cout << mh9[k].m[0][0] << " " << mh9[k].m[2][2] << std::endl;
-    //     std::cout << mh6[k].m[0][0] << " " << mh6[k].m[2][2] << std::endl;
-    //     std::cout << mh3[k].m[0][0] << " " << mh3[k].m[2][2] << std::endl;
-    // }
-    // std::cout << "m3m6m9m12 end~~~~~~~" << std::endl;
-
-
-
-    // std::vector<MATHUTILS::Matrix3x3d> mpvec(vertNum);
-    // cudaError_t err = cudaMemcpy(mpvec.data(), pcg_data->m_P, vertNum * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
-    // for (int k = 0; k < 5; k++) {
-    //     for (int i = 0; i < 3; ++i) {
-    //         for (int j = 0; j < 3; ++j) {
-    //             std::cout << "mpvec before~: "<< mpvec[k].m[i][j] << " ";
-    //         }
-    //     }
-    //     std::cout << std::endl;
-    // }
-
-
-
-
 
     blockNum = (vertNum + threadNum - 1) / threadNum;
     __PCG_inverse_P << <blockNum, threadNum >> > (pcg_data->m_P, vertNum);

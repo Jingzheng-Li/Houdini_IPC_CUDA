@@ -134,6 +134,8 @@ public:
 
     double IPC_dt;
 
+    int collision_detection_buff_scale;
+
     double density;
     double YoungModulus;
     double PoissonRate;

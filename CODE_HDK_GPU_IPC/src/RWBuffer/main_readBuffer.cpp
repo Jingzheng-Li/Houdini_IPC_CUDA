@@ -10,8 +10,6 @@
 
 namespace FIRSTFRAME {
 	static bool hou_initialized = false;
-	static int collision_detection_buff_scale = 1;
-
 };
 
 const SIM_DopDescription* GAS_Read_Buffer::getDopDescription() {
@@ -310,8 +308,8 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaTempMat3x3, maxNumbers);
 
 	instance->IPC_dt = 0.01;
-	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * FIRSTFRAME::collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
-	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * FIRSTFRAME::collision_detection_buff_scale;
+	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * instance->collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
+	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * instance->collision_detection_buff_scale;
 
 	CHECK_ERROR(instance->MAX_CCD_COLLITION_PAIRS_NUM > 0, "MAX_CCD_COLLITION_PAIRS_NUM is 0, this is incorrect");
 	CHECK_ERROR(instance->MAX_COLLITION_PAIRS_NUM > 0, "MAX_COLLITION_PAIRS_NUM is 0, this is incorrect");
@@ -404,6 +402,7 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->shearStiff = 0.03 * instance->stretchStiff;
 
 	instance->animation = false;
+	instance->collision_detection_buff_scale = 1;
 	
 }
 
