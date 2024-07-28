@@ -65,12 +65,13 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		}
 		CHECK_ERROR_SOLVER(instance, "geometry instance not initialize");
 
+		loadSIMParams();
+
 		transferPTAttribTOCUDA(geo, gdp);
 		transferPRIMAttribTOCUDA(geo, gdp);
 		transferDTAttribTOCUDA(geo, gdp);
 		transferOtherTOCUDA();
 
-		loadSIMParams();
 		initSIMFEM();
 		initSIMBVH();
 		buildSIMBVH();
@@ -225,6 +226,7 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 	CUDAMallocSafe(instance->cudaTriElement, numTris);
 	CUDAMemcpyHToDSafe(triEle, instance->cudaTriElement);
 
+
 	instance->tetVolume.resize(numTets);
 	instance->triArea.resize(numTris);
 	instance->vectetElement = MATHUTILS::__convertEigenToUintVector<uint4>(tetEle);
@@ -295,8 +297,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferOtherTOCUDA geoinstance not initialized");
 
-	instance->numVertices = instance->vertPos.rows();
-	instance->numTetElements = instance->tetElement.rows();
 	int &numVerts = instance->numVertices;
 	int &numTriElems = instance->numTriElements;
 	int &numTetElems = instance->numTetElements;
@@ -308,9 +308,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaTempBoundaryType, numVerts);
 	CUDAMallocSafe(instance->cudaTempDouble, maxNumbers);
 	CUDAMallocSafe(instance->cudaTempMat3x3, maxNumbers);
-
-	int triangle_num = 0;
-	CUDAMallocSafe(instance->cudaTriElement, triangle_num);
 
 	instance->IPC_dt = 0.01;
 	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * FIRSTFRAME::collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
@@ -347,6 +344,14 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseCPNum, 0, sizeof(uint32_t)));
 	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseGPNum, 0, sizeof(uint32_t)));
 
+
+	CHECK_ERROR(instance->vertPos.rows() == instance->numVertices, "numVerts not match with Eigen");
+	CHECK_ERROR(instance->tetElement.rows() == instance->numTetElements, "numTetEles not match with Eigen");
+	CHECK_ERROR(instance->triElement.rows() == instance->numTriElements, "numTriEles not match with Eigen");
+	CHECK_ERROR(instance->triEdges.rows() == instance->numTriEdges, "numTriEdges not match with Eigen")
+	CHECK_ERROR(instance->surfVert.rows() == instance->numSurfVerts, "numSurfVerts not match with Eigen");
+	CHECK_ERROR(instance->surfEdge.rows() == instance->numSurfEdges, "numSurfEdges not match with Eigen");
+	CHECK_ERROR(instance->surfFace.rows() == instance->numSurfFaces, "numSurfFaces not match with Eigen");
 
 	std::cout << "numVerts~~" << numVerts << std::endl;
 	std::cout << "numTriElems~~" << numTriElems << std::endl;
@@ -398,6 +403,8 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	instance->shearStiff = 0.03 * instance->stretchStiff;
 
+	instance->animation = false;
+	
 }
 
 
@@ -423,6 +430,7 @@ void GAS_Read_Buffer::initSIMFEM() {
 		double vlm = instance->triArea[i];
 		sumVolume += vlm;
 	}
+	std::cout << "sumVolume~~~~~~" << sumVolume << std::endl;
 	
 	instance->meanMass = sumMass / instance->numVertices;
 	instance->meanVolume = sumVolume / instance->numVertices;

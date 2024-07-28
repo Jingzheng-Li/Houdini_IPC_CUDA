@@ -289,30 +289,29 @@ AABB* calcuMaxSceneSize(std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
 }
 
 void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
-	int triangleNum = 0;
-	int triangleedgeNum = 0;
 
-	int numVerts = instance->vertPos.rows();
-	int numTetEles = instance->tetElement.rows();
-	int numSurfVerts = instance->surfVert.rows();
-	int numSurfFaces = instance->surfFace.rows();
-	int numSurfEdges = instance->surfEdge.rows();
+	int numVerts = instance->numVertices;
+	int numTetEles = instance->numTetElements;
+	int numTriEles = instance->numTriElements;
+	int numTriEdges = instance->numTriEdges;
+	int numSurfVerts = instance->numSurfVerts;
+	int numSurfEdges = instance->numSurfEdges;
+	int numSurfFaces = instance->numSurfFaces;
 
-    sortGeometry(instance, calcuMaxSceneSize(LBVH_F_ptr), numVerts, numTetEles, triangleNum);
-    CUDA_KERNEL_CHECK();
+    sortGeometry(instance, calcuMaxSceneSize(LBVH_F_ptr), numVerts, numTetEles, numTriEles);
+    // CUDA_KERNEL_CHECK();
 
     updateSurfaces(instance->cudaSortMapVertIndex, instance->cudaSurfFace, numVerts, numSurfFaces);
-	CUDA_KERNEL_CHECK();
-	
+	// CUDA_KERNEL_CHECK();
 
     updateSurfaceEdges(instance->cudaSortMapVertIndex, instance->cudaSurfEdge, numVerts, numSurfEdges);
-	CUDA_KERNEL_CHECK();
+	// CUDA_KERNEL_CHECK();
 
-    // updateTriEdges_adjVerts(instance->cudaSortMapVertIndex, TetMesh.tri_edges, TetMesh.tri_edge_adj_vertex, numVerts, 0);
+    updateTriEdges_adjVerts(instance->cudaSortMapVertIndex, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numVerts, numTriEdges);
 	// CUDA_KERNEL_CHECK();
 
     updateSurfaceVerts(instance->cudaSortMapVertIndex, instance->cudaSurfVert, numVerts, numSurfVerts);
-	CUDA_KERNEL_CHECK();
+	// CUDA_KERNEL_CHECK();
 
 
 	//////////////////////

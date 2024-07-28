@@ -6158,6 +6158,7 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
 
 
 float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
+
     calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, instance->cudaFb, instance->cudaVertMass, vertexNum);
     CUDA_SAFE_CALL(cudaMemset(_cpNum, 0, 5 * sizeof(uint32_t)));
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -6178,10 +6179,10 @@ float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance
     calculate_fem_gradient_hessian(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, BH->m_H12x12,
                                    h_cpNum[4] + h_cpNum_last[4], instance->cudaTetVolume,
                                    instance->cudaFb, tetrahedraNum, lengthRate, volumeRate, IPC_dt);
+
+
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    CUDA_SAFE_CALL(
-            cudaMemcpy(BH->m_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, tetrahedraNum * sizeof(uint4),
-                       cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(BH->m_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, tetrahedraNum * sizeof(uint4),cudaMemcpyDeviceToDevice));
 
     calculate_bending_gradient_hessian(instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, BH->m_H12x12, BH->m_D4Index, h_cpNum[4] + h_cpNum_last[4] + tetrahedraNum, instance->cudaFb, tri_edge_num, bendStiff, IPC_dt);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -6190,12 +6191,13 @@ float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance
                                             h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, triangleNum,
                                             stretchStiff, shearStiff, IPC_dt);
 
+
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     CUDA_SAFE_CALL(cudaMemcpy(BH->m_D3Index + h_cpNum[3] + h_cpNum_last[3], instance->cudaTriElement, triangleNum * sizeof(uint3), cudaMemcpyDeviceToDevice));
 
-
     computeGroundGradientAndHessian(instance->cudaFb);
     computeSoftConstraintGradientAndHessian(instance->cudaFb);
+
 
     return time00;
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -6473,8 +6475,7 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
 }
 
 
-void GIPC::postLineSearch(std::unique_ptr<GeometryManager>& instance, double alpha)
-{
+void GIPC::postLineSearch(std::unique_ptr<GeometryManager>& instance, double alpha) {
     if (IPCKappa == 0.0) {
         initKappa(instance);
     }
@@ -6554,10 +6555,9 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
 
         cudaEventRecord(start);
 
-        std::cout << "arrived here 1" << std::endl;
+
         timemakePd += computeGradientAndHessian(instance);
 
-        std::cout << "arrived here 2" << std::endl;
 
         double distToOpt_PN = calcMinMovement(_moveDir, pcg_data->m_squeue, vertexNum);
         std::cout << "distToOpt_PN: " << distToOpt_PN << std::endl;
@@ -6783,6 +6783,7 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     h_cpNum_last[3] = 0;
     h_cpNum_last[4] = 0;
 
+    animation = instance->animation;
 
 }
 
@@ -6863,6 +6864,82 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
 
     //     buildCP();
     // }
+
+
+    // std::cout << "bendStiff~~" << bendStiff << std::endl;
+    // std::cout << "density~~" << density << std::endl;
+    // std::cout << "YoungModulus~~" << YoungModulus << std::endl;
+    // std::cout << "PoissonRate~~" << PoissonRate << std::endl;
+    // std::cout << "lengthRateLame~~" << lengthRateLame << std::endl;
+    // std::cout << "volumeRateLame~~" << volumeRateLame << std::endl;
+    // std::cout << "lengthRate~~" << lengthRate << std::endl;
+    // std::cout << "volumeRate~~" << volumeRate << std::endl;
+    // std::cout << "frictionRate~~" << frictionRate << std::endl;
+    // std::cout << "clothThickness~~" << clothThickness << std::endl;
+    // std::cout << "clothYoungModulus~~" << clothYoungModulus << std::endl;
+    // std::cout << "stretchStiff~~" << stretchStiff << std::endl;
+    // std::cout << "shearStiff~~" << shearStiff << std::endl;
+    // std::cout << "clothDensity~~" << clothDensity << std::endl;
+    // std::cout << "softMotionRate~~" << softMotionRate << std::endl;
+    // std::cout << "Newton_solver_threshold~~" << Newton_solver_threshold << std::endl;
+    // std::cout << "pcg_threshold~~" << pcg_threshold << std::endl;
+
+    // std::cout << "IPCKappa~~~" << IPCKappa << std::endl; 
+    // std::cout << "dHat~~~" << dHat << std::endl; 
+    // std::cout << "fDhat~~~" << fDhat << std::endl; 
+    // std::cout << "bboxDiagSize2~~~" << bboxDiagSize2 << std::endl; 
+    // std::cout << "relative_dhat~~~" << relative_dhat << std::endl; 
+    // std::cout << "dTol~~~" << dTol << std::endl; 
+    // std::cout << "minKappaCoef~~~" << minKappaCoef << std::endl; 
+    // std::cout << "IPC_dt~~~" << IPC_dt << std::endl; 
+    // std::cout << "meanMass~~~" << meanMass << std::endl; 
+    // std::cout << "meanVolumn~~~" << meanVolumn << std::endl; 
+    // std::cout << "softNum~~~" << softNum << std::endl; 
+    // std::cout << "triangleNum~~~" << triangleNum << std::endl; 
+    // std::cout << "vertexNum~~~" << vertexNum << std::endl; 
+    // std::cout << "surf_vertexNum~~~" << surf_vertexNum << std::endl; 
+    // std::cout << "surf_edgeNum~~~" << surf_edgeNum << std::endl; 
+    // std::cout << "tri_edge_num~~~" << tri_edge_num << std::endl; 
+    // std::cout << "surf_faceNum~~~" << surf_faceNum << std::endl; 
+    // std::cout << "tetrahedraNum~~~" << tetrahedraNum << std::endl; 
+    // std::cout << "MAX_COLLITION_PAIRS_NUM~~~" << MAX_COLLITION_PAIRS_NUM << std::endl; 
+    // std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~~~" << MAX_CCD_COLLITION_PAIRS_NUM << std::endl; 
+    // std::cout << "animation_subRate~~~" << animation_subRate << std::endl; 
+    // std::cout << "animation_fullRate~~~" << animation_fullRate << std::endl; 
+
+
+    // Eigen::MatrixX3d vertexes;
+    // vertexes.resize(vertexNum, Eigen::NoChange);
+    // CUDAMemcpyDToHSafe(vertexes, _vertexes);
+    // Eigen::MatrixX3d rest_vertexes;
+    // rest_vertexes.resize(vertexNum, Eigen::NoChange);
+    // CUDAMemcpyDToHSafe(rest_vertexes, _rest_vertexes);
+    // Eigen::MatrixX3i faces;
+    // faces.resize(surf_faceNum, Eigen::NoChange);
+    // CUDAMemcpyDToHSafe(faces, _faces);
+    // Eigen::MatrixX2i edges;
+    // edges.resize(surf_edgeNum, Eigen::NoChange);
+    // CUDAMemcpyDToHSafe(edges, _edges);
+    // Eigen::VectorXi surfVerts;
+    // surfVerts.resize(surf_vertexNum);
+    // CUDAMemcpyDToHSafe(surfVerts, _surfVerts);
+    // for(int i = 0; i < 10; i++) {
+    //     std::cout << "vertexes~~" << vertexes.row(i) << std::endl;
+    //     std::cout << "rest_vertexes~~" << rest_vertexes.row(i) << std::endl;
+    //     std::cout << "faces~~" << faces.row(i) << std::endl;
+    //     std::cout << "edges~~" << edges.row(i) << std::endl;
+    //     std::cout << "surfVerts~~" << surfVerts.row(i) << std::endl;
+    // }
+
+
+
+
+
+
+
+
+
+
 
 
     std::cout << "Kappa~~~~~~1: " << IPCKappa << std::endl;

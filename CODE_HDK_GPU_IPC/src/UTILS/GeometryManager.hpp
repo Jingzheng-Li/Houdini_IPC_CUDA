@@ -152,6 +152,7 @@ public:
     double Newton_solver_threshold;
     double pcg_threshold;
 
+    bool animation;
     double animation_subRate;
     double animation_fullRate;
 
