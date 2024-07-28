@@ -1620,24 +1620,14 @@ namespace MATHUTILS {
 				tri_edges_adj_points(i, 1) = -1;
 			}
 		}
-		
-		// for (int i = 0; i < temp_edges_adj_points.size(); i++) {
-		// 	tri_edges.emplace_back(make_uint2(my_edges[i].x(), my_edges[i].y()));
-		// 	if (temp_edges_adj_points[i].size() == 2)
-		// 		tri_edges_adj_points.emplace_back(make_uint2(temp_edges_adj_points[i][0], temp_edges_adj_points[i][1]));
-		// 	else
-		// 		tri_edges_adj_points.emplace_back(make_uint2(temp_edges_adj_points[i][0], -1));
-		// }
 
 	}
 
 
-
-	void __getTetSurface(Eigen::VectorXi &surfVerts, Eigen::MatrixX3i &surfFaces, Eigen::MatrixX2i &surfEdges, Eigen::MatrixX3d &vertexes, Eigen::MatrixX4i &tetrahedras) {
+	void __getTetSurface(Eigen::VectorXi& surfVerts, Eigen::MatrixX3i& surfFaces, Eigen::MatrixX2i& surfEdges, Eigen::MatrixX3d& vertexes, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles) {
 		uint64_t length = vertexes.rows();
 		uint64_t tetrahedraNum = tetrahedras.rows();
-		std::vector<uint32_t> surfId2TetId;
-		std::vector<Eigen::Vector3i> triangles;
+		uint64_t triangleNum = triangles.rows();
 
 		auto triangle_hash = [&](const Triangle& tri) {
 			return length * (length * tri[0] + tri[1]) + tri[2];
@@ -1711,20 +1701,25 @@ namespace MATHUTILS {
 				double3 vec3 = MATHUTILS::__minus(tempvec3, tempvec0);
 				double3 n = MATHUTILS::__v_vec_cross(vec1, vec2);
 				if (MATHUTILS::__v_vec_dot(n, vec3) > 0) {
-					surfId2TetId.push_back(tetId);
+					// surfId2TetId.push_back(tetId);
 					surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
 					surfFaces.row(surfFaces.rows() - 1) = Eigen::Vector3i(triVInd[0], triVInd[2], triVInd[1]);
 				}
 				else {
-					surfId2TetId.push_back(tetId);
+					// surfId2TetId.push_back(tetId);
 					surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
                 	surfFaces.row(surfFaces.rows() - 1) = Eigen::Vector3i(triVInd[0], triVInd[1], triVInd[2]);
 				}
 			}
 		}
 
-		for (const auto& tri : triangles) {
+		// for (const auto& tri : triangles) {
+		// 	surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
+		// 	surfFaces.row(surfFaces.rows() - 1) = tri;
+		// }
+		for (int i = 0; i < triangleNum; i++) {
 			surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
+			Eigen::Vector3i tri = triangles.row(i);
 			surfFaces.row(surfFaces.rows() - 1) = tri;
 		}
 
@@ -1786,7 +1781,6 @@ namespace MATHUTILS {
 		}
 
 	}
-
 
 
 }

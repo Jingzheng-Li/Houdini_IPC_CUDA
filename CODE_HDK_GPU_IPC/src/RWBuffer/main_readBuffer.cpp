@@ -254,21 +254,8 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	Eigen::VectorXi &surfverts = instance->surfVert;
 	Eigen::MatrixX3i &surffaces = instance->surfFace;
 	Eigen::MatrixX2i &surfedges = instance->surfEdge;
-	MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement);
 
-	CUDAMallocSafe(instance->cudaDmInverses, instance->numTetElements);
-
-	CUDAMallocSafe(instance->cudaSurfVert, surfverts.rows());
-	CUDAMallocSafe(instance->cudaSurfFace, surffaces.rows());
-	CUDAMallocSafe(instance->cudaSurfEdge, surfedges.rows());
-	CUDAMemcpyHToDSafe(instance->surfVert, instance->cudaSurfVert);
-	CUDAMemcpyHToDSafe(instance->surfFace, instance->cudaSurfFace);
-	CUDAMemcpyHToDSafe(instance->surfEdge, instance->cudaSurfEdge);
-	instance->numSurfVerts = surfverts.rows();
-	instance->numSurfFaces = surffaces.rows();
-	instance->numSurfEdges = surfedges.rows();
-
-
+	// get triangle surface
 	MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex);
 	instance->numTriEdges = instance->triEdges.rows();
 
@@ -283,6 +270,22 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMemcpyHToDSafe(instance->triArea, instance->cudaTriArea);
 	CUDAMemcpyHToDSafe(instance->triEdges, instance->cudaTriEdges);
 	CUDAMemcpyHToDSafe(instance->triEdgeAdjVertex, instance->cudaTriEdgeAdjVertex);
+
+
+	// get tetrahedra surface
+	MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement, instance->triElement);
+
+	CUDAMallocSafe(instance->cudaDmInverses, instance->numTetElements);
+
+	CUDAMallocSafe(instance->cudaSurfVert, surfverts.rows());
+	CUDAMallocSafe(instance->cudaSurfFace, surffaces.rows());
+	CUDAMallocSafe(instance->cudaSurfEdge, surfedges.rows());
+	CUDAMemcpyHToDSafe(instance->surfVert, instance->cudaSurfVert);
+	CUDAMemcpyHToDSafe(instance->surfFace, instance->cudaSurfFace);
+	CUDAMemcpyHToDSafe(instance->surfEdge, instance->cudaSurfEdge);
+	instance->numSurfVerts = surfverts.rows();
+	instance->numSurfFaces = surffaces.rows();
+	instance->numSurfEdges = surfedges.rows();
 
 
 }
@@ -362,7 +365,9 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	std::cout << "max coner~~" << instance->maxCorner.x << " " 
 								<< instance->maxCorner.y << " " 
 								<< instance->maxCorner.z << " " << std::endl;
-
+	std::cout << "numMasses: " << instance->vertMass.rows() << std::endl;
+	std::cout << "numVolume: " << instance->tetVolume.rows() << std::endl;
+	std::cout << "numAreas: " << instance->triArea.rows() << std::endl;
 
 }
 

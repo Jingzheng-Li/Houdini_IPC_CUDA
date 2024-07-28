@@ -328,7 +328,7 @@ namespace MATHUTILS {
 
 	void __getTriSurface(Eigen::MatrixX3i& triElems, Eigen::MatrixX2i& tri_edges, Eigen::MatrixX2i& tri_edges_adj_points);
 
-	void __getTetSurface(Eigen::VectorXi &surfVerts, Eigen::MatrixX3i &surfFaces, Eigen::MatrixX2i &surfEdges, Eigen::MatrixX3d &vertexes, Eigen::MatrixX4i &tetrahedras);
+	void __getTetSurface(Eigen::VectorXi& surfVerts, Eigen::MatrixX3i& surfFaces, Eigen::MatrixX2i& surfEdges, Eigen::MatrixX3d& vertexes, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles);
 
 	template <typename TargetType, typename ScalarType, int Rows, int Cols>
 	std::vector<TargetType> __convertEigenToVector(const Eigen::Matrix<ScalarType, Rows, Cols>& matrix) {
