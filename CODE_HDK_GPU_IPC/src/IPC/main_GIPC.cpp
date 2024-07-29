@@ -47,7 +47,7 @@ void GAS_CUDA_GIPC::IPC_Solver() {
     }
     CHECK_ERROR(instance->GIPC_ptr, "IPC_Solver GIPC_ptr not initialized");
 
-    instance->GIPC_ptr->IPC_Solver(instance);
+    instance->GIPC_ptr->IPC_Solver();
     
 }
 

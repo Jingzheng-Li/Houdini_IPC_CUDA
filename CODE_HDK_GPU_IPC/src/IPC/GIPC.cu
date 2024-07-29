@@ -6637,7 +6637,7 @@ void GIPC::computeXTilta(std::unique_ptr<GeometryManager>& instance, const doubl
 
 GIPC::GIPC(std::unique_ptr<GeometryManager>& instance) 
     : m_instance(instance),
-    SceneSize(instance->AABB_SceneSize_ptr),
+    m_scene_size(instance->AABB_SceneSize_ptr),
     bvh_f(instance->LBVH_F_ptr),
     bvh_e(instance->LBVH_E_ptr),
     pcg_data(instance->PCGData_ptr),
@@ -6737,10 +6737,10 @@ bool isRotate = false;
 
 
 
-void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
+void GIPC::IPC_Solver() {
 
-    CHECK_ERROR(instance, "not initialize instance");
-    CHECK_ERROR(SceneSize, "not initialize SceneSize");
+    CHECK_ERROR(m_instance, "not initialize m_instance");
+    CHECK_ERROR(m_scene_size, "not initialize m_scene_size");
     CHECK_ERROR(bvh_f, "not initialize bvh_f");
     CHECK_ERROR(bvh_e, "not initialize bvh_e");
     CHECK_ERROR(pcg_data, "not initialize pcg_data");
@@ -6795,7 +6795,7 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
     if (IPCKappa < 1e-16) {
         suggestKappa(IPCKappa);
     }
-    initKappa(instance);
+    initKappa(m_instance);
 
 
 
@@ -6825,7 +6825,7 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
         CUDA_SAFE_CALL(cudaMemset(_close_cpNum, 0, sizeof(uint32_t)));
         CUDA_SAFE_CALL(cudaMemset(_close_gpNum, 0, sizeof(uint32_t)));
 
-        totalNT += solve_subIP(instance, time0, time1, time2, time3, time4);
+        totalNT += solve_subIP(m_instance, time0, time1, time2, time3, time4);
 
         double2 minMaxDist1 = minMaxGroundDist();
         double2 minMaxDist2 = minMaxSelfDist();
@@ -6896,9 +6896,9 @@ void GIPC::IPC_Solver(std::unique_ptr<GeometryManager>& instance) {
     CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
 #endif
 
-    updateVelocities(instance);
+    updateVelocities(m_instance);
 
-    computeXTilta(instance, 1);
+    computeXTilta(m_instance, 1);
     cudaEventRecord(end0);
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
     float tttime;

@@ -87,13 +87,13 @@ public:
 	void computeInverseGradient(std::unique_ptr<GeometryManager>& instance);
 	void computeFldm(double3* _deltaPos, double3* fldm);
 
-	void IPC_Solver(std::unique_ptr<GeometryManager>& instance);
+	void IPC_Solver();
 
 
 public:
 
 	std::unique_ptr<GeometryManager>& m_instance;
-	std::unique_ptr<AABB>& SceneSize;
+	std::unique_ptr<AABB>& m_scene_size;
     std::unique_ptr<LBVH_F>& bvh_f;
     std::unique_ptr<LBVH_E>& bvh_e;
     std::unique_ptr<PCGData>& pcg_data;
