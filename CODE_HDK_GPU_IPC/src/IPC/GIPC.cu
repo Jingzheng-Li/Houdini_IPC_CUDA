@@ -5708,11 +5708,11 @@ void GIPC::buildCP() {
     CUDA_SAFE_CALL(cudaMemset(_cpNum, 0, 5 * sizeof(uint32_t)));
     CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    //bvh_f->Construct();
-    bvh_f->SelfCollitionDetect(dHat);
+    //m_bvh_f->Construct();
+    m_bvh_f->SelfCollitionDetect(dHat);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    //bvh_e->Construct();
-    bvh_e->SelfCollitionDetect(dHat);
+    //m_bvh_e->Construct();
+    m_bvh_e->SelfCollitionDetect(dHat);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     GroundCollisionDetect();
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -5726,25 +5726,25 @@ void GIPC::buildFullCP(const double& alpha) {
 
     CUDA_SAFE_CALL(cudaMemset(_cpNum, 0, sizeof(uint32_t)));
 
-    bvh_f->SelfCollitionFullDetect(dHat, _moveDir, alpha);
-    bvh_e->SelfCollitionFullDetect(dHat, _moveDir, alpha);
+    m_bvh_f->SelfCollitionFullDetect(dHat, _moveDir, alpha);
+    m_bvh_e->SelfCollitionFullDetect(dHat, _moveDir, alpha);
 
     CUDA_SAFE_CALL(cudaMemcpy(&h_ccd_cpNum, _cpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost));
 }
 
 
 void GIPC::buildBVH() {
-    bvh_f->Construct();
-    bvh_e->Construct();
+    m_bvh_f->Construct();
+    m_bvh_e->Construct();
 }
 
 AABB* GIPC::calcuMaxSceneSize() {
-    return bvh_f->getSceneSize();
+    return m_bvh_f->getSceneSize();
 }
 
 void GIPC::buildBVH_FULLCCD(const double& alpha) {
-    bvh_f->ConstructFullCCD(_moveDir, alpha);
-    bvh_e->ConstructFullCCD(_moveDir, alpha);
+    m_bvh_f->ConstructFullCCD(_moveDir, alpha);
+    m_bvh_e->ConstructFullCCD(_moveDir, alpha);
 }
 
 void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
@@ -6051,7 +6051,7 @@ void compute_H_b(double d, double dHat, double& H) {
 
 void GIPC::suggestKappa(double& kappa) {
     double H_b;
-    //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(bvh_f->scene.upper, bvh_f->scene.lower));
+    //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(m_bvh_f->scene.upper, m_bvh_f->scene.lower));
     compute_H_b(1.0e-16 * bboxDiagSize2, dHat, H_b);
 
     if (meanMass == 0.0) {
@@ -6065,7 +6065,7 @@ void GIPC::suggestKappa(double& kappa) {
 void GIPC::upperBoundKappa(double& kappa)
 {
     double H_b;
-    //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(bvh_f->scene.upper, bvh_f->scene.lower));//(maxConer - minConer).squaredNorm();
+    //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(m_bvh_f->scene.upper, m_bvh_f->scene.lower));//(maxConer - minConer).squaredNorm();
     compute_H_b(1.0e-16 * bboxDiagSize2, dHat, H_b);
     double kappaMax = 100 * minKappaCoef * meanMass / (4.0e-16 * bboxDiagSize2 * H_b);
     //printf("max Kappa: %f\n", kappaMax);
@@ -6316,7 +6316,7 @@ bool edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, const
 
 bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance)
 {
-    return edgeTriIntersectionQuery(bvh_e->mc_btype, instance->cudaVertPos, bvh_e->mc_edges, bvh_f->mc_faces, bvh_e->mc_boundVolumes, bvh_e->mc_nodes, dHat, bvh_f->m_face_number);
+    return edgeTriIntersectionQuery(m_bvh_e->mc_btype, instance->cudaVertPos, m_bvh_e->mc_edges, m_bvh_f->mc_faces, m_bvh_e->mc_boundVolumes, m_bvh_e->mc_nodes, dHat, m_bvh_f->m_face_number);
 }
 
 bool GIPC::checkGroundIntersection() {
@@ -6638,8 +6638,8 @@ void GIPC::computeXTilta(std::unique_ptr<GeometryManager>& instance, const doubl
 GIPC::GIPC(std::unique_ptr<GeometryManager>& instance) 
     : m_instance(instance),
     m_scene_size(instance->AABB_SceneSize_ptr),
-    bvh_f(instance->LBVH_F_ptr),
-    bvh_e(instance->LBVH_E_ptr),
+    m_bvh_f(instance->LBVH_F_ptr),
+    m_bvh_e(instance->LBVH_E_ptr),
     pcg_data(instance->PCGData_ptr),
     BH(instance->BH_ptr) {
 
@@ -6741,8 +6741,8 @@ void GIPC::IPC_Solver() {
 
     CHECK_ERROR(m_instance, "not initialize m_instance");
     CHECK_ERROR(m_scene_size, "not initialize m_scene_size");
-    CHECK_ERROR(bvh_f, "not initialize bvh_f");
-    CHECK_ERROR(bvh_e, "not initialize bvh_e");
+    CHECK_ERROR(m_bvh_f, "not initialize m_bvh_f");
+    CHECK_ERROR(m_bvh_e, "not initialize m_bvh_e");
     CHECK_ERROR(pcg_data, "not initialize pcg_data");
     CHECK_ERROR(BH, "not initialize BH");
 

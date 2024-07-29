@@ -94,8 +94,8 @@ public:
 
 	std::unique_ptr<GeometryManager>& m_instance;
 	std::unique_ptr<AABB>& m_scene_size;
-    std::unique_ptr<LBVH_F>& bvh_f;
-    std::unique_ptr<LBVH_E>& bvh_e;
+    std::unique_ptr<LBVH_F>& m_bvh_f;
+    std::unique_ptr<LBVH_E>& m_bvh_e;
     std::unique_ptr<PCGData>& pcg_data;
     std::unique_ptr<BHessian>& BH;
 
