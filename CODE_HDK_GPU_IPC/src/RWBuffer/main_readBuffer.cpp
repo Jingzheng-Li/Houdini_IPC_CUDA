@@ -596,8 +596,4 @@ void GAS_Read_Buffer::buildSIMCP() {
 	}
 	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numTetElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
 
-	std::cout << "BH Malloc Nums~~ " << instance->numTetElements << " " << instance->numSurfVerts << " " << instance->numSurfFaces << " " << instance->numSurfEdges << " " << instance->numTriElements << " " << instance->numTriEdges << std::endl;
-
-
-
 }

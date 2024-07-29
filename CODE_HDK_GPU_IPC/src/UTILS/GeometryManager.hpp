@@ -10,7 +10,7 @@
 #include "MathUtils.hpp"
 #include "MathUtils.cuh"
 
-class Node;
+struct Node;
 class AABB;
 class LBVH_E;
 class LBVH_F;
