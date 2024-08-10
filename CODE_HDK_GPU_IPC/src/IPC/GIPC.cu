@@ -5754,7 +5754,7 @@ void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
 
-    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, _rest_vertexes, _collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, mKappa, numbers);
+    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, _collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, mKappa, numbers);
 
 
 }
@@ -5768,7 +5768,7 @@ void GIPC::calBarrierHessian() {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
 
-    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, _rest_vertexes, _collisonPairs, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, IPCKappa, numbers);
+    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, _collisonPairs, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, IPCKappa, numbers);
 }
 
 void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
@@ -5879,7 +5879,7 @@ void GIPC::calBarrierGradient(double3* _gradient, double mKappa) {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
-    _calBarrierGradient << <blockNum, threadNum >> > (mc_vertexes, _rest_vertexes, _collisonPairs, _gradient, dHat, mKappa, numbers);
+    _calBarrierGradient << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, _collisonPairs, _gradient, dHat, mKappa, numbers);
 
 }
 
@@ -6638,8 +6638,8 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     m_BH(instance->BH_ptr) {
 
     mc_vertexes = instance->cudaVertPos;
-    _rest_vertexes = instance->cudaRestVertPos;
-    _faces = instance->cudaSurfFace;
+    mc_rest_vertexes = instance->cudaRestVertPos;
+    mc_faces = instance->cudaSurfFace;
     _edges = instance->cudaSurfEdge;
     _surfVerts = instance->cudaSurfVert;
 
