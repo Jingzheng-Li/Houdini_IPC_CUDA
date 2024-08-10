@@ -127,8 +127,8 @@ public:
 	int4* mc_closeMConstraintID;
 	double* mc_closeMConstraintVal;
 
-	uint32_t* _gpNum;
-	uint32_t* _close_gpNum;
+	uint32_t* mc_gpNum;
+	uint32_t* mc_close_gpNum;
 
 	uint32_t h_cpNum[5];
 	uint32_t h_ccd_cpNum;

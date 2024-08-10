@@ -5418,7 +5418,7 @@ void GIPC::GroundCollisionDetect() {
     int numbers = surf_vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _GroundCollisionDetectIPC << <blockNum, threadNum >> > (mc_vertexes, mc_surfVerts, _groundOffset, _groundNormal, mc_environment_collisionPair, _gpNum, dHat, numbers);
+    _GroundCollisionDetectIPC << <blockNum, threadNum >> > (mc_vertexes, mc_surfVerts, _groundOffset, _groundNormal, mc_environment_collisionPair, mc_gpNum, dHat, numbers);
 
 }
 
@@ -5428,36 +5428,36 @@ void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     
     int numbers = m_softNum;
     if (numbers < 1) {
-        CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+        CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
         return;
     }
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
     // offset
-    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_targetVert, mc_targetInd, _gradient, _gpNum, m_BH->m_H3x3, m_BH->m_D1Index, softMotionRate,animation_fullRate, m_softNum);
-    CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_targetVert, mc_targetInd, _gradient, mc_gpNum, m_BH->m_H3x3, m_BH->m_D1Index, softMotionRate,animation_fullRate, m_softNum);
+    CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
 void GIPC::computeGroundGradientAndHessian(double3* _gradient) {
 #ifndef USE_FRICTION  
-    CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));
+    CUDA_SAFE_CALL(cudaMemset(mc_gpNum, 0, sizeof(uint32_t)));
 #endif
     int numbers = h_gpNum;
     if (numbers < 1) {
-        CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+        CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
         return;
     }
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, _groundOffset, _groundNormal, mc_environment_collisionPair, _gradient, _gpNum, m_BH->m_H3x3, m_BH->m_D1Index, dHat, IPCKappa, numbers);
-    CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+    _computeGroundGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, _groundOffset, _groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, m_BH->m_D1Index, dHat, IPCKappa, numbers);
+    CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
 void GIPC::computeCloseGroundVal() {
     int numbers = h_gpNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundCloseVal << <blockNum, threadNum >> > (mc_vertexes, _groundOffset, _groundNormal, mc_environment_collisionPair, dTol, mc_closeConstraintID, mc_closeConstraintVal, _close_gpNum, numbers);
+    _computeGroundCloseVal << <blockNum, threadNum >> > (mc_vertexes, _groundOffset, _groundNormal, mc_environment_collisionPair, dTol, mc_closeConstraintID, mc_closeConstraintVal, mc_close_gpNum, numbers);
 
 }
 
@@ -5515,7 +5515,7 @@ void GIPC::computeGroundGradient(double3* _gradient, double mKappa) {
     int numbers = h_gpNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradient << <blockNum, threadNum >> > (mc_vertexes, _groundOffset, _groundNormal, mc_environment_collisionPair, _gradient, _gpNum, m_BH->m_H3x3, dHat, mKappa, numbers);
+    _computeGroundGradient << <blockNum, threadNum >> > (mc_vertexes, _groundOffset, _groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, dHat, mKappa, numbers);
 }
 
 void GIPC::computeSoftConstraintGradient(double3* _gradient) {
@@ -5706,7 +5706,7 @@ double GIPC::InjectiveStepSize(double slackness, double errorRate, double* mqueu
 void GIPC::buildCP() {
 
     CUDA_SAFE_CALL(cudaMemset(mc_cpNum, 0, 5 * sizeof(uint32_t)));
-    CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));
+    CUDA_SAFE_CALL(cudaMemset(mc_gpNum, 0, sizeof(uint32_t)));
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     //m_bvh_f->Construct();
     m_bvh_f->SelfCollitionDetect(dHat);
@@ -5717,7 +5717,7 @@ void GIPC::buildCP() {
     GroundCollisionDetect();
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     CUDA_SAFE_CALL(cudaMemcpy(&h_cpNum, mc_cpNum, 5 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-    CUDA_SAFE_CALL(cudaMemcpy(&h_gpNum, _gpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    CUDA_SAFE_CALL(cudaMemcpy(&h_gpNum, mc_gpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost));
     /*CUDA_SAFE_CALL(cudaMemset(_cpNum, 0, 5 * sizeof(uint32_t)));
     CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));*/
 }
@@ -5800,7 +5800,7 @@ void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
 
 
     numbers = h_gpNum_last;
-    CUDA_SAFE_CALL(cudaMemcpy(_gpNum, &h_gpNum_last, sizeof(uint32_t), cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(mc_gpNum, &h_gpNum_last, sizeof(uint32_t), cudaMemcpyHostToDevice));
     blockNum = (numbers + threadNum - 1) / threadNum;
 
     _calFrictionHessian_gd << < blockNum, threadNum >> > (
@@ -6453,7 +6453,7 @@ void GIPC::postLineSearch(std::unique_ptr<GeometryManager>& instance, double alp
         tempFree_closeConstraint();
         tempMalloc_closeConstraint();
         CUDA_SAFE_CALL(cudaMemset(mc_close_cpNum, 0, sizeof(uint32_t)));
-        CUDA_SAFE_CALL(cudaMemset(_close_gpNum, 0, sizeof(uint32_t)));
+        CUDA_SAFE_CALL(cudaMemset(mc_close_gpNum, 0, sizeof(uint32_t)));
 
         computeCloseGroundVal();
 
@@ -6653,8 +6653,8 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     mc_MatIndex = instance->cudaMatIndex;
     mc_close_cpNum = instance->cudaCloseCPNum;
     mc_environment_collisionPair = instance->cudaEnvCollisionPairs;
-    _gpNum = instance->cudaGPNum;
-    _close_gpNum = instance->cudaCloseGPNum;
+    mc_gpNum = instance->cudaGPNum;
+    mc_close_gpNum = instance->cudaCloseGPNum;
     _groundNormal = instance->cudaGroundNormal;
     _groundOffset = instance->cudaGroundOffset;
 
@@ -6817,7 +6817,7 @@ void GIPC::IPC_Solver() {
         //if (h_cpNum[0] > 0) return;
         tempMalloc_closeConstraint();
         CUDA_SAFE_CALL(cudaMemset(mc_close_cpNum, 0, sizeof(uint32_t)));
-        CUDA_SAFE_CALL(cudaMemset(_close_gpNum, 0, sizeof(uint32_t)));
+        CUDA_SAFE_CALL(cudaMemset(mc_close_gpNum, 0, sizeof(uint32_t)));
 
         totalNT += solve_subIP(m_instance, time0, time1, time2, time3, time4);
 
