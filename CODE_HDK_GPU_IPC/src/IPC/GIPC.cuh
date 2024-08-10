@@ -100,7 +100,7 @@ public:
 
 	bool animation;
 
-	double3* _vertexes;
+	double3* mc_vertexes;
 	double3* _rest_vertexes;
 	uint3* _faces;
 	uint2* _edges;
