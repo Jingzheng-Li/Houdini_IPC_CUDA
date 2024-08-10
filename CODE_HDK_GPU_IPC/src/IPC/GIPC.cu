@@ -5426,7 +5426,7 @@ void GIPC::GroundCollisionDetect() {
 
 void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     
-    int numbers = softNum;
+    int numbers = m_softNum;
     if (numbers < 1) {
         CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
         return;
@@ -5434,7 +5434,7 @@ void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
     // offset
-    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, _targetVert, _targetInd, _gradient, _gpNum, m_BH->m_H3x3, m_BH->m_D1Index, softMotionRate,animation_fullRate, softNum);
+    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_targetVert, mc_targetInd, _gradient, _gpNum, m_BH->m_H3x3, m_BH->m_D1Index, softMotionRate,animation_fullRate, m_softNum);
     CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
@@ -5519,19 +5519,19 @@ void GIPC::computeGroundGradient(double3* _gradient, double mKappa) {
 }
 
 void GIPC::computeSoftConstraintGradient(double3* _gradient) {
-    int numbers = softNum;
+    int numbers = m_softNum;
 
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
     // offset
     _computeSoftConstraintGradient << <blockNum, threadNum >> > (
         mc_vertexes, 
-        _targetVert, 
-        _targetInd, 
+        mc_targetVert, 
+        mc_targetInd, 
         _gradient, 
         softMotionRate, 
         animation_fullRate, 
-        softNum);
+        m_softNum);
 }
 
 double GIPC::self_largestFeasibleStepSize(double slackness, double* mqueue, int numbers) {
@@ -6147,12 +6147,12 @@ float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     calculate_triangle_fem_gradient_hessian(instance->cudaTriDmInverses, instance->cudaVertPos, instance->cudaTriElement, m_BH->m_H9x9,
-                                            h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, triangleNum,
+                                            h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, m_triangleNum,
                                             stretchStiff, shearStiff, IPC_dt);
 
 
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    CUDA_SAFE_CALL(cudaMemcpy(m_BH->m_D3Index + h_cpNum[3] + h_cpNum_last[3], instance->cudaTriElement, triangleNum * sizeof(uint3), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(m_BH->m_D3Index + h_cpNum[3] + h_cpNum_last[3], instance->cudaTriElement, m_triangleNum * sizeof(uint3), cudaMemcpyDeviceToDevice));
 
     computeGroundGradientAndHessian(instance->cudaFb);
     computeSoftConstraintGradientAndHessian(instance->cudaFb);
@@ -6186,10 +6186,10 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         numbers = tetrahedraNum;
     }
     else if (type == 8) {
-        numbers = triangleNum;
+        numbers = m_triangleNum;
     }
     else if (type == 9) {
-        numbers = softNum;
+        numbers = m_softNum;
     }
     else if (type == 10) {
         numbers = tri_edge_num;
@@ -6501,7 +6501,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         cudaEventCreate(&end3);
         cudaEventCreate(&end4);
 
-        m_BH->updateDNum(triangleNum, tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, tri_edge_num);
+        m_BH->updateDNum(m_triangleNum, tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, tri_edge_num);
 
         //printf("collision num  %d\n", h_cpNum[0]);
 
@@ -6644,8 +6644,8 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     mc_surfVerts = instance->cudaSurfVert;
 
 
-    _targetVert = instance->cudaTargetVert;
-    _targetInd = instance->cudaTargetIndex;
+    mc_targetVert = instance->cudaTargetVert;
+    mc_targetInd = instance->cudaTargetIndex;
     _moveDir = instance->cudaMoveDir;
     _collisonPairs = instance->cudaCollisionPairs;
     _ccd_collisonPairs = instance->cudaCCDCollisionPairs;
@@ -6670,8 +6670,8 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     meanMass = instance->meanMass;
     meanVolumn = instance->meanVolume;
 
-    softNum = instance->softNum;
-    triangleNum = instance->numTriElements;
+    m_softNum = instance->softNum;
+    m_triangleNum = instance->numTriElements;
     vertexNum = instance->numVertices;
     surf_vertexNum = instance->numSurfVerts;
     surf_edgeNum = instance->numSurfEdges;

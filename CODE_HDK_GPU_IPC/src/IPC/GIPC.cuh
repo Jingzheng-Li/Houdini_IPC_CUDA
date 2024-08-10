@@ -107,10 +107,10 @@ public:
 	uint32_t* mc_surfVerts;
 
 
-	double3* _targetVert;	
-	uint32_t* _targetInd;	
-	uint32_t softNum;
-	uint32_t triangleNum;
+	double3* mc_targetVert;	
+	uint32_t* mc_targetInd;	
+	uint32_t m_softNum;
+	uint32_t m_triangleNum;
 
 	double3* _moveDir;
 
