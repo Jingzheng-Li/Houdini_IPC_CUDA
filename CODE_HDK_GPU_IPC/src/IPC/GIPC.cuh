@@ -116,9 +116,9 @@ public:
 
 	int4* mc_collisonPairs;
 	int4* mc_ccd_collisonPairs;
-	uint32_t* _cpNum;
-	int* _MatIndex;
-	uint32_t* _close_cpNum;
+	uint32_t* mc_cpNum;
+	uint32_t* mc_close_cpNum;
+	int* mc_MatIndex;
 
 	uint32_t* _environment_collisionPair;
 
