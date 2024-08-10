@@ -4,8 +4,7 @@
 namespace ACCD {
 
     __device__
-    int _dType_point_triangle(const double3& v0, const double3& v1, const double3& v2, const double3& v3)
-    {
+    int _dType_point_triangle(const double3& v0, const double3& v1, const double3& v2, const double3& v3) {
         double3 basis0 = MATHUTILS::__minus(v2, v1);
         double3 basis1 = MATHUTILS::__minus(v3, v1);
         double3 basis2 = MATHUTILS::__minus(v0, v1);
@@ -75,8 +74,7 @@ namespace ACCD {
     }
 
     __device__
-    int _dType_edge_edge(const double3& v0, const double3& v1, const double3& v2, const double3& v3)
-    {
+    int _dType_edge_edge(const double3& v0, const double3& v1, const double3& v2, const double3& v3) {
         double3 u = MATHUTILS::__minus(v1, v0);
         double3 v = MATHUTILS::__minus(v3, v2);
         double3 w = MATHUTILS::__minus(v0, v2);
@@ -145,30 +143,26 @@ namespace ACCD {
     }
 
     __device__ __forceinline__
-    double point_point_distance(const double3& v0, const double3& v1)
-    {
+    double point_point_distance(const double3& v0, const double3& v1) {
         return MATHUTILS::__squaredNorm(MATHUTILS::__minus(v0, v1));
     }
 
     __device__ __forceinline__
-    double point_triangle_distance(const double3& v0, const double3& v1, const double3& v2, const double3& v3)
-    {
+    double point_triangle_distance(const double3& v0, const double3& v1, const double3& v2, const double3& v3) {
         double3 b = MATHUTILS::__v_vec_cross(MATHUTILS::__minus(v2, v1), MATHUTILS::__minus(v3, v1));
         //double3 test = MATHUTILS::__minus(v0, v1);
         double aTb = MATHUTILS::__v_vec_dot(MATHUTILS::__minus(v0, v1), b);//(v0 - v1).dot(b);
-        //printf("%f   %f   %f          %f   %f   %f   %f\n", b.x, b.y, b.z, test.x, test.y, test.z, aTb);
+        //printf("%f   %f   %f   %f   %f   %f   %f\n", b.x, b.y, b.z, test.x, test.y, test.z, aTb);
         return aTb * aTb / MATHUTILS::__squaredNorm(b);
     }
 
     __device__ __forceinline__
-    double point_edge_distance(const double3& v0, const double3& v1, const double3& v2)
-    {
+    double point_edge_distance(const double3& v0, const double3& v1, const double3& v2) {
         return MATHUTILS::__squaredNorm(MATHUTILS::__v_vec_cross(MATHUTILS::__minus(v1, v0), MATHUTILS::__minus(v2, v0))) / MATHUTILS::__squaredNorm(MATHUTILS::__minus(v2, v1));
     }
 
     __device__ __forceinline__
-    double edge_edge_distance(const double3& v0, const double3& v1, const double3& v2, const double3& v3)
-    {
+    double edge_edge_distance(const double3& v0, const double3& v1, const double3& v2, const double3& v3) {
         double3 b = MATHUTILS::__v_vec_cross(MATHUTILS::__minus(v1, v0), MATHUTILS::__minus(v3, v2));//(v1 - v0).cross(v3 - v2);
         //if(MATHUTILS::__norm(b) <1e-6)
         //    b = MATHUTILS::__v_vec_cross(MATHUTILS::__v_vec_cross(MATHUTILS::__minus(v1, v0), MATHUTILS::__minus(v2, v0)), MATHUTILS::__minus(v1, v0));
@@ -177,21 +171,19 @@ namespace ACCD {
     }
 
 
-    __device__ __forceinline__
-    double _d_EEParallel(const double3& v0, const double3& v1, const double3& v2, const double3& v3)
-    {
-        double3 b = MATHUTILS::__v_vec_cross(MATHUTILS::__v_vec_cross(MATHUTILS::__minus(v1, v0), MATHUTILS::__minus(v2, v0)), MATHUTILS::__minus(v1, v0));
-        double aTb = MATHUTILS::__v_vec_dot(MATHUTILS::__minus(v2, v0), b);//(v2 - v0).dot(b);
-        return aTb * aTb / MATHUTILS::__squaredNorm(b);
-    }
+    // __device__ __forceinline__
+    // double _d_EEParallel(const double3& v0, const double3& v1, const double3& v2, const double3& v3) {
+    //     double3 b = MATHUTILS::__v_vec_cross(MATHUTILS::__v_vec_cross(MATHUTILS::__minus(v1, v0), MATHUTILS::__minus(v2, v0)), MATHUTILS::__minus(v1, v0));
+    //     double aTb = MATHUTILS::__v_vec_dot(MATHUTILS::__minus(v2, v0), b);//(v2 - v0).dot(b);
+    //     return aTb * aTb / MATHUTILS::__squaredNorm(b);
+    // }
 
     __device__
     double edge_edge_distance_unclassified(
         const double3& ea0,
         const double3& ea1,
         const double3& eb0,
-        const double3& eb1)
-    {
+        const double3& eb1) {
         switch (_dType_edge_edge(ea0, ea1, eb0, eb1)) {
         case 0:
             return point_point_distance(ea0, eb0);
@@ -221,8 +213,7 @@ namespace ACCD {
         const double3& p,
         const double3& t0,
         const double3& t1,
-        const double3& t2)
-    {
+        const double3& t2) {
         switch (_dType_point_triangle(p, t0, t1, t2)) {
         case 0:
             return point_point_distance(p, t0);
@@ -253,8 +244,7 @@ namespace ACCD {
         const double3& _dea1,
         const double3& _deb0,
         const double3& _deb1,
-        double eta, double thickness)
-    {
+        double eta, double thickness) {
         double3 ea0 = _ea0, ea1 = _ea1, eb0 = _eb0, eb1 = _eb1, dea0 = _dea0, dea1 = _dea1, deb0 = _deb0, deb1 = _deb1;
         double3 temp0 = MATHUTILS::__add(dea0, dea1);
         double3 temp1 = MATHUTILS::__add(deb0, deb1);
@@ -329,8 +319,8 @@ namespace ACCD {
         const double3& _dt0,
         const double3& _dt1,
         const double3& _dt2,
-        double eta, double thickness)
-    {
+        double eta, double thickness) {
+
         double3 p = _p, t0 = _t0, t1 = _t1, t2 = _t2, dp = _dp, dt0 = _dt0, dt1 = _dt1, dt2 = _dt2;
 
         double3 temp0 = MATHUTILS::__add(dt0, dt1);
@@ -355,6 +345,7 @@ namespace ACCD {
         double gap = eta * (dist2_cur - thickness * thickness) / (dist_cur + thickness);
         double toc = 0.0;
         int count = 0;
+
         while (true) {
             count++;
             if (count > 50000) return toc;
@@ -391,8 +382,8 @@ namespace ACCD {
         double3 a0, b0, c0, p0;
     } NewtonCheckData;
 
-    inline __device__ bool _insideTriangle(double3 a, double3 b, double3 c, double3 p)
-    {
+    inline __device__ 
+    bool _insideTriangle(double3 a, double3 b, double3 c, double3 p) {
         double3 n, da, db, dc;
         double wa, wb, wc;
 
@@ -418,8 +409,8 @@ namespace ACCD {
     }
 
 
-    inline __device__ int solveQuadric(double c[3], double s[2], const double& errorRate)
-    {
+    inline __device__ 
+    int solveQuadric(double c[3], double s[2], const double& errorRate) {
         double p, q, D;
 
         // make sure we have a d2 equation
@@ -436,8 +427,7 @@ namespace ACCD {
         q = c[0] / c[2];
         D = p * p - q;
 
-        if ((D)< errorRate)
-        {
+        if ((D)< errorRate) {
             // one float root
             s[0] = s[1] = -p;
             return 1;
@@ -447,8 +437,7 @@ namespace ACCD {
             // no real root
             return 0;
 
-        else
-        {
+        else {
             // two real roots
             double sqrt_D = sqrt(D);
             s[0] = sqrt_D - p;
@@ -456,8 +445,9 @@ namespace ACCD {
             return 2;
         }
     }
-    inline __device__ int solveCubic(double c[4], double s[3], const double& errorRate)
-    {
+    
+    inline __device__ 
+    int solveCubic(double c[4], double s[3], const double& errorRate) {
         int	i, num;
         double	sub,
             A, B, C,
@@ -482,16 +472,13 @@ namespace ACCD {
         cb_p = p * p * p;
         D = q * q + cb_p;
         double My_PI = 3.1415926535897932;
-        if ((D)< errorRate)
-        {
-            if ((q)< errorRate)
-            {
+        if ((D)< errorRate) {
+            if ((q)< errorRate) {
                 // one triple solution
                 s[0] = 0.0f;
                 num = 1;
             }
-            else
-            {
+            else {
                 // one single and one float solution
                 double u = cbrt(-q);
                 s[0] = 2.0f * u;
@@ -500,8 +487,7 @@ namespace ACCD {
             }
         }
         else
-            if (D < 0.0f)
-            {
+            if (D < 0.0f) {
                 // casus irreductibilis: three real solutions
                 double phi = ONE_DIV_3 * acos(-q / sqrt(-cb_p));
                 double t = 2.0f * sqrt(-p);
@@ -510,8 +496,7 @@ namespace ACCD {
                 s[2] = -t * cos(phi - My_PI / 3.0f);
                 num = 3;
             }
-            else
-            {
+            else {
                 // one real solution
                 double sqrt_D = sqrt(D);
                 double u = cbrt(sqrt_D + fabs(q));
@@ -529,11 +514,12 @@ namespace ACCD {
         return num;
     }
 
-    inline __device__ void _equateCubic_VF(
+    inline __device__ 
+    void _equateCubic_VF(
         double3 a0, double3 ad, double3 b0, double3 bd,
         double3 c0, double3 cd, double3 p0, double3 pd,
-        double& a, double& b, double& c, double& d, const double& thickness)
-    {
+        double& a, double& b, double& c, double& d, const double& thickness) {
+
         double3 dab, dac, dap;
         double3 oab, oac, oap;
         double3 dabXdac, dabXoac, oabXdac, oabXoac;
@@ -552,11 +538,12 @@ namespace ACCD {
         d = thickness * MATHUTILS::__v_vec_dot(oap, oabXoac);
     }
 
-    inline __device__ double IntersectVF(double3 ta0, double3 tb0, double3 tc0,
+    inline __device__ 
+    double IntersectVF(double3 ta0, double3 tb0, double3 tc0,
         double3 ad, double3 bd, double3 cd,
         double3 q0, double3 qd,
-        const double& errorRate, const double& thickness)
-    {
+        const double& errorRate, const double& thickness) {
+
         double collisionTime = 1.0;
 
         double a, b, c, d; /* cubic polynomial coefficients */
@@ -602,8 +589,8 @@ namespace ACCD {
         const double3& _dt0,
         const double3& _dt1,
         const double3& _dt2,
-        double errorRate, double thickness)
-    {
+        double errorRate, double thickness) {
+
         double ret = IntersectVF(_t0, _t1, _t2, _dt0, _dt1, _dt2, _p, _dp, errorRate, thickness);
 
         return ret;

@@ -72,7 +72,6 @@ public:
 	void updateBoundary(std::unique_ptr<GeometryManager>& instance, double alpha);
 	void updateBoundaryMoveDir(std::unique_ptr<GeometryManager>& instance, double alpha);
     void updateBoundary2(std::unique_ptr<GeometryManager>& instance);
-	void computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate);
 
 	void initKappa(std::unique_ptr<GeometryManager>& instance);
 	void suggestKappa(double& kappa);

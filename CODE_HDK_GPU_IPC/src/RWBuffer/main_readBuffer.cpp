@@ -72,9 +72,7 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 		initSIMFEM();
 		initSIMBVH();
-		buildSIMBVH();
 		initSIMIPC();
-		buildSIMCP();
 
 		FIRSTFRAME::hou_initialized = true;
 	}
@@ -429,7 +427,6 @@ void GAS_Read_Buffer::initSIMFEM() {
 		double vlm = instance->triArea[i];
 		sumVolume += vlm;
 	}
-	std::cout << "sumVolume~~~~~~" << sumVolume << std::endl;
 	
 	instance->meanMass = sumMass / instance->numVertices;
 	instance->meanVolume = sumVolume / instance->numVertices;
@@ -512,15 +509,6 @@ void GAS_Read_Buffer::initSIMBVH() {
 	// calcuate Morton Code and sort MC together with face index
 	SortMesh::sortMesh(instance, instance->LBVH_F_ptr);
 
-}
-
-
-
-
-void GAS_Read_Buffer::buildSIMBVH() {
-	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "buildSIMBVH geoinstance not initialized");
-
 	instance->LBVH_F_ptr->Construct();
 	instance->LBVH_E_ptr->Construct();
 
@@ -541,23 +529,17 @@ void GAS_Read_Buffer::initSIMIPC() {
 	double3 &upper = AABBScene->m_upper;
 	double3 &lower = AABBScene->m_lower;
 	CHECK_ERROR((upper.x >= lower.x) && (upper.y >= lower.y) && (upper.z >= lower.z), "AABB maybe error, please check again");
-    std::cout << "SceneSize upper/lower: ~~" << upper.x << " " << lower.x << std::endl;
 
 	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene->m_upper, AABBScene->m_lower));
 	instance->dTol = 1e-18 * instance->bboxDiagSize2;
 	instance->minKappaCoef = 1e11;
 	instance->dHat = instance->relative_dhat * instance->relative_dhat * instance->bboxDiagSize2;
 	instance->fDhat = 1e-6 * instance->bboxDiagSize2;
-	
-}
-
-void GAS_Read_Buffer::buildSIMCP() {
-	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "buildSIMCP geoinstance not initialized");
 
 	CUDA_SAFE_CALL(cudaMemset(instance->cudaCPNum, 0, 5 * sizeof(uint32_t)));
 	CUDA_SAFE_CALL(cudaMemset(instance->cudaGPNum, 0, sizeof(uint32_t)));
-
+	
+	// build collision detection
 	instance->LBVH_F_ptr->SelfCollitionDetect(instance->dHat);
 	instance->LBVH_E_ptr->SelfCollitionDetect(instance->dHat);
 

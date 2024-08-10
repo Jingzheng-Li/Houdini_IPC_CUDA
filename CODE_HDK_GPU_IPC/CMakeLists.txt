@@ -17,17 +17,11 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/hfs19.5/toolkit/cmake")
 find_package(Houdini REQUIRED)
 find_package(CUDAToolkit REQUIRED COMPONENTS cufft)
 find_package(Eigen3 REQUIRED)
-# find_package(GLEW REQUIRED)
-# find_package(GLUT REQUIRED)
-# find_package(OpenGL REQUIRED)
 
 # Include directories
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${HOUDINI_INCLUDE_DIRS})
 include_directories(${EIGEN3_INCLUDE_DIR})
-# include_directories(${GLEW_INCLUDE_DIRS})
-# include_directories(${GLUT_INCLUDE_DIRS})
-# include_directories(${OPENGL_INCLUDE_DIRS})
 include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 # Add library with source files
@@ -65,12 +59,16 @@ set_target_properties(${library_name} PROPERTIES
 target_link_libraries(${library_name} PRIVATE Houdini)
 target_link_libraries(${library_name} PRIVATE cusparse cublas cusolver cudart_static)
 target_link_libraries(${library_name} PRIVATE Eigen3::Eigen)
-# target_link_libraries(${library_name} PRIVATE GLUT::GLUT GLEW::GLEW OpenGL::GLU)
 
 # Compile definitions
 target_compile_definitions(${library_name} PRIVATE GIPC_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets/")
 target_compile_definitions(${library_name} PRIVATE GIPC_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Output/")
-target_compile_definitions(${library_name} PRIVATE USE_SNK SVD_DOUBLE ADAPTIVE_KAPPA)
+
+target_compile_definitions(${library_name} PRIVATE 
+    USE_SNK 
+    SVD_DOUBLE 
+    ADAPTIVE_KAPPA
+)
 
 # Compile options
 target_compile_features(${library_name} PRIVATE cxx_std_17 cuda_std_17)

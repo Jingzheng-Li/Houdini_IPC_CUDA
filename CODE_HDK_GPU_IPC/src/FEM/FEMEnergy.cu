@@ -5,7 +5,7 @@
 namespace FEMENERGY {
 
     __device__ __host__
-        static Eigen::Matrix3d crossMatrix(Eigen::Vector3d v) {
+    static Eigen::Matrix3d crossMatrix(Eigen::Vector3d v) {
         Eigen::Matrix3d ret;
         ret << 0, -v[2], v[1],
             v[2], 0, -v[0],
@@ -14,17 +14,19 @@ namespace FEMENERGY {
     }
 
     __device__ __host__
-        static Eigen::Matrix2d adjugate(Eigen::Matrix2d M) {
+    static Eigen::Matrix2d adjugate(Eigen::Matrix2d M) {
         Eigen::Matrix2d ret;
         ret << M(1, 1), -M(0, 1), -M(1, 0), M(0, 0);
         return ret;
     }
 
     __device__ __host__
-        static double angle(const Eigen::Vector3d& v, const Eigen::Vector3d& w, const Eigen::Vector3d& axis,
-            Eigen::Matrix<double, 1, 9>* derivative, // v, w
-            Eigen::Matrix<double, 9, 9>* hessian
-        ) {
+    static double angle(const Eigen::Vector3d& v, 
+        const Eigen::Vector3d& w, 
+        const Eigen::Vector3d& axis,
+        Eigen::Matrix<double, 1, 9>* derivative, // v, w
+        Eigen::Matrix<double, 9, 9>* hessian) {
+
         double theta = 2.0 * atan2((v.cross(w).dot(axis) / axis.norm()), v.dot(w) + v.norm() * w.norm());
 
         if (derivative) {
@@ -32,6 +34,7 @@ namespace FEMENERGY {
             derivative->segment<3>(3) = axis.cross(w) / w.squaredNorm() / axis.norm();
             derivative->segment<3>(6).setZero();
         }
+
         if (hessian) {
             hessian->setZero();
             hessian->block<3, 3>(0, 0) +=
@@ -52,13 +55,14 @@ namespace FEMENERGY {
     }
 
     __device__ __host__
-        static double edgeTheta(
-            const Eigen::Vector3d& q0,
-            const Eigen::Vector3d& q1,
-            const Eigen::Vector3d& q2,
-            const Eigen::Vector3d& q3,
-            Eigen::Matrix<double, 1, 12>* derivative, // edgeVertex, then edgeOppositeVertex
-            Eigen::Matrix<double, 12, 12>* hessian) {
+    static double edgeTheta(
+        const Eigen::Vector3d& q0,
+        const Eigen::Vector3d& q1,
+        const Eigen::Vector3d& q2,
+        const Eigen::Vector3d& q3,
+        Eigen::Matrix<double, 1, 12>* derivative, // edgeVertex, then edgeOppositeVertex
+        Eigen::Matrix<double, 12, 12>* hessian) {
+
         if (derivative)
             derivative->setZero();
         if (hessian)
@@ -156,6 +160,7 @@ namespace FEMENERGY {
 
     __device__ __host__
     void __calculateDm2D_double(const double3* vertexes, const uint3& index, MATHUTILS::Matrix2x2d& M) {
+
         double3 v01 = MATHUTILS::__minus(vertexes[index.y], vertexes[index.x]);
         double3 v02 = MATHUTILS::__minus(vertexes[index.z], vertexes[index.x]);
         double3 normal = MATHUTILS::__normalized(MATHUTILS::__v_vec_cross(v01, v02));
@@ -169,8 +174,6 @@ namespace FEMENERGY {
         double cos = MATHUTILS::__v_vec_dot(normal, target);
         MATHUTILS::Matrix3x3d rotation;
         MATHUTILS::__set_Mat_val(rotation, 1, 0, 0, 0, 1, 0, 0, 0, 1);
-
-        // printf("%f~~~~~\n", cos);
 
         if (cos + 1 == 0) {
             rotation.m[0][0] = -1; rotation.m[1][1] = -1;
@@ -252,7 +255,6 @@ namespace FEMENERGY {
             vcoeff *= 1e-2;
         }
 
-
         MATHUTILS::Matrix2x2d uu = MATHUTILS::__v2_vec2_toMat2x2(u, u);
         MATHUTILS::Matrix2x2d vv = MATHUTILS::__v2_vec2_toMat2x2(v, v);
         MATHUTILS::Matrix3x2d Fuu = MATHUTILS::__M3x2_M2x2_Multiply(F, uu);
@@ -269,6 +271,7 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x2d PEPF_stretch = MATHUTILS::__Mat3x2_add(MATHUTILS::__S_Mat3x2_multiply(Fuu, 2 * ucoeff), MATHUTILS::__S_Mat3x2_multiply(Fvv, 2 * vcoeff));
         MATHUTILS::Matrix3x2d PEPF = MATHUTILS::__Mat3x2_add(MATHUTILS::__S_Mat3x2_multiply(PEPF_shear, shearStiff), MATHUTILS::__S_Mat3x2_multiply(PEPF_stretch, stretchStiff));
         return PEPF;
+
     }
 
     __device__
@@ -303,8 +306,8 @@ namespace FEMENERGY {
     }
 
     __device__
-    MATHUTILS::Matrix3x3d computePEPF_ARAP_double(const MATHUTILS::Matrix3x3d& F, const MATHUTILS::Matrix3x3d& Sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double& lengthRate)
-    {
+    MATHUTILS::Matrix3x3d computePEPF_ARAP_double(const MATHUTILS::Matrix3x3d& F, const MATHUTILS::Matrix3x3d& Sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double& lengthRate) {
+
         MATHUTILS::Matrix3x3d R, S;
 
         S = MATHUTILS::__M_Mat_multiply(MATHUTILS::__M_Mat_multiply(V, Sigma), MATHUTILS::__Transpose3x3(V));//V * sigma * V.transpose();
@@ -314,8 +317,7 @@ namespace FEMENERGY {
     }
 
     __device__
-    MATHUTILS::Matrix9x9d project_ARAP_H_3D(const MATHUTILS::Matrix3x3d& Sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double& lengthRate)
-    {
+    MATHUTILS::Matrix9x9d project_ARAP_H_3D(const MATHUTILS::Matrix3x3d& Sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double& lengthRate) {
         MATHUTILS::Matrix3x3d R, S;
 
         S = MATHUTILS::__M_Mat_multiply(MATHUTILS::__M_Mat_multiply(V, Sigma), MATHUTILS::__Transpose3x3(V));//V * sigma * V.transpose();
@@ -497,6 +499,7 @@ namespace FEMENERGY {
 
     __device__ 
     MATHUTILS::Matrix9x9d __project_StabbleNHK_H_3D(const double3& sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double& lengthRate, const double& volumRate, MATHUTILS::Matrix9x9d& H) {
+
         double sigxx = sigma.x * sigma.x;
         double sigyy = sigma.y * sigma.y;
         double sigzz = sigma.z * sigma.z;
@@ -597,9 +600,9 @@ namespace FEMENERGY {
 
     __device__ 
     MATHUTILS::Matrix9x9d __project_ANIOSI5_H_3D(const MATHUTILS::Matrix3x3d& F, const MATHUTILS::Matrix3x3d& sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double3& fiber_direction, const double& scale, const double& contract_length) {
+
         double3 direction = MATHUTILS::__normalized(fiber_direction);
         MATHUTILS::Matrix3x3d S, M_temp[3], Vtranspose;
-
 
         //S = V * sigma * V.transpose();
         MATHUTILS::__M_Mat_multiply(V, sigma, M_temp[0]);
@@ -745,7 +748,6 @@ namespace FEMENERGY {
         if (I5v < 1) {
             vcoeff *= 1e-2;
         }
-
 
         double I6 = MATHUTILS::__v_vec_dot(__M3x2_v2_multiply(F, u), __M3x2_v2_multiply(F, v));
         return area * (stretchStiff * (ucoeff * pow(sqrt(I5u) - 1, 2) + vcoeff * pow(sqrt(I5v) - 1, 2)) + shearhStiff * I6 * I6);
@@ -971,20 +973,17 @@ namespace FEMENERGY {
     }
 
     template <typename Scalar, int size>
-    __device__ void PDSNK(Eigen::Matrix<Scalar, size, size>& symMtr)
-    {
+    __device__ void PDSNK(Eigen::Matrix<Scalar, size, size>& symMtr) {
+
         Eigen::SelfAdjointEigenSolver<Eigen::Matrix<Scalar, size, size>> eigenSolver(symMtr);
-        if(eigenSolver.eigenvalues()[0] >= 0.0)
-        {
+        if(eigenSolver.eigenvalues()[0] >= 0.0) {
             return;
         }
         Eigen::Matrix<Scalar, size, size> D;
         D.setZero();
         int rows = size;  //((size == Eigen::Dynamic) ? symMtr.rows() : size);
-        for(int i = 0; i < rows; i++)
-        {
-            if(eigenSolver.eigenvalues()[i] > 0.0)
-            {
+        for(int i = 0; i < rows; i++) {
+            if(eigenSolver.eigenvalues()[i] > 0.0) {
                 D(i, i) = eigenSolver.eigenvalues()[i];
             }
         }
@@ -1126,9 +1125,7 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x3d* DmInverses, 
         const double3* vertexes, 
         const uint4* tetrahedras,
-        MATHUTILS::Matrix12x12d* Hessians, uint32_t offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt)
-    {
-
+        MATHUTILS::Matrix12x12d* Hessians, uint32_t offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
 
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= tetrahedraNum) return;
@@ -1208,8 +1205,8 @@ namespace FEMENERGY {
 
     __global__
     void _calculate_triangle_fem_gradient_hessian(MATHUTILS::Matrix2x2d* trimInverses, const double3* vertexes, const uint3* triangles,
-        MATHUTILS::Matrix9x9d* Hessians, uint32_t offset, const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearhStiff, double IPC_dt)
-    {
+        MATHUTILS::Matrix9x9d* Hessians, uint32_t offset, const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearhStiff, double IPC_dt) {
+
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= triangleNum) return;
 
@@ -1251,8 +1248,8 @@ namespace FEMENERGY {
 
     __global__
     void _calculate_triangle_fem_gradient(MATHUTILS::Matrix2x2d* trimInverses, const double3* vertexes, const uint3* triangles,
-        const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearhStiff, double IPC_dt)
-    {
+        const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearhStiff, double IPC_dt) {
+
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= triangleNum) return;
 
@@ -1285,8 +1282,8 @@ namespace FEMENERGY {
 
     __global__
     void _calculate_fem_gradient(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
-        const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double dt)
-    {
+        const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double dt) {
+
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= tetrahedraNum) return;
 
@@ -1337,10 +1334,11 @@ namespace FEMENERGY {
 
     __global__
     void _calculate_bending_gradient_hessian(const double3* vertexes, const double3* rest_vertexes, const uint2* edges, const uint2* edges_adj_vertex,
-        MATHUTILS::Matrix12x12d* Hessians, uint4* Indices, uint32_t offset, double3* gradient, int edgeNum, double bendStiff, double IPC_dt)
-    {
+        MATHUTILS::Matrix12x12d* Hessians, uint4* Indices, uint32_t offset, double3* gradient, int edgeNum, double bendStiff, double IPC_dt) {
+
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= edgeNum) return;
+
         uint2 edge = edges[idx];
         uint2 adj = edges_adj_vertex[idx];
         if (adj.y == -1) {
@@ -1416,9 +1414,10 @@ namespace FEMENERGY {
         Hessians[idx + offset] = d_H;
         Indices[idx + offset] = make_uint4(edge.x, edge.y, adj.x, adj.y);
     }
+
+
     __device__
-    double __cal_bending_energy(const double3* vertexes, const double3* rest_vertexes, const uint2& edge, const uint2& adj, double length, double bendStiff)
-    {
+    double __cal_bending_energy(const double3* vertexes, const double3* rest_vertexes, const uint2& edge, const uint2& adj, double length, double bendStiff) {
         if (adj.y == -1)return 0;
         auto x0 = vertexes[edge.x];
         auto x1 = vertexes[edge.y];
@@ -1449,18 +1448,18 @@ namespace FEMENERGY {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= numbers) return;
 
-        double3 gravityDtSq = make_double3(0, 0, 0);//MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);//Vector3d(0, gravity, 0) * IPC_dt * IPC_dt;
+        double3 gravityDtSq = make_double3(0, 0, 0); //MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);//Vector3d(0, gravity, 0) * IPC_dt * IPC_dt;
         if (_btype[idx] == 0) {
             gravityDtSq = MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);
         }
-        _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq));//(mesh.V_prev[vI] + (mesh.velocities[vI] * IPC_dt + gravityDtSq));
+        _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq)); //(mesh.V_prev[vI] + (mesh.velocities[vI] * IPC_dt + gravityDtSq));
     }
 
     void computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate) {
         int numbers = instance->numVertices;
         const unsigned int threadNum = default_threads;
         int blockNum = (numbers + threadNum - 1) / threadNum;//
-        _computeXTilta << <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
+        _computeXTilta <<<blockNum, threadNum>>> (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
     }
 
 

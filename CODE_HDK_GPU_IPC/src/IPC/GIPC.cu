@@ -6351,8 +6351,8 @@ bool GIPC::isIntersected(std::unique_ptr<GeometryManager>& instance)
     return false;
 }
 
-bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha)
-{
+bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha) {
+
     bool stopped = false;
     //buildCP();
     double lastEnergyVal = computeEnergy(instance);
@@ -6409,8 +6409,10 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
         buildCP();
         testingE = computeEnergy(instance);
     }
+
     if (numOfLineSearch > 8)
         printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        
     if (alpha < LFStepSize) {
         bool needRecomputeCS = false;
         while (checkInterset && isIntersected(instance)) {
@@ -6616,14 +6618,6 @@ void GIPC::updateBoundary2(std::unique_ptr<GeometryManager>& instance) {
     int blockNum = (numbers + threadNum - 1) / threadNum;//
     _updateBoundary2<< <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaConstraints, numbers);
 }
-
-void GIPC::computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate) {
-    int numbers = vertexNum;
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _computeXTilta << <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, IPC_dt, rate, numbers);
-}
-
 
 
 
@@ -6860,9 +6854,7 @@ void GIPC::IPC_Solver() {
         }
 
         animation_fullRate += animation_subRate;
-        //updateVelocities(TetMesh);
-
-        //computeXTilta(TetMesh, 1);
+        
 #ifdef USE_FRICTION
         CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
         CUDA_SAFE_CALL(cudaFree(distCoord));
@@ -6898,7 +6890,7 @@ void GIPC::IPC_Solver() {
 
     updateVelocities(m_instance);
 
-    computeXTilta(m_instance, 1);
+    FEMENERGY::computeXTilta(m_instance, 1);
     cudaEventRecord(end0);
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
     float tttime;
