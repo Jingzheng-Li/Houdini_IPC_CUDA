@@ -120,12 +120,12 @@ public:
 	uint32_t* mc_close_cpNum;
 	int* mc_MatIndex;
 
-	uint32_t* _environment_collisionPair;
+	uint32_t* mc_environment_collisionPair;
 
-	uint32_t* _closeConstraintID;
-	double* _closeConstraintVal;
-	int4* _closeMConstraintID;
-	double* _closeMConstraintVal;
+	uint32_t* mc_closeConstraintID;
+	double* mc_closeConstraintVal;
+	int4* mc_closeMConstraintID;
+	double* mc_closeMConstraintVal;
 
 	uint32_t* _gpNum;
 	uint32_t* _close_gpNum;
