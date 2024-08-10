@@ -176,14 +176,14 @@ public:
 	double animation_subRate;
 	double animation_fullRate;
 
-	double bendStiff;
-	double density;
-	double YoungModulus;
-	double PoissonRate;
-	double lengthRateLame;
-	double volumeRateLame;
-	double lengthRate;
-	double volumeRate;
+	double m_bendStiff;
+	double m_density;
+	double m_YoungModulus;
+	double m_PoissonRate;
+	double m_lengthRateLame;
+	double m_volumeRateLame;
+	double m_lengthRate;
+	double m_volumeRate;
 	double frictionRate;
 	double clothThickness;
 	double clothYoungModulus;
