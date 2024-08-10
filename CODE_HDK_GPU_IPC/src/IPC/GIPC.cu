@@ -5418,7 +5418,7 @@ void GIPC::GroundCollisionDetect() {
     int numbers = surf_vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _GroundCollisionDetectIPC << <blockNum, threadNum >> > (mc_vertexes, _surfVerts, _groundOffset, _groundNormal, _environment_collisionPair, _gpNum, dHat, numbers);
+    _GroundCollisionDetectIPC << <blockNum, threadNum >> > (mc_vertexes, mc_surfVerts, _groundOffset, _groundNormal, _environment_collisionPair, _gpNum, dHat, numbers);
 
 }
 
@@ -5577,7 +5577,7 @@ double GIPC::cfl_largestSpeed(double* mqueue) {
     /*double* _maxV;
     CUDA_SAFE_CALL(cudaMalloc((void**)&_maxV, numbers * sizeof(double)));*/
     //CUDA_SAFE_CALL(cudaMemcpy(_tempMinMovement, _moveDir, number * sizeof(AABB), cudaMemcpyDeviceToDevice));
-    _reduct_max_cfl_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, mqueue, _surfVerts, numbers);
+    _reduct_max_cfl_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, mqueue, mc_surfVerts, numbers);
     //_reduct_min_double3_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, _tempMinMovement, numbers);
 
     numbers = blockNum;
@@ -5651,7 +5651,7 @@ double GIPC::ground_largestFeasibleStepSize(double slackness, double* mqueue) {
     //    }
     //    delete[] mvd;
     //}
-    _reduct_min_groundTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, _surfVerts, _groundOffset, _groundNormal, _moveDir, mqueue, slackness, numbers);
+    _reduct_min_groundTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, mc_surfVerts, _groundOffset, _groundNormal, _moveDir, mqueue, slackness, numbers);
 
 
     numbers = blockNum;
@@ -6640,8 +6640,8 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     mc_vertexes = instance->cudaVertPos;
     mc_rest_vertexes = instance->cudaRestVertPos;
     mc_faces = instance->cudaSurfFace;
-    _edges = instance->cudaSurfEdge;
-    _surfVerts = instance->cudaSurfVert;
+    mc_edges = instance->cudaSurfEdge;
+    mc_surfVerts = instance->cudaSurfVert;
 
 
     _targetVert = instance->cudaTargetVert;

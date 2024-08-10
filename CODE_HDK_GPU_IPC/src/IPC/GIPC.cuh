@@ -103,8 +103,8 @@ public:
 	double3* mc_vertexes;
 	double3* mc_rest_vertexes;
 	uint3* mc_faces;
-	uint2* _edges;
-	uint32_t* _surfVerts;
+	uint2* mc_edges;
+	uint32_t* mc_surfVerts;
 
 
 	double3* _targetVert;	
