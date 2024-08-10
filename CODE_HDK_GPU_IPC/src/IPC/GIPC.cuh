@@ -112,10 +112,10 @@ public:
 	uint32_t m_softNum;
 	uint32_t m_triangleNum;
 
-	double3* _moveDir;
+	double3* mc_moveDir;
 
-	int4* _collisonPairs;
-	int4* _ccd_collisonPairs;
+	int4* mc_collisonPairs;
+	int4* mc_ccd_collisonPairs;
 	uint32_t* _cpNum;
 	int* _MatIndex;
 	uint32_t* _close_cpNum;

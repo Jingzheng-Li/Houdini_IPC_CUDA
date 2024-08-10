@@ -5405,7 +5405,7 @@ void GIPC::buildFrictionSets() {
     int numbers = h_cpNum[0];
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    _calFrictionLastH_DistAndTan <<<blockNum, threadNum>>> (mc_vertexes, _collisonPairs, lambda_lastH_scalar, distCoord, tanBasis, _collisonPairs_lastH, dHat, IPCKappa, _cpNum, h_cpNum[0]);
+    _calFrictionLastH_DistAndTan <<<blockNum, threadNum>>> (mc_vertexes, mc_collisonPairs, lambda_lastH_scalar, distCoord, tanBasis, _collisonPairs_lastH, dHat, IPCKappa, _cpNum, h_cpNum[0]);
     CUDA_SAFE_CALL(cudaMemcpy(h_cpNum_last, _cpNum, 5 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
     numbers = h_gpNum;
@@ -5546,7 +5546,7 @@ double GIPC::self_largestFeasibleStepSize(double slackness, double* mqueue, int 
     //double* _minSteps;
     //CUDA_SAFE_CALL(cudaMalloc((void**)&_minSteps, numbers * sizeof(double)));
     //CUDA_SAFE_CALL(cudaMemcpy(_tempMinMovement, _moveDir, number * sizeof(AABB), cudaMemcpyDeviceToDevice));
-    _reduct_min_selfTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, _ccd_collisonPairs, _moveDir, mqueue, slackness, numbers);
+    _reduct_min_selfTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, mc_ccd_collisonPairs, mc_moveDir, mqueue, slackness, numbers);
     //_reduct_min_double3_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, _tempMinMovement, numbers);
 
     numbers = blockNum;
@@ -5577,7 +5577,7 @@ double GIPC::cfl_largestSpeed(double* mqueue) {
     /*double* _maxV;
     CUDA_SAFE_CALL(cudaMalloc((void**)&_maxV, numbers * sizeof(double)));*/
     //CUDA_SAFE_CALL(cudaMemcpy(_tempMinMovement, _moveDir, number * sizeof(AABB), cudaMemcpyDeviceToDevice));
-    _reduct_max_cfl_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, mqueue, mc_surfVerts, numbers);
+    _reduct_max_cfl_to_double << <blockNum, threadNum, sharedMsize >> > (mc_moveDir, mqueue, mc_surfVerts, numbers);
     //_reduct_min_double3_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, _tempMinMovement, numbers);
 
     numbers = blockNum;
@@ -5651,7 +5651,7 @@ double GIPC::ground_largestFeasibleStepSize(double slackness, double* mqueue) {
     //    }
     //    delete[] mvd;
     //}
-    _reduct_min_groundTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, mc_surfVerts, _groundOffset, _groundNormal, _moveDir, mqueue, slackness, numbers);
+    _reduct_min_groundTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, mc_surfVerts, _groundOffset, _groundNormal, mc_moveDir, mqueue, slackness, numbers);
 
 
     numbers = blockNum;
@@ -5679,7 +5679,7 @@ double GIPC::InjectiveStepSize(double slackness, double errorRate, double* mqueu
 
     unsigned int sharedMsize = sizeof(double) * (threadNum >> 5);
 
-    _reduct_min_InjectiveTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, tets, _moveDir, mqueue, slackness, errorRate, numbers);
+    _reduct_min_InjectiveTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, tets, mc_moveDir, mqueue, slackness, errorRate, numbers);
 
 
     numbers = blockNum;
@@ -5726,8 +5726,8 @@ void GIPC::buildFullCP(const double& alpha) {
 
     CUDA_SAFE_CALL(cudaMemset(_cpNum, 0, sizeof(uint32_t)));
 
-    m_bvh_f->SelfCollitionFullDetect(dHat, _moveDir, alpha);
-    m_bvh_e->SelfCollitionFullDetect(dHat, _moveDir, alpha);
+    m_bvh_f->SelfCollitionFullDetect(dHat, mc_moveDir, alpha);
+    m_bvh_e->SelfCollitionFullDetect(dHat, mc_moveDir, alpha);
 
     CUDA_SAFE_CALL(cudaMemcpy(&h_ccd_cpNum, _cpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost));
 }
@@ -5743,8 +5743,8 @@ AABB* GIPC::calcuMaxSceneSize() {
 }
 
 void GIPC::buildBVH_FULLCCD(const double& alpha) {
-    m_bvh_f->ConstructFullCCD(_moveDir, alpha);
-    m_bvh_e->ConstructFullCCD(_moveDir, alpha);
+    m_bvh_f->ConstructFullCCD(mc_moveDir, alpha);
+    m_bvh_e->ConstructFullCCD(mc_moveDir, alpha);
 }
 
 void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
@@ -5754,7 +5754,7 @@ void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
 
-    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, _collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, mKappa, numbers);
+    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, mKappa, numbers);
 
 
 }
@@ -5768,7 +5768,7 @@ void GIPC::calBarrierHessian() {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
 
-    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, _collisonPairs, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, IPCKappa, numbers);
+    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, _cpNum, _MatIndex, dHat, IPCKappa, numbers);
 }
 
 void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
@@ -5821,7 +5821,7 @@ void GIPC::computeSelfCloseVal() {
     int numbers = h_cpNum[0];
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _calSelfCloseVal << <blockNum, threadNum >> > (mc_vertexes, _collisonPairs, _closeMConstraintID, _closeMConstraintVal,
+    _calSelfCloseVal << <blockNum, threadNum >> > (mc_vertexes, mc_collisonPairs, _closeMConstraintID, _closeMConstraintVal,
         _close_cpNum, dTol, numbers);
 }
 
@@ -5852,7 +5852,7 @@ double2 GIPC::minMaxSelfDist() {
     double2* _queue;
     CUDA_SAFE_CALL(cudaMalloc((void**)&_queue, numbers * sizeof(double2)));
     //CUDA_SAFE_CALL(cudaMemcpy(_tempMinMovement, _moveDir, number * sizeof(AABB), cudaMemcpyDeviceToDevice));
-    _reduct_MSelfDist << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, _collisonPairs, _queue, numbers);
+    _reduct_MSelfDist << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, mc_collisonPairs, _queue, numbers);
     //_reduct_min_double3_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, _tempMinMovement, numbers);
 
     numbers = blockNum;
@@ -5879,7 +5879,7 @@ void GIPC::calBarrierGradient(double3* _gradient, double mKappa) {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
-    _calBarrierGradient << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, _collisonPairs, _gradient, dHat, mKappa, numbers);
+    _calBarrierGradient << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, dHat, mKappa, numbers);
 
 }
 
@@ -6210,10 +6210,10 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         _getFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTetElement, instance->cudaDmInverses, instance->cudaTetVolume, numbers, lengthRate, volumeRate);
         break;
     case 2:
-        _getBarrierEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, _collisonPairs, IPCKappa, dHat, numbers);
+        _getBarrierEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, mc_collisonPairs, IPCKappa, dHat, numbers);
         break;
     case 3:
-        _getDeltaEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaFb, _moveDir, numbers);
+        _getDeltaEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaFb, mc_moveDir, numbers);
         break;
     case 4:
         _computeGroundEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, _groundOffset, _groundNormal, _environment_collisionPair, dHat, IPCKappa, numbers);
@@ -6280,7 +6280,7 @@ double GIPC::computeEnergy(std::unique_ptr<GeometryManager>& instance) {
 
 int GIPC::calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type) {
     if (preconditioner_type == 0) {
-        return PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
+        return PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
     }
     else if (preconditioner_type == 1) {
         std::cout << "not support preconditioner type right now!" << std::endl;
@@ -6364,7 +6364,7 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
 
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTempDouble3Mem, instance->cudaVertPos, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
 
-    stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, _moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
+    stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, mc_moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
 
     bool rehash = true;
 
@@ -6382,7 +6382,7 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
         alpha /= 2.0;
         numOfIntersect++;
         alpha = MATHUTILS::__m_min(cfl_alpha, alpha);
-        stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, _moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
+        stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, mc_moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
         buildBVH();
     }
 
@@ -6403,7 +6403,7 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
         alpha /= 2.0;
         ++numOfLineSearch;
 
-        stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, _moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
+        stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, mc_moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
 
         buildBVH();
         buildCP();
@@ -6421,7 +6421,7 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
             alpha /= 2.0;
             numOfIntersect++;
             alpha = MATHUTILS::__m_min(cfl_alpha, alpha);
-            stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, _moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
+            stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, mc_moveDir, instance->cudaBoundaryType, alpha, false, vertexNum);
             buildBVH();
             needRecomputeCS = true;
         }
@@ -6487,7 +6487,7 @@ std::vector<int> iterV;
 int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0, double& time1, double& time2, double& time3, double& time4) {
     int iterCap = 10000, k = 0;
 
-    CUDA_SAFE_CALL(cudaMemset(_moveDir, 0, vertexNum * sizeof(double3)));
+    CUDA_SAFE_CALL(cudaMemset(mc_moveDir, 0, vertexNum * sizeof(double3)));
     //m_BH->m_MALLOC_DEVICE_MEM_O(tetrahedraNum, h_cpNum + 1, h_gpNum);
     double totalTimeStep = 0;
     for (; k < iterCap; ++k) {
@@ -6511,7 +6511,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         timemakePd += computeGradientAndHessian(instance);
 
 
-        double distToOpt_PN = calcMinMovement(_moveDir, m_pcg_data->m_squeue, vertexNum);
+        double distToOpt_PN = calcMinMovement(mc_moveDir, m_pcg_data->m_squeue, vertexNum);
 
         bool gradVanish = (distToOpt_PN < sqrt(Newton_solver_threshold * Newton_solver_threshold * bboxDiagSize2 * IPC_dt * IPC_dt));
         if (k && gradVanish) {
@@ -6602,14 +6602,14 @@ void GIPC::updateBoundary(std::unique_ptr<GeometryManager>& instance, double alp
     int numbers = vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateBoundary << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, _moveDir, alpha, numbers);
+    _updateBoundary << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, mc_moveDir, alpha, numbers);
 }
 
 void GIPC::updateBoundaryMoveDir(std::unique_ptr<GeometryManager>& instance, double alpha) {
     int numbers = vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateBoundaryMoveDir << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, _moveDir, IPC_dt, MATHUTILS::PI, alpha, numbers);
+    _updateBoundaryMoveDir << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, mc_moveDir, IPC_dt, MATHUTILS::PI, alpha, numbers);
 }
 
 void GIPC::updateBoundary2(std::unique_ptr<GeometryManager>& instance) {
@@ -6646,9 +6646,9 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
 
     mc_targetVert = instance->cudaTargetVert;
     mc_targetInd = instance->cudaTargetIndex;
-    _moveDir = instance->cudaMoveDir;
-    _collisonPairs = instance->cudaCollisionPairs;
-    _ccd_collisonPairs = instance->cudaCCDCollisionPairs;
+    mc_moveDir = instance->cudaMoveDir;
+    mc_collisonPairs = instance->cudaCollisionPairs;
+    mc_ccd_collisonPairs = instance->cudaCCDCollisionPairs;
     _cpNum = instance->cudaCPNum;
     _MatIndex = instance->cudaMatIndex;
     _close_cpNum = instance->cudaCloseCPNum;
