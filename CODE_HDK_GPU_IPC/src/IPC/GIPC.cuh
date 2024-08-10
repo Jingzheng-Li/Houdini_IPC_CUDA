@@ -184,15 +184,15 @@ public:
 	double m_volumeRateLame;
 	double m_lengthRate;
 	double m_volumeRate;
-	double frictionRate;
-	double clothThickness;
-	double clothYoungModulus;
-	double stretchStiff;
-	double shearStiff;
-	double clothDensity;
-	double softMotionRate;
-	double Newton_solver_threshold;
-	double pcg_threshold;
+	double m_frictionRate;
+	double m_clothThickness;
+	double m_clothYoungModulus;
+	double m_stretchStiff;
+	double m_shearStiff;
+	double m_clothDensity;
+	double m_softMotionRate;
+	double m_Newton_solver_threshold;
+	double m_pcg_threshold;
 	//bool USE_MAS;
 
 };
