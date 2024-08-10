@@ -99,7 +99,6 @@ public:
     std::unique_ptr<PCGData>& m_pcg_data;
     std::unique_ptr<BHessian>& m_BH;
 
-
 	bool animation;
 
 	double3* _vertexes;

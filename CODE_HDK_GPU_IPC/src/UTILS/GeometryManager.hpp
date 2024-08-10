@@ -119,7 +119,13 @@ public:
     int4* cudaCCDCollisionPairs;
     uint32_t* cudaEnvCollisionPairs;
 
-    uint32_t* cudaCPNum; // collision pair
+    // cpnum[0] = all collision pairs
+    // cpnum[1] = all specific cps (pp, pe...)
+    // cpnum[2] = cps of pp
+    // cpnum[3] = cps of pe
+    // cpnum[4] = cps of pt
+    uint32_t* cudaCPNum; // collision pair [5]
+
     uint32_t* cudaGPNum; // ground pair
     uint32_t* cudaCloseGPNum; // close ground pair
     uint32_t* cudaCloseCPNum; // close collision pair

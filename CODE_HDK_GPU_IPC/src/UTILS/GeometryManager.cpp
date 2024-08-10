@@ -54,9 +54,9 @@ void GeometryManager::totallyfree() {
     if (instance) {
         instance->LBVH_E_ptr->CUDA_FREE_LBVH();
         instance->LBVH_F_ptr->CUDA_FREE_LBVH();
-        // instance->AABB_SceneSize_ptr->;
-        // instance->PCGData_ptr->CUDA_FREE_PCGDATA();
-        // instance->BH_ptr->CUDA_FREE_BHESSIAN();
+        // instance->AABB_SceneSize_ptr->cuda;
+        instance->PCGData_ptr->CUDA_FREE_PCGDATA();
+        instance->BH_ptr->CUDA_FREE_BHESSIAN();
         // instance->GIPC_ptr->;
 
         instance.reset();
