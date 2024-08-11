@@ -153,13 +153,13 @@ public:
 	double* mc_groundOffset;
 
 	// for friction
-	double* lambda_lastH_scalar;
-	double2* distCoord;
-	MATHUTILS::Matrix3x2d* tanBasis;
-	int4* _collisonPairs_lastH;
-	int* _MatIndex_last;
-	double* lambda_lastH_scalar_gd;
-	uint32_t* _collisonPairs_lastH_gd;
+	double* mc_lambda_lastH_scalar;
+	double2* mc_distCoord;
+	MATHUTILS::Matrix3x2d* mc_tanBasis;
+	int4* mc_collisonPairs_lastH;
+	int* mc_MatIndex_last;
+	double* mc_lambda_lastH_scalar_gd;
+	uint32_t* mc_collisonPairs_lastH_gd;
 
 
 	uint32_t m_vertexNum;
@@ -173,8 +173,8 @@ public:
 	int m_MAX_COLLITION_PAIRS_NUM;
 	int m_MAX_CCD_COLLITION_PAIRS_NUM;
 
-	double animation_subRate;
-	double animation_fullRate;
+	double m_animation_subRate;
+	double m_animation_fullRate;
 
 	double m_bendStiff;
 	double m_density;
