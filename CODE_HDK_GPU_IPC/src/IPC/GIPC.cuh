@@ -162,16 +162,16 @@ public:
 	uint32_t* _collisonPairs_lastH_gd;
 
 
-	uint32_t vertexNum;
-	uint32_t surf_vertexNum;
-	uint32_t surf_edgeNum;
-	uint32_t tri_edge_num;
-	uint32_t surf_faceNum;
-	uint32_t tetrahedraNum;
+	uint32_t m_vertexNum;
+	uint32_t m_surf_vertexNum;
+	uint32_t m_surf_edgeNum;
+	uint32_t m_tri_edge_num;
+	uint32_t m_surf_faceNum;
+	uint32_t m_tetrahedraNum;
 
 
-	int MAX_COLLITION_PAIRS_NUM;
-	int MAX_CCD_COLLITION_PAIRS_NUM;
+	int m_MAX_COLLITION_PAIRS_NUM;
+	int m_MAX_CCD_COLLITION_PAIRS_NUM;
 
 	double animation_subRate;
 	double animation_fullRate;
