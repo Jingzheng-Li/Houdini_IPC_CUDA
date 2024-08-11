@@ -144,13 +144,13 @@ public:
 	double m_fDhat;
 	double m_bboxDiagSize2;
 	double m_relative_dhat;
-	double dTol;
-    double minKappaCoef;
-	double IPC_dt;
-	double meanMass;
-	double meanVolumn;
-	double3* _groundNormal;
-	double* _groundOffset;
+	double m_dTol;
+    double m_minKappaCoef;
+	double m_IPC_dt;
+	double m_meanMass;
+	double m_meanVolumn;
+	double3* mc_groundNormal;
+	double* mc_groundOffset;
 
 	// for friction
 	double* lambda_lastH_scalar;
