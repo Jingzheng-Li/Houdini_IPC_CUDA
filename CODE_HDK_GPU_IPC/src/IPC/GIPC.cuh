@@ -98,7 +98,7 @@ public:
     std::unique_ptr<PCGData>& m_pcg_data;
     std::unique_ptr<BHessian>& m_BH;
 
-	bool animation;
+
 
 	double3* mc_vertexes;
 	double3* mc_rest_vertexes;
@@ -138,12 +138,12 @@ public:
 	uint32_t h_gpNum_last;
 	uint32_t h_cpNum_last[5];
 
-
-	double IPCKappa;
-	double dHat;
-	double fDhat;
-	double bboxDiagSize2;
-	double relative_dhat;
+	bool m_animation;
+	double m_IPCKappa;
+	double m_dHat;
+	double m_fDhat;
+	double m_bboxDiagSize2;
+	double m_relative_dhat;
 	double dTol;
     double minKappaCoef;
 	double IPC_dt;
