@@ -5405,12 +5405,12 @@ void GIPC::buildFrictionSets() {
     int numbers = h_cpNum[0];
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    _calFrictionLastH_DistAndTan <<<blockNum, threadNum>>> (mc_vertexes, mc_collisonPairs, mc_lambda_lastH_scalar, mc_distCoord, mc_tanBasis, mc_collisonPairs_lastH, m_dHat, m_IPCKappa, mc_cpNum, h_cpNum[0]);
+    _calFrictionLastH_DistAndTan <<<blockNum, threadNum>>> (mc_vertexes, mc_collisonPairs, mc_lambda_lastH_scalar, mc_distCoord, mc_tanBasis, mc_collisonPairs_lastH, m_instance->dHat, m_instance->Kappa, mc_cpNum, h_cpNum[0]);
     CUDA_SAFE_CALL(cudaMemcpy(h_cpNum_last, mc_cpNum, 5 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
     numbers = h_gpNum;
     blockNum = (numbers + threadNum - 1) / threadNum;
-    _calFrictionLastH_gd << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, mc_lambda_lastH_scalar_gd, mc_collisonPairs_lastH_gd, m_dHat, m_IPCKappa, h_gpNum);
+    _calFrictionLastH_gd << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, mc_lambda_lastH_scalar_gd, mc_collisonPairs_lastH_gd, m_instance->dHat, m_instance->Kappa, h_gpNum);
     h_gpNum_last = h_gpNum;
 }
 
@@ -5418,7 +5418,7 @@ void GIPC::GroundCollisionDetect() {
     int numbers = m_surf_vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _GroundCollisionDetectIPC << <blockNum, threadNum >> > (mc_vertexes, mc_surfVerts, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, mc_gpNum, m_dHat, numbers);
+    _GroundCollisionDetectIPC << <blockNum, threadNum >> > (mc_vertexes, mc_surfVerts, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, mc_gpNum, m_instance->dHat, numbers);
 
 }
 
@@ -5449,7 +5449,7 @@ void GIPC::computeGroundGradientAndHessian(double3* _gradient) {
     }
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, m_BH->m_D1Index, m_dHat, m_IPCKappa, numbers);
+    _computeGroundGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, m_BH->m_D1Index, m_instance->dHat, m_instance->Kappa, numbers);
     CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
@@ -5457,7 +5457,7 @@ void GIPC::computeCloseGroundVal() {
     int numbers = h_gpNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundCloseVal << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, m_dTol, mc_closeConstraintID, mc_closeConstraintVal, mc_close_gpNum, numbers);
+    _computeGroundCloseVal << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, m_instance->dTol, mc_closeConstraintID, mc_closeConstraintVal, mc_close_gpNum, numbers);
 
 }
 
@@ -5515,7 +5515,7 @@ void GIPC::computeGroundGradient(double3* _gradient, double mKappa) {
     int numbers = h_gpNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradient << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, m_dHat, mKappa, numbers);
+    _computeGroundGradient << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, m_instance->dHat, mKappa, numbers);
 }
 
 void GIPC::computeSoftConstraintGradient(double3* _gradient) {
@@ -5709,10 +5709,10 @@ void GIPC::buildCP() {
     CUDA_SAFE_CALL(cudaMemset(mc_gpNum, 0, sizeof(uint32_t)));
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     //m_bvh_f->Construct();
-    m_bvh_f->SelfCollitionDetect(m_dHat);
+    m_bvh_f->SelfCollitionDetect(m_instance->dHat);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     //m_bvh_e->Construct();
-    m_bvh_e->SelfCollitionDetect(m_dHat);
+    m_bvh_e->SelfCollitionDetect(m_instance->dHat);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     GroundCollisionDetect();
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -5726,8 +5726,8 @@ void GIPC::buildFullCP(const double& alpha) {
 
     CUDA_SAFE_CALL(cudaMemset(mc_cpNum, 0, sizeof(uint32_t)));
 
-    m_bvh_f->SelfCollitionFullDetect(m_dHat, mc_moveDir, alpha);
-    m_bvh_e->SelfCollitionFullDetect(m_dHat, mc_moveDir, alpha);
+    m_bvh_f->SelfCollitionFullDetect(m_instance->dHat, mc_moveDir, alpha);
+    m_bvh_e->SelfCollitionFullDetect(m_instance->dHat, mc_moveDir, alpha);
 
     CUDA_SAFE_CALL(cudaMemcpy(&h_ccd_cpNum, mc_cpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost));
 }
@@ -5754,7 +5754,7 @@ void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
 
-    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, mc_cpNum, mc_MatIndex, m_dHat, mKappa, numbers);
+    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, mc_cpNum, mc_MatIndex, m_instance->dHat, mKappa, numbers);
 
 
 }
@@ -5768,7 +5768,7 @@ void GIPC::calBarrierHessian() {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
 
-    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, mc_cpNum, mc_MatIndex, m_dHat, m_IPCKappa, numbers);
+    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, mc_cpNum, mc_MatIndex, m_instance->dHat, m_instance->Kappa, numbers);
 }
 
 void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
@@ -5789,9 +5789,9 @@ void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
         m_BH->m_D2Index,
         mc_cpNum,
         numbers,
-        m_IPC_dt, mc_distCoord,
+        m_instance->IPC_dt, mc_distCoord,
         mc_tanBasis,
-        m_fDhat * m_IPC_dt * m_IPC_dt,
+        m_instance->fDhat * m_instance->IPC_dt * m_instance->IPC_dt,
         mc_lambda_lastH_scalar,
         m_frictionRate,
         h_cpNum[4],
@@ -5811,8 +5811,8 @@ void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
         m_BH->m_H3x3,
         m_BH->m_D1Index,
         numbers,
-        m_IPC_dt,
-        m_fDhat * m_IPC_dt * m_IPC_dt,
+        m_instance->IPC_dt,
+        m_instance->fDhat * m_instance->IPC_dt * m_instance->IPC_dt,
         mc_lambda_lastH_scalar_gd,
         m_frictionRate);
 }
@@ -5822,7 +5822,7 @@ void GIPC::computeSelfCloseVal() {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
     _calSelfCloseVal << <blockNum, threadNum >> > (mc_vertexes, mc_collisonPairs, mc_closeMConstraintID, mc_closeMConstraintVal,
-        mc_close_cpNum, m_dTol, numbers);
+        mc_close_cpNum, m_instance->dTol, numbers);
 }
 
 bool GIPC::checkSelfCloseVal() {
@@ -5879,7 +5879,7 @@ void GIPC::calBarrierGradient(double3* _gradient, double mKappa) {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
-    _calBarrierGradient << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_dHat, mKappa, numbers);
+    _calBarrierGradient << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_instance->dHat, mKappa, numbers);
 
 }
 
@@ -5895,10 +5895,10 @@ void GIPC::calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManag
         mc_collisonPairs_lastH,
         _gradient,
         numbers,
-        m_IPC_dt,
+        m_instance->IPC_dt,
         mc_distCoord,
         mc_tanBasis,
-        m_fDhat * m_IPC_dt * m_IPC_dt,
+        m_instance->fDhat * m_instance->IPC_dt * m_instance->IPC_dt,
         mc_lambda_lastH_scalar,
         m_frictionRate
         );
@@ -5914,8 +5914,8 @@ void GIPC::calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManag
         mc_collisonPairs_lastH_gd,
         _gradient,
         numbers,
-        m_IPC_dt,
-        m_fDhat * m_IPC_dt * m_IPC_dt,
+        m_instance->IPC_dt,
+        m_instance->fDhat * m_instance->IPC_dt * m_instance->IPC_dt,
         mc_lambda_lastH_scalar_gd,
         m_frictionRate
         );
@@ -6052,13 +6052,13 @@ void compute_H_b(double d, double dHat, double& H) {
 void GIPC::suggestKappa(double& kappa) {
     double H_b;
     //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(m_bvh_f->scene.upper, m_bvh_f->scene.lower));
-    compute_H_b(1.0e-16 * m_bboxDiagSize2, m_dHat, H_b);
+    compute_H_b(1.0e-16 * m_instance->bboxDiagSize2, m_instance->dHat, H_b);
 
-    if (m_meanMass == 0.0) {
-        kappa = m_minKappaCoef / (4.0e-16 * m_bboxDiagSize2 * H_b);
+    if (m_instance->meanMass == 0.0) {
+        kappa = m_instance->minKappaCoef / (4.0e-16 * m_instance->bboxDiagSize2 * H_b);
     }
     else {
-        kappa = m_minKappaCoef * m_meanMass / (4.0e-16 * m_bboxDiagSize2 * H_b);
+        kappa = m_instance->minKappaCoef * m_instance->meanMass / (4.0e-16 * m_instance->bboxDiagSize2 * H_b);
     }
 }
 
@@ -6066,11 +6066,11 @@ void GIPC::upperBoundKappa(double& kappa)
 {
     double H_b;
     //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(m_bvh_f->scene.upper, m_bvh_f->scene.lower));//(maxConer - minConer).squaredNorm();
-    compute_H_b(1.0e-16 * m_bboxDiagSize2, m_dHat, H_b);
-    double kappaMax = 100 * m_minKappaCoef * m_meanMass / (4.0e-16 * m_bboxDiagSize2 * H_b);
+    compute_H_b(1.0e-16 * m_instance->bboxDiagSize2, m_instance->dHat, H_b);
+    double kappaMax = 100 * m_instance->minKappaCoef * m_instance->meanMass / (4.0e-16 * m_instance->bboxDiagSize2 * H_b);
     //printf("max Kappa: %f\n", kappaMax);
-    if (m_meanMass == 0.0) {
-        kappaMax = 100 * m_minKappaCoef / (4.0e-16 * m_bboxDiagSize2 * H_b);
+    if (m_instance->meanMass == 0.0) {
+        kappaMax = 100 * m_instance->minKappaCoef / (4.0e-16 * m_instance->bboxDiagSize2 * H_b);
     }
 
     if (kappa > kappaMax) {
@@ -6091,7 +6091,7 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
         CUDA_SAFE_CALL(cudaMemset(_GE, 0, m_vertexNum * sizeof(double3)));
         calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, _GE, instance->cudaVertMass, m_vertexNum);
         calculate_fem_gradient(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, instance->cudaTetVolume,
-            _GE, m_tetrahedraNum, m_lengthRate, m_volumeRate, m_IPC_dt);
+            _GE, m_tetrahedraNum, m_lengthRate, m_volumeRate, m_instance->IPC_dt);
         //calculate_triangle_fem_gradient(instance->triDmInverses, instance->cudaVertPos, instance->triangles, instance->area, _GE, triangleNum, stretchStiff, shearStiff, IPC_dt);
         computeSoftConstraintGradient(_GE);
         computeGroundGradient(_gc,1);
@@ -6102,13 +6102,13 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
         //CUDA_SAFE_CALL(cudaFree(_GE));
         double minKappa = -gsum / gsnorm;
         if (minKappa > 0.0) {
-            m_IPCKappa = minKappa;
+            m_instance->Kappa = minKappa;
         }
         suggestKappa(minKappa);
-        if (m_IPCKappa < minKappa) {
-            m_IPCKappa = minKappa;
+        if (m_instance->Kappa < minKappa) {
+            m_instance->Kappa = minKappa;
         }
-        upperBoundKappa(m_IPCKappa);
+        upperBoundKappa(m_instance->Kappa);
     }
 
     //printf("Kappa ====== %f\n", Kappa);
@@ -6124,7 +6124,7 @@ float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance
     //calBarrierHessian();
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-    calBarrierGradientAndHessian(instance->cudaFb, m_IPCKappa);
+    calBarrierGradientAndHessian(instance->cudaFb, m_instance->Kappa);
 
     float time00 = 0;
 
@@ -6137,18 +6137,18 @@ float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     calculate_fem_gradient_hessian(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, m_BH->m_H12x12,
                                    h_cpNum[4] + h_cpNum_last[4], instance->cudaTetVolume,
-                                   instance->cudaFb, m_tetrahedraNum, m_lengthRate, m_volumeRate, m_IPC_dt);
+                                   instance->cudaFb, m_tetrahedraNum, m_lengthRate, m_volumeRate, m_instance->IPC_dt);
 
 
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     CUDA_SAFE_CALL(cudaMemcpy(m_BH->m_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, m_tetrahedraNum * sizeof(uint4),cudaMemcpyDeviceToDevice));
 
-    calculate_bending_gradient_hessian(instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, m_BH->m_H12x12, m_BH->m_D4Index, h_cpNum[4] + h_cpNum_last[4] + m_tetrahedraNum, instance->cudaFb, m_tri_edge_num, m_bendStiff, m_IPC_dt);
+    calculate_bending_gradient_hessian(instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, m_BH->m_H12x12, m_BH->m_D4Index, h_cpNum[4] + h_cpNum_last[4] + m_tetrahedraNum, instance->cudaFb, m_tri_edge_num, m_bendStiff, m_instance->IPC_dt);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     calculate_triangle_fem_gradient_hessian(instance->cudaTriDmInverses, instance->cudaVertPos, instance->cudaTriElement, m_BH->m_H9x9,
                                             h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, m_triangleNum,
-                                            m_stretchStiff, m_shearStiff, m_IPC_dt);
+                                            m_stretchStiff, m_shearStiff, m_instance->IPC_dt);
 
 
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -6210,19 +6210,19 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         _getFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTetElement, instance->cudaDmInverses, instance->cudaTetVolume, numbers, m_lengthRate, m_volumeRate);
         break;
     case 2:
-        _getBarrierEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, mc_collisonPairs, m_IPCKappa, m_dHat, numbers);
+        _getBarrierEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, mc_collisonPairs, m_instance->Kappa, m_instance->dHat, numbers);
         break;
     case 3:
         _getDeltaEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaFb, mc_moveDir, numbers);
         break;
     case 4:
-        _computeGroundEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, m_dHat, m_IPCKappa, numbers);
+        _computeGroundEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, m_instance->dHat, m_instance->Kappa, numbers);
         break;
     case 5:
-        _getFrictionEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaOriginVertPos, mc_collisonPairs_lastH, numbers, m_IPC_dt, mc_distCoord, mc_tanBasis, mc_lambda_lastH_scalar, m_fDhat * m_IPC_dt * m_IPC_dt, sqrt(m_fDhat) * m_IPC_dt);
+        _getFrictionEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaOriginVertPos, mc_collisonPairs_lastH, numbers, m_instance->IPC_dt, mc_distCoord, mc_tanBasis, mc_lambda_lastH_scalar, m_instance->fDhat * m_instance->IPC_dt * m_instance->IPC_dt, sqrt(m_instance->fDhat) * m_instance->IPC_dt);
         break;
     case 6:
-        _getFrictionEnergy_gd_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaOriginVertPos, mc_groundNormal, mc_collisonPairs_lastH_gd, numbers, m_IPC_dt, mc_lambda_lastH_scalar_gd, sqrt(m_fDhat) * m_IPC_dt);
+        _getFrictionEnergy_gd_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaOriginVertPos, mc_groundNormal, mc_collisonPairs_lastH_gd, numbers, m_instance->IPC_dt, mc_lambda_lastH_scalar_gd, sqrt(m_instance->fDhat) * m_instance->IPC_dt);
         break;
     case 7:
         _getRestStableNHKEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaTetVolume, numbers, m_lengthRate, m_volumeRate);
@@ -6257,17 +6257,17 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
 double GIPC::computeEnergy(std::unique_ptr<GeometryManager>& instance) {
     double Energy = Energy_Add_Reduction_Algorithm(0, instance);
 
-    Energy += m_IPC_dt * m_IPC_dt * Energy_Add_Reduction_Algorithm(1, instance);
+    Energy += m_instance->IPC_dt * m_instance->IPC_dt * Energy_Add_Reduction_Algorithm(1, instance);
 
-    Energy += m_IPC_dt * m_IPC_dt * Energy_Add_Reduction_Algorithm(8, instance);
+    Energy += m_instance->IPC_dt * m_instance->IPC_dt * Energy_Add_Reduction_Algorithm(8, instance);
 
-    Energy += m_IPC_dt * m_IPC_dt * Energy_Add_Reduction_Algorithm(10, instance);
+    Energy += m_instance->IPC_dt * m_instance->IPC_dt * Energy_Add_Reduction_Algorithm(10, instance);
 
     Energy += Energy_Add_Reduction_Algorithm(9, instance);
 
     Energy += Energy_Add_Reduction_Algorithm(2, instance);
 
-    Energy += m_IPCKappa * Energy_Add_Reduction_Algorithm(4, instance);
+    Energy += m_instance->Kappa * Energy_Add_Reduction_Algorithm(4, instance);
 
 #ifdef USE_FRICTION
     Energy += frictionRate * Energy_Add_Reduction_Algorithm(5, instance);
@@ -6280,7 +6280,7 @@ double GIPC::computeEnergy(std::unique_ptr<GeometryManager>& instance) {
 
 int GIPC::calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type) {
     if (preconditioner_type == 0) {
-        return PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, m_vertexNum, m_tetrahedraNum, m_IPC_dt, m_meanVolumn, m_pcg_threshold);
+        return PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, m_vertexNum, m_tetrahedraNum, m_instance->IPC_dt, m_instance->meanVolume, m_pcg_threshold);
     }
     else if (preconditioner_type == 1) {
         std::cout << "not support preconditioner type right now!" << std::endl;
@@ -6316,7 +6316,7 @@ bool edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, const
 
 bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance)
 {
-    return edgeTriIntersectionQuery(m_bvh_e->mc_btype, instance->cudaVertPos, m_bvh_e->mc_edges, m_bvh_f->mc_faces, m_bvh_e->mc_boundVolumes, m_bvh_e->mc_nodes, m_dHat, m_bvh_f->m_face_number);
+    return edgeTriIntersectionQuery(m_bvh_e->mc_btype, instance->cudaVertPos, m_bvh_e->mc_edges, m_bvh_f->mc_faces, m_bvh_e->mc_boundVolumes, m_bvh_e->mc_nodes, m_instance->dHat, m_bvh_f->m_face_number);
 }
 
 bool GIPC::checkGroundIntersection() {
@@ -6437,7 +6437,7 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
 
 
 void GIPC::postLineSearch(std::unique_ptr<GeometryManager>& instance, double alpha) {
-    if (m_IPCKappa == 0.0) {
+    if (m_instance->Kappa == 0.0) {
         initKappa(instance);
     }
     else {
@@ -6447,8 +6447,8 @@ void GIPC::postLineSearch(std::unique_ptr<GeometryManager>& instance, double alp
             updateKappa = checkSelfCloseVal();
         }
         if (updateKappa) {
-            m_IPCKappa *= 2.0;
-            upperBoundKappa(m_IPCKappa);
+            m_instance->Kappa *= 2.0;
+            upperBoundKappa(m_instance->Kappa);
         }
         tempFree_closeConstraint();
         tempMalloc_closeConstraint();
@@ -6513,7 +6513,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
 
         double distToOpt_PN = calcMinMovement(mc_moveDir, m_pcg_data->m_squeue, m_vertexNum);
 
-        bool gradVanish = (distToOpt_PN < sqrt(m_Newton_solver_threshold * m_Newton_solver_threshold * m_bboxDiagSize2 * m_IPC_dt * m_IPC_dt));
+        bool gradVanish = (distToOpt_PN < sqrt(m_Newton_solver_threshold * m_Newton_solver_threshold * m_instance->bboxDiagSize2 * m_instance->IPC_dt * m_instance->IPC_dt));
         if (k && gradVanish) {
             break;
         }
@@ -6537,7 +6537,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         buildFullCP(temp_alpha);
         if (h_ccd_cpNum > 0) {
             double maxSpeed = cfl_largestSpeed(m_pcg_data->m_squeue);
-            alpha_CFL = sqrt(m_dHat) / maxSpeed * 0.5;
+            alpha_CFL = sqrt(m_instance->dHat) / maxSpeed * 0.5;
             alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
             if (temp_alpha > 2 * alpha_CFL) {
                 /*buildBVH_FULLCCD(temp_alpha);
@@ -6586,7 +6586,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
     //    outiter << iterV[ii] << std::endl;
     //}
     //outiter.close();
-    printf("\n\n Kappa: %f  iteration k:  %d\n\n\n", m_IPCKappa, k);
+    printf("\n\n Kappa: %f  iteration k:  %d\n\n\n", m_instance->Kappa, k);
     return k;
    
 }
@@ -6595,7 +6595,7 @@ void GIPC::updateVelocities(std::unique_ptr<GeometryManager>& instance) {
     int numbers = m_vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateVelocities << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaOriginVertPos, instance->cudaVertVel, instance->cudaBoundaryType, m_IPC_dt, numbers);
+    _updateVelocities << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaOriginVertPos, instance->cudaVertVel, instance->cudaBoundaryType, m_instance->IPC_dt, numbers);
 }
 
 void GIPC::updateBoundary(std::unique_ptr<GeometryManager>& instance, double alpha) {
@@ -6609,7 +6609,7 @@ void GIPC::updateBoundaryMoveDir(std::unique_ptr<GeometryManager>& instance, dou
     int numbers = m_vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateBoundaryMoveDir << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, mc_moveDir, m_IPC_dt, MATHUTILS::PI, alpha, numbers);
+    _updateBoundaryMoveDir << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, mc_moveDir, m_instance->IPC_dt, MATHUTILS::PI, alpha, numbers);
 }
 
 void GIPC::updateBoundary2(std::unique_ptr<GeometryManager>& instance) {
@@ -6659,16 +6659,18 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     mc_groundOffset = instance->cudaGroundOffset;
 
 
-    m_IPCKappa = instance->Kappa;
-    m_dHat = instance->dHat;
-    m_fDhat = instance->fDhat;
-	m_bboxDiagSize2 = instance->bboxDiagSize2;
-	m_relative_dhat = instance->relative_dhat;
-    m_dTol = instance->dTol;
-    m_minKappaCoef = instance->minKappaCoef;
-    m_IPC_dt = instance->IPC_dt;
-    m_meanMass = instance->meanMass;
-    m_meanVolumn = instance->meanVolume;
+    // m_instance->Kappa = instance->Kappa;
+    // m_instance->dHat = instance->dHat;
+    // m_instance->fDhat = instance->fDhat;
+	// m_instance->bboxDiagSize2 = instance->bboxDiagSize2;
+	// m_instance->relative_dhat = instance->relative_dhat;
+    // m_instance->dTol = instance->dTol;
+    // m_instance->minKappaCoef = instance->minKappaCoef;
+    // m_instance->IPC_dt = instance->IPC_dt;
+    // m_instance->meanMass = instance->meanMass;
+    // m_instance->meanVolume = instance->meanVolume;
+    // m_instance->animation = instance->animation;
+
 
     m_softNum = instance->softNum;
     m_triangleNum = instance->numTriElements;
@@ -6710,7 +6712,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     h_cpNum_last[3] = 0;
     h_cpNum_last[4] = 0;
 
-    m_animation = instance->animation;
 
 }
 
@@ -6785,9 +6786,9 @@ void GIPC::IPC_Solver() {
     // }
 
 
-    upperBoundKappa(m_IPCKappa);
-    if (m_IPCKappa < 1e-16) {
-        suggestKappa(m_IPCKappa);
+    upperBoundKappa(m_instance->Kappa);
+    if (m_instance->Kappa < 1e-16) {
+        suggestKappa(m_instance->Kappa);
     }
     initKappa(m_instance);
 
@@ -6832,11 +6833,11 @@ void GIPC::IPC_Solver() {
         if (finishMotion) {
             if ((h_cpNum[0] + h_gpNum) > 0) {
 
-                if (minDist < m_dTol) {
+                if (minDist < m_instance->dTol) {
                     tempFree_closeConstraint();
                     break;
                 }
-                else if (maxDist < m_dHat) {
+                else if (maxDist < m_instance->dHat) {
                     tempFree_closeConstraint();
                     break;
                 }

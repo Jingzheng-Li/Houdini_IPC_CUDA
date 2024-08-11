@@ -138,17 +138,8 @@ public:
 	uint32_t h_gpNum_last;
 	uint32_t h_cpNum_last[5];
 
-	bool m_animation;
-	double m_IPCKappa;
-	double m_dHat;
-	double m_fDhat;
-	double m_bboxDiagSize2;
-	double m_relative_dhat;
-	double m_dTol;
-    double m_minKappaCoef;
-	double m_IPC_dt;
-	double m_meanMass;
-	double m_meanVolumn;
+
+
 	double3* mc_groundNormal;
 	double* mc_groundOffset;
 
@@ -194,6 +185,18 @@ public:
 	double m_Newton_solver_threshold;
 	double m_pcg_threshold;
 	//bool USE_MAS;
+
+	// bool m_animation;
+	// double m_IPCKappa;
+	// double m_dHat;
+	// double m_fDhat;
+	// double m_bboxDiagSize2;
+	// double m_relative_dhat;
+	// double m_dTol;
+    // double m_minKappaCoef;
+	// double m_IPC_dt;
+	// double m_meanMass;
+	// double m_meanVolumn;
 
 };
 
