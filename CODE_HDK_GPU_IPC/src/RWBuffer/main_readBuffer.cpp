@@ -437,7 +437,7 @@ void GAS_Read_Buffer::initSIMFEM() {
 	// init meanMass & meanVolume
 	/////////////////////////////
 	double angleX = -MATHUTILS::PI / 4, angleY = -MATHUTILS::PI / 4, angleZ = MATHUTILS::PI / 2;
-	MATHUTILS::Matrix3x3d rotation, rotationZ, rotationY, rotationX, eigenTest;
+	MATHUTILS::Matrix3x3d rotation, rotationZ, rotationY, rotationX;
 	MATHUTILS::__set_Mat_val(rotation, 1, 0, 0, 0, 1, 0, 0, 0, 1);
 	MATHUTILS::__set_Mat_val(rotationZ, cos(angleZ), -sin(angleZ), 0, sin(angleZ), cos(angleZ), 0, 0, 0, 1);
 	MATHUTILS::__set_Mat_val(rotationY, cos(angleY), 0, -sin(angleY), 0, 1, 0, sin(angleY), 0, cos(angleY));
