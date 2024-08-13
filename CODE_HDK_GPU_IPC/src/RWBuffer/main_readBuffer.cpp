@@ -35,7 +35,6 @@ GAS_Read_Buffer::GAS_Read_Buffer(const SIM_DataFactory* factory) : BaseClass(fac
 
 GAS_Read_Buffer::~GAS_Read_Buffer() {
 	FIRSTFRAME::hou_initialized = false;
-	GeometryManager::totallyfree();
 }
 
 bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
@@ -437,7 +436,7 @@ void GAS_Read_Buffer::initSIMFEM() {
 	// init meanMass & meanVolume
 	/////////////////////////////
 	double angleX = -MATHUTILS::PI / 4, angleY = -MATHUTILS::PI / 4, angleZ = MATHUTILS::PI / 2;
-	MATHUTILS::Matrix3x3d rotation, rotationZ, rotationY, rotationX, eigenTest;
+	MATHUTILS::Matrix3x3d rotation, rotationZ, rotationY, rotationX;
 	MATHUTILS::__set_Mat_val(rotation, 1, 0, 0, 0, 1, 0, 0, 0, 1);
 	MATHUTILS::__set_Mat_val(rotationZ, cos(angleZ), -sin(angleZ), 0, sin(angleZ), cos(angleZ), 0, 0, 0, 1);
 	MATHUTILS::__set_Mat_val(rotationY, cos(angleY), 0, -sin(angleY), 0, 1, 0, sin(angleY), 0, cos(angleY));
@@ -463,11 +462,11 @@ void GAS_Read_Buffer::initSIMFEM() {
 
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaDmInverses, instance->DMInverse.data(), instance->numTetElements * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTriDmInverses, instance->TriDMInverse.data(), instance->numTriElements * sizeof(MATHUTILS::Matrix2x2d), cudaMemcpyHostToDevice));
-	
 
 }
 
 void GAS_Read_Buffer::initSIMBVH() {
+
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMBVH geoinstance not initialized");
 

@@ -24,7 +24,7 @@ public:
 
 public:
     double3 m_upper;
-    double3 m_lower;
+    double3 m_lower;    
     
 };
 

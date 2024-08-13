@@ -6270,9 +6270,9 @@ double GIPC::computeEnergy(std::unique_ptr<GeometryManager>& instance) {
     Energy += m_instance->Kappa * Energy_Add_Reduction_Algorithm(4, instance);
 
 #ifdef USE_FRICTION
-    Energy += frictionRate * Energy_Add_Reduction_Algorithm(5, instance);
+    Energy += m_instance->frictionRate * Energy_Add_Reduction_Algorithm(5, instance);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    Energy += frictionRate * Energy_Add_Reduction_Algorithm(6, instance);
+    Energy += m_instance->frictionRate * Energy_Add_Reduction_Algorithm(6, instance);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 #endif
     return Energy;
@@ -6314,8 +6314,7 @@ bool edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, const
     return false;
 }
 
-bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance)
-{
+bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance) {
     return edgeTriIntersectionQuery(m_bvh_e->mc_btype, instance->cudaVertPos, m_bvh_e->mc_edges, m_bvh_f->mc_faces, m_bvh_e->mc_boundVolumes, m_bvh_e->mc_nodes, m_instance->dHat, m_bvh_f->m_face_number);
 }
 
@@ -6339,8 +6338,7 @@ bool GIPC::checkGroundIntersection() {
 
 }
 
-bool GIPC::isIntersected(std::unique_ptr<GeometryManager>& instance)
-{
+bool GIPC::isIntersected(std::unique_ptr<GeometryManager>& instance) {
     if (checkGroundIntersection()) {
         return true;
     }
@@ -6659,19 +6657,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     mc_groundOffset = instance->cudaGroundOffset;
 
 
-    // m_instance->Kappa = instance->Kappa;
-    // m_instance->dHat = instance->dHat;
-    // m_instance->fDhat = instance->fDhat;
-	// m_instance->bboxDiagSize2 = instance->bboxDiagSize2;
-	// m_instance->relative_dhat = instance->relative_dhat;
-    // m_instance->dTol = instance->dTol;
-    // m_instance->minKappaCoef = instance->minKappaCoef;
-    // m_instance->IPC_dt = instance->IPC_dt;
-    // m_instance->meanMass = instance->meanMass;
-    // m_instance->meanVolume = instance->meanVolume;
-    // m_instance->animation = instance->animation;
-
-
     m_softNum = instance->softNum;
     m_triangleNum = instance->numTriElements;
     m_vertexNum = instance->numVertices;
@@ -6688,24 +6673,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     m_animation_fullRate = instance->animation_fullRate;
 
 
-    // m_instance->bendStiff = instance->bendStiff;
-    // m_instance->density = instance->density;
-    // m_instance->YoungModulus = instance->YoungModulus;
-    // m_instance->PoissonRate = instance->PoissonRate;
-    // m_instance->lengthRateLame = instance->lengthRateLame;
-    // m_instance->volumeRateLame = instance->volumeRateLame;
-    // m_instance->lengthRate = instance->lengthRate;
-    // m_instance->volumeRate = instance->volumeRate;
-    // m_instance->frictionRate = instance->frictionRate;
-    // m_instance->clothThickness = instance->clothThickness;
-    // m_instance->clothYoungModulus = instance->clothYoungModulus;
-    // m_instance->stretchStiff = instance->stretchStiff;
-    // m_instance->shearStiff = instance->shearStiff;
-    // m_instance->clothDensity = instance->clothDensity;
-    // m_instance->softMotionRate = instance->softMotionRate;
-    // m_instance->Newton_solver_threshold = instance->Newton_solver_threshold;
-    // m_instance->pcg_threshold = instance->pcg_threshold;
-
     h_cpNum_last[0] = 0;
     h_cpNum_last[1] = 0;
     h_cpNum_last[2] = 0;
@@ -6718,6 +6685,31 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
 
 GIPC::~GIPC() { }
 
+void GIPC::CUDA_FREE_GIPC() {
+    CUDAFreeSafe(mc_MatIndex);
+    CUDAFreeSafe(mc_collisonPairs);
+    CUDAFreeSafe(mc_ccd_collisonPairs);
+    CUDAFreeSafe(mc_cpNum);
+    CUDAFreeSafe(mc_close_cpNum);
+    CUDAFreeSafe(mc_close_gpNum);
+    CUDAFreeSafe(mc_environment_collisionPair);
+    CUDAFreeSafe(mc_gpNum);
+    CUDAFreeSafe(mc_moveDir);
+    CUDAFreeSafe(mc_groundNormal);
+    CUDAFreeSafe(mc_groundOffset);
+    CUDAFreeSafe(mc_faces);
+    CUDAFreeSafe(mc_edges);
+    CUDAFreeSafe(mc_surfVerts);
+
+}
+
+
+
+
+
+
+
+
 
 
 int totalNT = 0;
@@ -6728,8 +6720,6 @@ double ttime1 = 0;
 double ttime2 = 0;
 double ttime3 = 0;
 double ttime4 = 0;
-bool isRotate = false;
-
 
 
 void GIPC::IPC_Solver() {
@@ -6741,49 +6731,46 @@ void GIPC::IPC_Solver() {
     CHECK_ERROR(m_pcg_data, "not initialize m_pcg_data");
     CHECK_ERROR(m_BH, "not initialize m_BH");
 
-
-    //double animation_fullRate = 0;
+    bool isRotate = true;
     cudaEvent_t start, end0;
     cudaEventCreate(&start);
     cudaEventCreate(&end0);
     double alpha = 1;
     cudaEventRecord(start);
-//    if(isRotate&&total_Frames*IPC_dt>=2.2){
-//        isRotate = false;
-//        updateBoundary2(TetMesh);
-//    }
 
 
-    // if (isRotate)
-    // {
-    //     updateBoundaryMoveDir(instance, alpha);
-    //     buildBVH_FULLCCD(alpha);
-    //     buildFullCP(alpha);
-    //     if (h_ccd_cpNum > 0) {
-    //         double slackness_m = 0.8;
-    //         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->m_squeue, h_ccd_cpNum));
-    //     }
-    //     //updateBoundary(TetMesh, alpha);
+    if (isRotate) {
+        updateBoundaryMoveDir(m_instance, alpha);
+        buildBVH_FULLCCD(alpha);
+        buildFullCP(alpha);
+        if (h_ccd_cpNum > 0) {
+            double slackness_m = 0.8;
+            alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->m_squeue, h_ccd_cpNum));
+        }
+        updateBoundary(m_instance, alpha);
 
-    //     CUDA_SAFE_CALL(cudaMemcpy(TetMesh.temp_double3Mem, TetMesh.vertexes, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
-    //     updateBoundaryMoveDir(TetMesh, alpha);
-    //     stepForward(TetMesh.vertexes, TetMesh.temp_double3Mem, _moveDir, TetMesh.BoundaryType, 1, true, vertexNum);
+        CUDA_SAFE_CALL(cudaMemcpy(
+            m_instance->cudaTempDouble3Mem,
+            m_instance->cudaVertPos,
+            m_vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
+        
+        updateBoundaryMoveDir(m_instance, alpha);
+        stepForward(m_instance->cudaVertPos, m_instance->cudaTempDouble3Mem, m_instance->cudaMoveDir, m_instance->cudaBoundaryType, 1, true, m_vertexNum);
 
-    //     bool rehash = true;
+        bool rehash = true;
 
-    //     buildBVH();
-    //     int numOfIntersect = 0;
-    //     while (isIntersected(TetMesh)) {
-    //         //printf("type 0 intersection happened\n");
-    //         alpha /= 2.0;
-    //         updateBoundaryMoveDir(TetMesh, alpha);
-    //         numOfIntersect++;
-    //         stepForward(TetMesh.vertexes, TetMesh.temp_double3Mem, _moveDir, TetMesh.BoundaryType, 1, true, vertexNum);
-    //         buildBVH();
-    //     }
-
-    //     buildCP();
-    // }
+        buildBVH();
+        int numOfIntersect = 0;
+        while (isIntersected(m_instance)) {
+            //printf("type 0 intersection happened\n");
+            alpha /= 2.0;
+            updateBoundaryMoveDir(m_instance, alpha);
+            numOfIntersect++;
+            stepForward(m_instance->cudaVertPos, m_instance->cudaTempDouble3Mem, m_instance->cudaMoveDir, m_instance->cudaBoundaryType, 1, true, m_vertexNum);
+            buildBVH();
+        }
+        buildCP();
+    }
 
 
     upperBoundKappa(m_instance->Kappa);
@@ -6795,18 +6782,18 @@ void GIPC::IPC_Solver() {
 
 
 #ifdef USE_FRICTION
-    CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&distCoord, h_cpNum[0] * sizeof(double2)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&_MatIndex_last, h_cpNum[0] * sizeof(int)));
-
-    CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_distCoord, h_cpNum[0] * sizeof(double2)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_MatIndex_last, h_cpNum[0] * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
     buildFrictionSets();
 #endif
+
     m_animation_fullRate = m_animation_subRate;
-    int k = 0;
+
     double time0 = 0;
     double time1 = 0;
     double time2 = 0;
@@ -6814,8 +6801,7 @@ void GIPC::IPC_Solver() {
     double time4 = 0;
 
     while (true) {
-    // for (int i = 0; i < 1; i++) {
-        //if (h_cpNum[0] > 0) return;
+
         tempMalloc_closeConstraint();
         CUDA_SAFE_CALL(cudaMemset(mc_close_cpNum, 0, sizeof(uint32_t)));
         CUDA_SAFE_CALL(cudaMemset(mc_close_gpNum, 0, sizeof(uint32_t)));
@@ -6857,43 +6843,43 @@ void GIPC::IPC_Solver() {
         m_animation_fullRate += m_animation_subRate;
         
 #ifdef USE_FRICTION
-        CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
-        CUDA_SAFE_CALL(cudaFree(distCoord));
-        CUDA_SAFE_CALL(cudaFree(tanBasis));
-        CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
-        CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
+        CUDA_SAFE_CALL(cudaFree(mc_lambda_lastH_scalar));
+        CUDA_SAFE_CALL(cudaFree(mc_distCoord));
+        CUDA_SAFE_CALL(cudaFree(mc_tanBasis));
+        CUDA_SAFE_CALL(cudaFree(mc_collisonPairs_lastH));
+        CUDA_SAFE_CALL(cudaFree(mc_MatIndex_last));
+        CUDA_SAFE_CALL(cudaFree(mc_lambda_lastH_scalar_gd));
+        CUDA_SAFE_CALL(cudaFree(mc_collisonPairs_lastH_gd));
 
-        CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
-        CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
-
-        CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
-        CUDA_SAFE_CALL(cudaMalloc((void**)&distCoord, h_cpNum[0] * sizeof(double2)));
-        CUDA_SAFE_CALL(cudaMalloc((void**)&tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
-        CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
-        CUDA_SAFE_CALL(cudaMalloc((void**)&_MatIndex_last, h_cpNum[0] * sizeof(int)));
-        CUDA_SAFE_CALL(cudaMalloc((void**)&lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
-        CUDA_SAFE_CALL(cudaMalloc((void**)&_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&mc_distCoord, h_cpNum[0] * sizeof(double2)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&mc_tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&mc_MatIndex_last, h_cpNum[0] * sizeof(int)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
         buildFrictionSets();
 #endif
     }
 
 
 #ifdef USE_FRICTION
-    CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar));
-    CUDA_SAFE_CALL(cudaFree(distCoord));
-    CUDA_SAFE_CALL(cudaFree(tanBasis));
-    CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH));
-    CUDA_SAFE_CALL(cudaFree(_MatIndex_last));
-
-    CUDA_SAFE_CALL(cudaFree(lambda_lastH_scalar_gd));
-    CUDA_SAFE_CALL(cudaFree(_collisonPairs_lastH_gd));
+    CUDA_SAFE_CALL(cudaFree(mc_lambda_lastH_scalar));
+    CUDA_SAFE_CALL(cudaFree(mc_distCoord));
+    CUDA_SAFE_CALL(cudaFree(mc_tanBasis));
+    CUDA_SAFE_CALL(cudaFree(mc_collisonPairs_lastH));
+    CUDA_SAFE_CALL(cudaFree(mc_MatIndex_last));
+    CUDA_SAFE_CALL(cudaFree(mc_lambda_lastH_scalar_gd));
+    CUDA_SAFE_CALL(cudaFree(mc_collisonPairs_lastH_gd));
 #endif
 
     updateVelocities(m_instance);
 
     FEMENERGY::computeXTilta(m_instance, 1);
     cudaEventRecord(end0);
+
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    
     float tttime;
     cudaEventElapsedTime(&tttime, start, end0);
     totalTime += tttime;

@@ -24,9 +24,7 @@ const SIM_DopDescription* GAS_CUDA_LBVH::getDopDescription() {
 
 GAS_CUDA_LBVH::GAS_CUDA_LBVH(const SIM_DataFactory* factory) : BaseClass(factory) {}
 
-GAS_CUDA_LBVH::~GAS_CUDA_LBVH() {
-    GeometryManager::totallyfree();
-}
+GAS_CUDA_LBVH::~GAS_CUDA_LBVH() { }
 
 bool GAS_CUDA_LBVH::solveGasSubclass(SIM_Engine& engine,
                                     SIM_Object* object,

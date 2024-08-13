@@ -14,6 +14,7 @@ public:
 
 	GIPC(std::unique_ptr<GeometryManager>& instance);
 	~GIPC();
+	void CUDA_FREE_GIPC();
 
 	void tempMalloc_closeConstraint();
 	void tempFree_closeConstraint();
@@ -99,7 +100,6 @@ public:
     std::unique_ptr<BHessian>& m_BH;
 
 
-
 	double3* mc_vertexes;
 	double3* mc_rest_vertexes;
 	uint3* mc_faces;
@@ -139,7 +139,6 @@ public:
 	uint32_t h_cpNum_last[5];
 
 
-
 	double3* mc_groundNormal;
 	double* mc_groundOffset;
 
@@ -167,36 +166,6 @@ public:
 	double m_animation_subRate;
 	double m_animation_fullRate;
 
-	// double m_bendStiff;
-	// double m_density;
-	// double m_YoungModulus;
-	// double m_PoissonRate;
-	// double m_lengthRateLame;
-	// double m_volumeRateLame;
-	// double m_lengthRate;
-	// double m_volumeRate;
-	// double m_frictionRate;
-	// double m_clothThickness;
-	// double m_clothYoungModulus;
-	// double m_stretchStiff;
-	// double m_shearStiff;
-	// double m_clothDensity;
-	// double m_softMotionRate;
-	// double m_Newton_solver_threshold;
-	// double m_pcg_threshold;
-	//bool USE_MAS;
-
-	// bool m_animation;
-	// double m_IPCKappa;
-	// double m_dHat;
-	// double m_fDhat;
-	// double m_bboxDiagSize2;
-	// double m_relative_dhat;
-	// double m_dTol;
-    // double m_minKappaCoef;
-	// double m_IPC_dt;
-	// double m_meanMass;
-	// double m_meanVolumn;
 
 };
 
