@@ -44,9 +44,9 @@ void GAS_CUDA_GIPC::IPC_Solver() {
     auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "IPC_Solver geoinstance not initialized");
 
-    if (!instance->GIPC_ptr) {
-        instance->GIPC_ptr = std::make_unique<GIPC>(instance);
-    }
+    // if (!instance->GIPC_ptr) {
+    //     instance->GIPC_ptr = std::make_unique<GIPC>(instance);
+    // }
     CHECK_ERROR(instance->GIPC_ptr, "IPC_Solver GIPC_ptr not initialized");
 
     instance->GIPC_ptr->IPC_Solver();

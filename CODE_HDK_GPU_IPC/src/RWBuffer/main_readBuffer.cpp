@@ -7,6 +7,7 @@
 #include "LBVH/LBVH.cuh"
 #include "PCG/PCGSolver.cuh"
 #include "FEMEnergy.cuh"
+#include "IPC/GIPC.cuh"
 
 namespace FIRSTFRAME {
 	static bool hou_initialized = false;
@@ -511,63 +512,93 @@ void GAS_Read_Buffer::initSIMBVH() {
 	// calcuate Morton Code and sort MC together with face index
 	SortMesh::sortMesh(instance, instance->LBVH_F_ptr);
 
+	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestVertPos, instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
+
+	// buildBVH()
 	instance->LBVH_F_ptr->Construct();
 	instance->LBVH_E_ptr->Construct();
 
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 这里要大的修正一下 把ipc指针也初始化在这里！！
+// 之前的函数应该都没有什么大问题 后面的函数倒是需要大的修改一下啊!!!!!
+
+
 void GAS_Read_Buffer::initSIMIPC() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
-	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestVertPos, instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
+	// ipc.init()
+	AABB AABBScene = instance->LBVH_F_ptr->m_scene;
+	CHECK_ERROR((AABBScene.m_upper.x >= AABBScene.m_lower.x) && (AABBScene.m_upper.y >= AABBScene.m_lower.y) && (AABBScene.m_upper.z >= AABBScene.m_lower.z), "AABB maybe error, please check again");
+	std::cout << "SceneSize upper/lower: ~~" << AABBScene.m_upper.x << " " << AABBScene.m_lower.x << std::endl;
 
-	if (!instance->AABB_SceneSize_ptr) {
-		instance->AABB_SceneSize_ptr = std::make_unique<AABB>();
-	}
-	*(instance->AABB_SceneSize_ptr) = instance->LBVH_F_ptr->m_scene;
-	auto &AABBScene = instance->AABB_SceneSize_ptr;
-	double3 &upper = AABBScene->m_upper;
-	double3 &lower = AABBScene->m_lower;
-	CHECK_ERROR((upper.x >= lower.x) && (upper.y >= lower.y) && (upper.z >= lower.z), "AABB maybe error, please check again");
-
-	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene->m_upper, AABBScene->m_lower));
+	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene.m_upper, AABBScene.m_lower));
 	instance->dTol = 1e-18 * instance->bboxDiagSize2;
 	instance->minKappaCoef = 1e11;
 	instance->dHat = instance->relative_dhat * instance->relative_dhat * instance->bboxDiagSize2;
 	instance->fDhat = 1e-6 * instance->bboxDiagSize2;
 
-	CUDA_SAFE_CALL(cudaMemset(instance->cudaCPNum, 0, 5 * sizeof(uint32_t)));
-	CUDA_SAFE_CALL(cudaMemset(instance->cudaGPNum, 0, sizeof(uint32_t)));
-	
-	// build collision detection
-	instance->LBVH_F_ptr->SelfCollitionDetect(instance->dHat);
-	instance->LBVH_E_ptr->SelfCollitionDetect(instance->dHat);
-
-	instance->LBVH_F_ptr->GroundCollisionDetect(
-		instance->cudaVertPos, 
-		instance->cudaSurfVert,
-		instance->cudaGroundOffset,
-		instance->cudaGroundNormal,
-		instance->cudaEnvCollisionPairs,
-		instance->cudaGPNum,
-		instance->dHat,
-		instance->surfVert.rows());
+	// init BH_ptr
+	if (instance->BH_ptr) {
+		instance->BH_ptr = std::make_unique<BHessian>();
+	}
+	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numTetElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
 
 
+	// init PCGData_ptr
 	if (!instance->PCGData_ptr) {
 		instance->PCGData_ptr = std::make_unique<PCGData>();
 	}
-
 	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numTetElements);
-
 	instance->PCGData_ptr->m_P_type = 0;
 	instance->PCGData_ptr->m_b = instance->cudaFb;
 	instance->cudaMoveDir = instance->PCGData_ptr->m_dx;
 
+
+
+
+
+
+
+
+
+
+	// 这个地方非常乱 一定要非常非常小心
+
 	double motion_rate = 1.0;
 	instance->animation_subRate = 1.0 / motion_rate;
+
+    if (!instance->GIPC_ptr) {
+        instance->GIPC_ptr = std::make_unique<GIPC>(instance);
+    }
+	instance->GIPC_ptr->buildCP();
+
+
+
+
 	FEMENERGY::computeXTilta(instance, 1);
 
 	std::vector<AABB> boundVolumes(2 * instance->numSurfEdges - 1);
@@ -575,9 +606,5 @@ void GAS_Read_Buffer::initSIMIPC() {
 	CUDA_SAFE_CALL(cudaMemcpy(&boundVolumes[0], instance->LBVH_E_ptr->mc_boundVolumes, (2 * instance->numSurfEdges - 1) * sizeof(AABB), cudaMemcpyDeviceToHost));
 	CUDA_SAFE_CALL(cudaMemcpy(&Nodes[0], instance->LBVH_E_ptr->mc_nodes, (2 * instance->numSurfEdges - 1) * sizeof(Node), cudaMemcpyDeviceToHost));
 
-	if (instance->BH_ptr) {
-		instance->BH_ptr = std::make_unique<BHessian>();
-	}
-	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numTetElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
 
 }

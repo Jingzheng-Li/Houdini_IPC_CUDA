@@ -68,7 +68,7 @@ target_compile_definitions(${library_name} PRIVATE
     USE_SNK 
     SVD_DOUBLE 
     ADAPTIVE_KAPPA
-    USE_FRICTION
+    # USE_FRICTION
 )
 
 # Compile options

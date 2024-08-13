@@ -5718,6 +5718,7 @@ void GIPC::buildCP() {
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     CUDA_SAFE_CALL(cudaMemcpy(&h_cpNum, mc_cpNum, 5 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
     CUDA_SAFE_CALL(cudaMemcpy(&h_gpNum, mc_gpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost));
+
     /*CUDA_SAFE_CALL(cudaMemset(_cpNum, 0, 5 * sizeof(uint32_t)));
     CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));*/
 }
@@ -6321,6 +6322,8 @@ bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& insta
 
 bool GIPC::checkGroundIntersection() {
     int numbers = h_gpNum;
+    std::cout << "h_gpNum~~~~~~~~~~" << h_gpNum << std::endl;
+
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
 
@@ -6631,11 +6634,11 @@ void GIPC::updateBoundary2(std::unique_ptr<GeometryManager>& instance) {
 
 GIPC::GIPC(std::unique_ptr<GeometryManager>& instance) 
     : m_instance(instance),
-    m_scene_size(instance->AABB_SceneSize_ptr),
     m_bvh_f(instance->LBVH_F_ptr),
     m_bvh_e(instance->LBVH_E_ptr),
     m_pcg_data(instance->PCGData_ptr),
     m_BH(instance->BH_ptr) {
+
 
     mc_vertexes = instance->cudaVertPos;
     mc_rest_vertexes = instance->cudaRestVertPos;
@@ -6704,7 +6707,6 @@ bool isRotate = true;
 void GIPC::IPC_Solver() {
 
     CHECK_ERROR(m_instance, "not initialize m_instance");
-    CHECK_ERROR(m_scene_size, "not initialize m_scene_size");
     CHECK_ERROR(m_bvh_f, "not initialize m_bvh_f");
     CHECK_ERROR(m_bvh_e, "not initialize m_bvh_e");
     CHECK_ERROR(m_pcg_data, "not initialize m_pcg_data");
