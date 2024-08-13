@@ -35,7 +35,9 @@ GAS_Read_Buffer::GAS_Read_Buffer(const SIM_DataFactory* factory) : BaseClass(fac
 
 GAS_Read_Buffer::~GAS_Read_Buffer() {
 	FIRSTFRAME::hou_initialized = false;
-	GeometryManager::freeCUDAptr();
+    if (GeometryManager::instance) {
+        // GeometryManager::instance->freeGeometryManager();
+    }
 }
 
 bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,

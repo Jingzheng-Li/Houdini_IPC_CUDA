@@ -41,17 +41,17 @@ GeometryManager::GeometryManager() :
     cudaH9x9(nullptr),
     cudaH6x6(nullptr),
     cudaH3x3(nullptr),
-    cudaD1Index(nullptr),
+    cudaD4Index(nullptr),
     cudaD3Index(nullptr),
-    cudaD4Index(nullptr)
-    // cudaD2Index(nullptr),
+    cudaD2Index(nullptr),
+    cudaD1Index(nullptr)
     // cudaCloseGPNum(nullptr),
     // cudaCloseCPNum(nullptr),
     // cudaTargetVert(nullptr),
     // cudaTargetIndex(nullptr),
     // cudaXTilta(nullptr),
     // cudaFb(nullptr),
-    // // cudaMoveDir(nullptr),
+    // cudaMoveDir(nullptr),
     // cudaTriArea(nullptr),
     // cudaTriEdges(nullptr),
     // cudaTriEdgeAdjVertex(nullptr),
@@ -63,19 +63,23 @@ GeometryManager::~GeometryManager() {
     freeCUDA();
 }
 
-void GeometryManager::freeCUDAptr() {
-    if (instance) {
-        instance->LBVH_E_ptr->CUDA_FREE_LBVH();
-        instance->LBVH_F_ptr->CUDA_FREE_LBVH();
-        instance->PCGData_ptr->CUDA_FREE_PCGDATA();
-        instance->BH_ptr->CUDA_FREE_BHESSIAN();
-        // instance->GIPC_ptr->;
+void GeometryManager::freeGeometryManager() {
+    freeCUDAptr();
+    freeCUDA();
+    instance.reset();
+}
 
-        instance.reset();
-    }
+
+void GeometryManager::freeCUDAptr() {
+    instance->LBVH_E_ptr->CUDA_FREE_LBVH();
+    instance->LBVH_F_ptr->CUDA_FREE_LBVH();
+    instance->PCGData_ptr->CUDA_FREE_PCGDATA();
+    instance->BH_ptr->CUDA_FREE_BHESSIAN();
+    // instance->GIPC_ptr->;
 }
 
 void GeometryManager::freeCUDA() {
+    
     CUDAFreeSafe(instance->cudaVertPos);
     CUDAFreeSafe(instance->cudaVertVel);
     CUDAFreeSafe(instance->cudaVertMass);
@@ -108,10 +112,10 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaH9x9);
     CUDAFreeSafe(instance->cudaH6x6);
     CUDAFreeSafe(instance->cudaH3x3);
-    CUDAFreeSafe(instance->cudaD1Index);
-    CUDAFreeSafe(instance->cudaD3Index);
     CUDAFreeSafe(instance->cudaD4Index);
+    CUDAFreeSafe(instance->cudaD3Index);
     CUDAFreeSafe(instance->cudaD2Index);
+    CUDAFreeSafe(instance->cudaD1Index);
     // CUDAFreeSafe(instance->cudaCloseGPNum);
     // CUDAFreeSafe(instance->cudaCloseCPNum);
     // CUDAFreeSafe(instance->cudaTargetVert);
@@ -124,4 +128,5 @@ void GeometryManager::freeCUDA() {
     // CUDAFreeSafe(instance->cudaTriEdgeAdjVertex);
     // CUDAFreeSafe(instance->cudaTempDouble3Mem);
     // CUDAFreeSafe(instance->cudaTriDmInverses);
+    
 }
