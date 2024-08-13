@@ -59,43 +59,51 @@ GeometryManager::GeometryManager() :
     cudaTriEdgeAdjVertex(nullptr) {}
 
 GeometryManager::~GeometryManager() {
-
     std::cout << "GeometryManager Deconstruction" << std::endl;
+}
+
+void GeometryManager::freeGeometryManager() {
+
+    std::cout << "running freeGeometryManager" << std::endl;
 
     freeCUDA();
     freeCUDAptr();
-
     instance.reset();
-
-    CHECK_ERROR(!instance, "instance not reset");
-    CHECK_ERROR(!LBVH_F_ptr, "LBVH_F_ptr not reset");
-    CHECK_ERROR(!LBVH_E_ptr, "LBVH_E_ptr not reset");
-    CHECK_ERROR(!AABB_SceneSize_ptr, "AABB_SceneSize_ptr not reset");
-    CHECK_ERROR(!PCGData_ptr, "PCGData_ptr not reset");
-    CHECK_ERROR(!BH_ptr, "BH_ptr not reset");
-    CHECK_ERROR(!GIPC_ptr, "GIPC_ptr not reset");
 
 }
 
+
+
 void GeometryManager::freeCUDAptr() {
-    std::cout << "GeometryManager freeCUDAptr" << std::endl;
     CHECK_ERROR(instance, "freeCUDAptr instance not exist right now");
 
-    if (instance->LBVH_E_ptr)
+    if (instance->LBVH_E_ptr) {
         instance->LBVH_E_ptr->CUDA_FREE_LBVH();
-    if (instance->LBVH_F_ptr)
+        instance->LBVH_E_ptr.reset();
+    }
+    if (instance->LBVH_F_ptr) {
         instance->LBVH_F_ptr->CUDA_FREE_LBVH();
-    if (instance->PCGData_ptr)
+        instance->LBVH_F_ptr.reset();
+    }
+    if (instance->PCGData_ptr) {
         instance->PCGData_ptr->CUDA_FREE_PCGDATA();
-    if (instance->BH_ptr)
+        instance->PCGData_ptr.reset();
+    }
+    if (instance->AABB_SceneSize_ptr) {
+        instance->AABB_SceneSize_ptr.reset();
+    }
+    if (instance->BH_ptr) {
         instance->BH_ptr->CUDA_FREE_BHESSIAN();
-    if (instance->GIPC_ptr)
+        instance->BH_ptr.reset();
+    }
+    if (instance->GIPC_ptr) {
         instance->GIPC_ptr->CUDA_FREE_GIPC();
+        instance->GIPC_ptr.reset();
+    }
 
 }
 
 void GeometryManager::freeCUDA() {
-    std::cout << "GeometryManager freeCUDA" << std::endl;
     CHECK_ERROR(instance, "freeCUDA instance not exist right now");
 
     CUDAFreeSafe(instance->cudaVertPos);
@@ -142,7 +150,7 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaTargetIndex);
     CUDAFreeSafe(instance->cudaXTilta);
     CUDAFreeSafe(instance->cudaFb);
-    CUDAFreeSafe(instance->cudaMoveDir);
+    // CUDAFreeSafe(instance->cudaMoveDir); ??? why this is use pcg m_dx??
     CUDAFreeSafe(instance->cudaTriArea);
     CUDAFreeSafe(instance->cudaTriEdges);
     CUDAFreeSafe(instance->cudaTriEdgeAdjVertex);

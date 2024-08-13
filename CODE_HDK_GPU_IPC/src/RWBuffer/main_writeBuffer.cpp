@@ -21,7 +21,12 @@ const SIM_DopDescription* GAS_Write_Buffer::getDopDescription() {
 
 GAS_Write_Buffer::GAS_Write_Buffer(const SIM_DataFactory* factory) : BaseClass(factory) {}
 
-GAS_Write_Buffer::~GAS_Write_Buffer() { }
+GAS_Write_Buffer::~GAS_Write_Buffer() {
+    if (GeometryManager::instance) {
+        std::cout << "GAS_Write_Buffer freeGeometryManager" << std::endl;
+        GeometryManager::instance->freeGeometryManager();
+    }
+}
 
 bool GAS_Write_Buffer::solveGasSubclass(SIM_Engine& engine,
                                         SIM_Object* object,

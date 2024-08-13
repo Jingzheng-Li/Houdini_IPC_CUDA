@@ -9,8 +9,8 @@
 
 const static int default_threads = 256;
 
-#define CHECK_ERROR(cond, msg) \
-    if (!(cond)) { \
+#define CHECK_ERROR(correctcond, msg) \
+    if (!(correctcond)) { \
         std::cerr << msg << std::endl; \
         return; \
     }

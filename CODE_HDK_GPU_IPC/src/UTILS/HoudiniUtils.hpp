@@ -28,14 +28,14 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 
-#define CHECK_ERROR(cond, msg) \
-    if (!(cond)) { \
+#define CHECK_ERROR(correctcond, msg) \
+    if (!(correctcond)) { \
         std::cerr << msg << std::endl; \
         return; \
     }
 
-#define CHECK_ERROR_SOLVER(cond, msg) \
-    if (!(cond)) { \
+#define CHECK_ERROR_SOLVER(correctcond, msg) \
+    if (!(correctcond)) { \
         std::cerr << msg << std::endl; \
         return false; \
     }

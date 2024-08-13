@@ -23,6 +23,7 @@ class GeometryManager {
 public:
     GeometryManager();
     ~GeometryManager();
+    static void freeGeometryManager();
 
 private:
     static void freeCUDAptr();

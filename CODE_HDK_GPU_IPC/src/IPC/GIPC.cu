@@ -6686,20 +6686,20 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
 GIPC::~GIPC() { }
 
 void GIPC::CUDA_FREE_GIPC() {
-    CUDAFreeSafe(mc_MatIndex);
-    CUDAFreeSafe(mc_collisonPairs);
-    CUDAFreeSafe(mc_ccd_collisonPairs);
-    CUDAFreeSafe(mc_cpNum);
-    CUDAFreeSafe(mc_close_cpNum);
-    CUDAFreeSafe(mc_close_gpNum);
-    CUDAFreeSafe(mc_environment_collisionPair);
-    CUDAFreeSafe(mc_gpNum);
-    CUDAFreeSafe(mc_moveDir);
-    CUDAFreeSafe(mc_groundNormal);
-    CUDAFreeSafe(mc_groundOffset);
-    CUDAFreeSafe(mc_faces);
-    CUDAFreeSafe(mc_edges);
-    CUDAFreeSafe(mc_surfVerts);
+    // CUDAFreeSafe(mc_MatIndex);
+    // CUDAFreeSafe(mc_collisonPairs);
+    // CUDAFreeSafe(mc_ccd_collisonPairs);
+    // CUDAFreeSafe(mc_cpNum);
+    // CUDAFreeSafe(mc_close_cpNum);
+    // CUDAFreeSafe(mc_close_gpNum);
+    // CUDAFreeSafe(mc_environment_collisionPair);
+    // CUDAFreeSafe(mc_gpNum);
+    // // CUDAFreeSafe(mc_moveDir);
+    // CUDAFreeSafe(mc_groundNormal);
+    // CUDAFreeSafe(mc_groundOffset);
+    // CUDAFreeSafe(mc_faces);
+    // CUDAFreeSafe(mc_edges);
+    // CUDAFreeSafe(mc_surfVerts);
 
 }
 
