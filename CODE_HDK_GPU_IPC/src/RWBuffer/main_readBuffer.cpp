@@ -595,7 +595,8 @@ void GAS_Read_Buffer::initSIMIPC() {
         instance->GIPC_ptr = std::make_unique<GIPC>(instance);
     }
 	instance->GIPC_ptr->buildCP();
-
+	// personal intuition, maybe not correct
+	// instance->GIPC_ptr->h_close_gpNum = instance->GIPC_ptr->h_gpNum;
 
 
 

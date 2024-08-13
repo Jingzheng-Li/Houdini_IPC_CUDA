@@ -6322,8 +6322,6 @@ bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& insta
 
 bool GIPC::checkGroundIntersection() {
     int numbers = h_gpNum;
-    std::cout << "h_gpNum~~~~~~~~~~" << h_gpNum << std::endl;
-
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
 
@@ -6758,6 +6756,13 @@ void GIPC::IPC_Solver() {
         suggestKappa(m_instance->Kappa);
     }
     initKappa(m_instance);
+
+    // uint32_t temp_gpNum;
+    // uint32_t temp_close_gpNum;
+    // cudaMemcpy(&temp_gpNum, mc_gpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(&temp_close_gpNum, mc_close_gpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost);
+    // std::cout << "temp_gpNum~~~~~~" << temp_gpNum << std::endl;
+    // std::cout << "temp_close_gpNum~~~~~~" << temp_close_gpNum << std::endl;
 
 
 
