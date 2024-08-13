@@ -25,7 +25,7 @@
 
 
 // GAS_CUDA_ACCD::~GAS_CUDA_ACCD() {
-//     GeometryManager::totallyfree();
+//     GeometryManager::freeCUDAptr();
 // }
 
 // bool GAS_CUDA_ACCD::solveGasSubclass(SIM_Engine& engine,

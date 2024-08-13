@@ -25,7 +25,7 @@ const SIM_DopDescription* GAS_CUDA_GIPC::getDopDescription() {
 GAS_CUDA_GIPC::GAS_CUDA_GIPC(const SIM_DataFactory* factory) : BaseClass(factory) {}
 
 GAS_CUDA_GIPC::~GAS_CUDA_GIPC() {
-    GeometryManager::totallyfree();
+    GeometryManager::freeCUDAptr();
 }
 
 bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,

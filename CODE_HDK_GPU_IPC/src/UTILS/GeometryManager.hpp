@@ -24,7 +24,7 @@ public:
     GeometryManager();
     ~GeometryManager();
 
-    static void totallyfree();
+    static void freeCUDAptr();
 
 private:
     static void freeCUDA();

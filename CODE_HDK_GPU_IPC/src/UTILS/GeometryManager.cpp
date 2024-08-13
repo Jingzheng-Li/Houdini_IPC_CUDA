@@ -43,18 +43,30 @@ GeometryManager::GeometryManager() :
     cudaH3x3(nullptr),
     cudaD1Index(nullptr),
     cudaD3Index(nullptr),
-    cudaD4Index(nullptr),
-    cudaD2Index(nullptr) {}
+    cudaD4Index(nullptr)
+    // cudaD2Index(nullptr),
+    // cudaCloseGPNum(nullptr),
+    // cudaCloseCPNum(nullptr),
+    // cudaTargetVert(nullptr),
+    // cudaTargetIndex(nullptr),
+    // cudaXTilta(nullptr),
+    // cudaFb(nullptr),
+    // // cudaMoveDir(nullptr),
+    // cudaTriArea(nullptr),
+    // cudaTriEdges(nullptr),
+    // cudaTriEdgeAdjVertex(nullptr),
+    // cudaTempDouble3Mem(nullptr),
+    // cudaTriDmInverses(nullptr)
+    {}
 
 GeometryManager::~GeometryManager() {
     freeCUDA();
 }
 
-void GeometryManager::totallyfree() {
+void GeometryManager::freeCUDAptr() {
     if (instance) {
         instance->LBVH_E_ptr->CUDA_FREE_LBVH();
         instance->LBVH_F_ptr->CUDA_FREE_LBVH();
-        // instance->AABB_SceneSize_ptr->cuda;
         instance->PCGData_ptr->CUDA_FREE_PCGDATA();
         instance->BH_ptr->CUDA_FREE_BHESSIAN();
         // instance->GIPC_ptr->;
@@ -100,4 +112,16 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaD3Index);
     CUDAFreeSafe(instance->cudaD4Index);
     CUDAFreeSafe(instance->cudaD2Index);
+    // CUDAFreeSafe(instance->cudaCloseGPNum);
+    // CUDAFreeSafe(instance->cudaCloseCPNum);
+    // CUDAFreeSafe(instance->cudaTargetVert);
+    // CUDAFreeSafe(instance->cudaTargetIndex);
+    // CUDAFreeSafe(instance->cudaXTilta);
+    // CUDAFreeSafe(instance->cudaFb);
+    // // CUDAFreeSafe(instance->cudaMoveDir);
+    // CUDAFreeSafe(instance->cudaTriArea);
+    // CUDAFreeSafe(instance->cudaTriEdges);
+    // CUDAFreeSafe(instance->cudaTriEdgeAdjVertex);
+    // CUDAFreeSafe(instance->cudaTempDouble3Mem);
+    // CUDAFreeSafe(instance->cudaTriDmInverses);
 }
