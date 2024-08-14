@@ -69,6 +69,7 @@ void BHessian::CUDA_FREE_BHESSIAN() {
 
 }
 
+
 void BHessian::updateDNum(const int& tri_Num, const int& tet_number, const uint32_t* cpNums, const uint32_t* last_cpNums, const int& tri_edge_number) {
     m_DNum[1] = cpNums[1];
     m_DNum[2] = cpNums[2] + tri_Num;

@@ -35,7 +35,7 @@ public:
 	void calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManager>& instance);
 
 	int calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type = 0);
-	float computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance);
+	void computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance);
 	void computeGroundGradientAndHessian(double3* _gradient);
 	void computeGroundGradient(double3* _gradient, double mKap);
 	void computeSoftConstraintGradientAndHessian(double3* _gradient);
@@ -167,6 +167,11 @@ public:
 	double m_animation_fullRate;
 
 	bool m_isRotate;
+
+	int m_total_Cg_count;
+	int m_maxCOllisionPairNum;
+	int m_totalCollisionPairs;
+
 
 };
 

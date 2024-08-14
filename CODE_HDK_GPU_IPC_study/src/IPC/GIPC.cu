@@ -40,7 +40,6 @@ void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1D
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -90,7 +89,6 @@ void _reduct_min_double(double* _double1Dim, int number) {
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -140,7 +138,6 @@ void _reduct_M_double2(double2* _double2Dim, int number) {
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -194,7 +191,6 @@ void _reduct_max_double(double* _double1Dim, int number) {
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -3034,7 +3030,6 @@ void _reduct_MSelfDist(const double3* _vertexes, int4* _collisionPairs, double2*
     double2 temp = make_double2(1.0 / tempv, tempv);
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4145,7 +4140,6 @@ void _reduct_MGroundDist(const double3* vertexes, const double* g_offset, const 
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4237,7 +4231,6 @@ void _getFrictionEnergy_Reduction_3D(double* squeue,
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4291,7 +4284,6 @@ void _getFrictionEnergy_gd_Reduction_3D(double* squeue,
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -6119,50 +6111,35 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
 
 
 
-float GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
+void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
 
     calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, instance->cudaFb, instance->cudaVertMass, m_vertexNum);
     CUDA_SAFE_CALL(cudaMemset(mc_cpNum, 0, 5 * sizeof(uint32_t)));
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    //calBarrierHessian();
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     calBarrierGradientAndHessian(instance->cudaFb, m_instance->Kappa);
 
-    float time00 = 0;
-
-    //calBarrierGradient(instance->cudaFb, Kappa);
 #ifdef USE_FRICTION
     calFrictionGradient(instance->cudaFb, instance);
     calFrictionHessian(instance);
 #endif
 
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     calculate_fem_gradient_hessian(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, m_BH->m_H12x12,
                                    h_cpNum[4] + h_cpNum_last[4], instance->cudaTetVolume,
                                    instance->cudaFb, m_tetrahedraNum, m_instance->lengthRate, m_instance->volumeRate, m_instance->IPC_dt);
 
-
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     CUDA_SAFE_CALL(cudaMemcpy(m_BH->m_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, m_tetrahedraNum * sizeof(uint4),cudaMemcpyDeviceToDevice));
 
     calculate_bending_gradient_hessian(instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, m_BH->m_H12x12, m_BH->m_D4Index, h_cpNum[4] + h_cpNum_last[4] + m_tetrahedraNum, instance->cudaFb, m_tri_edge_num, m_instance->bendStiff, m_instance->IPC_dt);
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     calculate_triangle_fem_gradient_hessian(instance->cudaTriDmInverses, instance->cudaVertPos, instance->cudaTriElement, m_BH->m_H9x9,
                                             h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, m_triangleNum,
                                             m_instance->stretchStiff, m_instance->shearStiff, m_instance->IPC_dt);
 
-
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     CUDA_SAFE_CALL(cudaMemcpy(m_BH->m_D3Index + h_cpNum[3] + h_cpNum_last[3], instance->cudaTriElement, m_triangleNum * sizeof(uint3), cudaMemcpyDeviceToDevice));
 
     computeGroundGradientAndHessian(instance->cudaFb);
     computeSoftConstraintGradientAndHessian(instance->cudaFb);
 
-
-    return time00;
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 }
 
 
@@ -6480,24 +6457,32 @@ void GIPC::tempFree_closeConstraint() {
 }
 
 
-double maxCOllisionPairNum = 0;
-double totalCollisionPairs = 0;
-double total_Cg_count = 0;
-double timemakePd = 0;
+// int maxCOllisionPairNum = 0;
+// int totalCollisionPairs = 0;
+// int total_Cg_count = 0;
 
 int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
     int iterCap = 10000, k = 0;
     CUDA_SAFE_CALL(cudaMemset(mc_moveDir, 0, m_vertexNum * sizeof(double3)));
 
+    std::cout << "m_maxCOllisionPairNum~~~~~~" << m_maxCOllisionPairNum << std::endl;
+    std::cout << "m_totalCollisionPairs~~~~~~" << m_totalCollisionPairs << std::endl;
+    std::cout << "m_total_Cg_count~~~~~~" << m_total_Cg_count << std::endl;
+    m_total_Cg_count = 0;
+    m_totalCollisionPairs = 0;
+
     for (; k < iterCap; ++k) {
 
-        totalCollisionPairs += h_cpNum[0];
-        maxCOllisionPairNum = (maxCOllisionPairNum > h_cpNum[0]) ? maxCOllisionPairNum : h_cpNum[0];
+        m_totalCollisionPairs += h_cpNum[0];
+        std::cout << "h_cpNum[0]~~~~~~~" << h_cpNum[0] << std::endl;
+        std::cout << "maxCOllisionPairNum~in for~~~~~" << m_maxCOllisionPairNum << std::endl;
+        std::cout << "totalCollisionPairs~in for~~~~~" << m_totalCollisionPairs << std::endl;
+        m_maxCOllisionPairNum = (m_maxCOllisionPairNum > h_cpNum[0]) ? m_maxCOllisionPairNum : h_cpNum[0];
         
         m_BH->updateDNum(m_triangleNum, m_tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, m_tri_edge_num);
 
-        timemakePd += computeGradientAndHessian(instance);
+        computeGradientAndHessian(instance);
 
         double distToOpt_PN = calcMinMovement(mc_moveDir, m_pcg_data->m_squeue, m_vertexNum);
 
@@ -6506,7 +6491,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
             break;
         }
 
-        total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], m_pcg_data->m_P_type);
+        m_total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], m_pcg_data->m_P_type);
 
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 
@@ -6644,6 +6629,9 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     h_close_gpNum = 0;
 
     m_isRotate = true;
+    m_total_Cg_count = 0;
+    m_maxCOllisionPairNum = 0;
+    m_totalCollisionPairs = 0;
 
 }
 
