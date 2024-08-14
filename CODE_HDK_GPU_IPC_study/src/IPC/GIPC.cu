@@ -514,11 +514,6 @@ double _computeInjectiveStepSize_3d(const double3* verts, const double3* mv, con
     z3 = verts[v2].z;
     z4 = verts[v3].z;
 
-    int _3Fii0 = v0 * 3;
-    int _3Fii1 = v1 * 3;
-    int _3Fii2 = v2 * 3;
-    int _3Fii3 = v3 * 3;
-
     p1 = -mv[v0].x;
     p2 = -mv[v1].x;
     p3 = -mv[v2].x;
@@ -1888,25 +1883,24 @@ void _calBarrierHessian(const double3* _vertexes, const double3* _rest_vertexes,
 }
 
 __global__
-void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _rest_vertexes, const const int4* _collisionPair, double3* _gradient, MATHUTILS::Matrix12x12d* H12x12, MATHUTILS::Matrix9x9d* H9x9,
-                                   MATHUTILS::Matrix6x6d* H6x6, uint4* D4Index, uint3* D3Index, uint2* D2Index, uint32_t* _cpNum, int* matIndex, double dHat, double Kappa, int number) {
+void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _rest_vertexes, const int4* _collisionPair, double3* _gradient, MATHUTILS::Matrix12x12d* H12x12, MATHUTILS::Matrix9x9d* H9x9, MATHUTILS::Matrix6x6d* H6x6, uint4* D4Index, uint3* D3Index, uint2* D2Index, uint32_t* _cpNum, int* matIndex, double dHat, double Kappa, int number) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= number) return;
+
     int4 MMCVIDI = _collisionPair[idx];
     double dHat_sqrt = sqrt(dHat);
-    //double dHat = dHat_sqrt * dHat_sqrt;
-    //double Kappa = 1;
     double gassThreshold = 1e-4;
+
     if (MMCVIDI.x >= 0) {
         if (MMCVIDI.w >= 0) {
+
 #ifdef NEWF
             double dis;
             MATHUTILS::__distanceEdgeEdge(_vertexes[MMCVIDI.x], _vertexes[MMCVIDI.y], _vertexes[MMCVIDI.z], _vertexes[MMCVIDI.w], dis);
             dis = sqrt(dis);
             double d_hat_sqrt = sqrt(dHat);
             MATHUTILS::Matrix12x9d PFPxT;
-            GIPCPDERIV::pFpx_ee2(_vertexes[MMCVIDI.x], _vertexes[MMCVIDI.y], _vertexes[MMCVIDI.z], _vertexes[MMCVIDI.w], d_hat_sqrt,
-                     PFPxT);
+            GIPCPDERIV::pFpx_ee2(_vertexes[MMCVIDI.x], _vertexes[MMCVIDI.y], _vertexes[MMCVIDI.z], _vertexes[MMCVIDI.w], d_hat_sqrt, PFPxT);
             double I5 = pow(dis / d_hat_sqrt, 2);
             MATHUTILS::Vector9 tmp;
             tmp.v[0] = tmp.v[1] = tmp.v[2] = tmp.v[3] = tmp.v[4] = tmp.v[5] = tmp.v[6] = tmp.v[7] = 0;
@@ -1915,12 +1909,9 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
             MATHUTILS::Vector9 q0;
             q0.v[0] = q0.v[1] = q0.v[2] = q0.v[3] = q0.v[4] = q0.v[5] = q0.v[6] = q0.v[7] = 0;
             q0.v[8] = 1;
-            //q0 = MATHUTILS::__s_vec9_multiply(q0, 1.0 / sqrt(I5));
 
             MATHUTILS::Matrix9x9d H;
-            //MATHUTILS::__init_Mat9x9(H, 0);
 #else
-
             double3 v0 = MATHUTILS::__minus(_vertexes[MMCVIDI.y], _vertexes[MMCVIDI.x]);
             double3 v1 = MATHUTILS::__minus(_vertexes[MMCVIDI.z], _vertexes[MMCVIDI.x]);
             double3 v2 = MATHUTILS::__minus(_vertexes[MMCVIDI.w], _vertexes[MMCVIDI.x]);
@@ -1952,16 +1943,11 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
             double I5 = MATHUTILS::__squaredNorm(FxN);
 
             MATHUTILS::Matrix9x12d PFPx = __computePFDsPX3D_double(DmInv);
-
             MATHUTILS::Matrix3x3d fnn;
-
             MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
-
             MATHUTILS::__M_Mat_multiply(F, nn, fnn);
-
             MATHUTILS::Vector9 tmp = MATHUTILS::__Mat3x3_to_vec9_double(fnn);
-
-#endif
+#endif // ifdef NEWF
 
 #if (RANK == 1)
             MATHUTILS::Vector9 flatten_pk1 = MATHUTILS::__s_vec9_multiply(tmp, 2 * Kappa * -(dHat * dHat * (I5 - 1) * (I5 + 2 * I5 * log(I5) - 1)) / I5);
@@ -1976,7 +1962,6 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 #elif (RANK == 6)
             MATHUTILS::Vector9 flatten_pk1 = MATHUTILS::__s_vec9_multiply(tmp, (4 * Kappa * dHat * dHat * log(I5) * log(I5) * log(I5) * log(I5) * log(I5) * (I5 - 1) * (3 * I5 + I5 * log(I5) - 3)) / I5);
 #endif
-
 
 #if (RANK == 1)
             double lambda0 = Kappa * (2 * dHat * dHat * (6 * I5 + 2 * I5 * log(I5) - 7 * I5 * I5 - 6 * I5 * I5 * log(I5) + 1)) / I5;
@@ -2004,29 +1989,15 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 #ifdef NEWF
             MATHUTILS::Vector12 gradient_vec = MATHUTILS::__M12x9_v9_multiply((PFPxT), flatten_pk1);
             H = MATHUTILS::__S_Mat9x9_multiply(MATHUTILS::__v9_vec9_toMat9x9(q0, q0), lambda0);
-
-            MATHUTILS::Matrix12x12d Hessian;// = MATHUTILS::__M12x9_M9x12_Multiply(MATHUTILS::__M12x9_M9x9_Multiply(PFPxT, H), MATHUTILS::__Transpose12x9(PFPxT));
+            MATHUTILS::Matrix12x12d Hessian;
             MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPxT, H, Hessian);
 #else
-
             MATHUTILS::Vector12 gradient_vec = MATHUTILS::__M12x9_v9_multiply(MATHUTILS::__Transpose9x12(PFPx), flatten_pk1);
-            //MATHUTILS::Matrix3x3d Q0;
-
-//            MATHUTILS::Matrix3x3d fnn;
-
- //           MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
-
-//            MATHUTILS::__M_Mat_multiply(F, nn, fnn);
-
             MATHUTILS::Vector9 q0 = MATHUTILS::__Mat3x3_to_vec9_double(fnn);
-
             q0 = MATHUTILS::__s_vec9_multiply(q0, 1.0 / sqrt(I5));
-
             MATHUTILS::Matrix9x9d H;
             MATHUTILS::__init_Mat9x9(H, 0);
-
             H = MATHUTILS::__S_Mat9x9_multiply(MATHUTILS::__v9_vec9_toMat9x9(q0, q0), lambda0);
-
             MATHUTILS::Matrix12x9d PFPxTransPos = MATHUTILS::__Transpose9x12(PFPx);
             MATHUTILS::Matrix12x12d Hessian = MATHUTILS::__M12x9_M9x12_Multiply(MATHUTILS::__M12x9_M9x9_Multiply(PFPxTransPos, H), PFPx);
 #endif
@@ -2045,18 +2016,17 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                 atomicAdd(&(_gradient[MMCVIDI.w].y), gradient_vec.v[10]);
                 atomicAdd(&(_gradient[MMCVIDI.w].z), gradient_vec.v[11]);
             }
-            int Hidx = matIndex[idx];//atomicAdd(_cpNum + 4, 1);
 
+            int Hidx = matIndex[idx];
             H12x12[Hidx] = Hessian;
             D4Index[Hidx] = make_uint4(MMCVIDI.x, MMCVIDI.y, MMCVIDI.z, MMCVIDI.w);
 
-        }
+        } // MMCVIDI.w >= 0
         else {
-            //return;
             MMCVIDI.w = -MMCVIDI.w - 1;
             double3 v0 = MATHUTILS::__minus(_vertexes[MMCVIDI.y], _vertexes[MMCVIDI.x]);
             double3 v1 = MATHUTILS::__minus(_vertexes[MMCVIDI.w], _vertexes[MMCVIDI.z]);
-            double c = MATHUTILS::__norm(MATHUTILS::__v_vec_cross(v0, v1)) /*/ MATHUTILS::__norm(v0)*/;
+            double c = MATHUTILS::__norm(MATHUTILS::__v_vec_cross(v0, v1));
             double I1 = c * c;
             if (I1 == 0) return;
             double dis;
@@ -2072,7 +2042,6 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
             double eps_x = MATHUTILS::__computeEdgeProductNorm(_rest_vertexes[MMCVIDI.x], _rest_vertexes[MMCVIDI.y], _rest_vertexes[MMCVIDI.z], _rest_vertexes[MMCVIDI.w]);
 
             MATHUTILS::Matrix3x3d g1, g2;
-
             MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(n1, n1);
             MATHUTILS::__M_Mat_multiply(F, nn, g1);
             nn = MATHUTILS::__v_vec_toMat(n2, n2);
@@ -2172,6 +2141,7 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 #elif (RANK == 6)
             double lambdag1g = -Kappa * 4 * c * F.m[2][2] * (4 * dHat * dHat * pow(log(I2), 5) * (I1 - eps_x) * (I2 - 1) * (3 * I2 + I2 * log(I2) - 3)) / (I2 * (eps_x * eps_x));
 #endif
+
             double eigenValues[2];
             int eigenNum = 0;
             double2 eigenVecs[2];
@@ -2181,24 +2151,20 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                 if (eigenValues[i] > 0) {
                     MATHUTILS::Matrix3x3d eigenMatrix;
                     MATHUTILS::__set_Mat_val(eigenMatrix, 0, 0, 0, 0, eigenVecs[i].x, 0, 0, 0, eigenVecs[i].y);
-
                     MATHUTILS::Vector9 eigenMVec = MATHUTILS::__Mat3x3_to_vec9_double(eigenMatrix);
-
                     M9_temp = MATHUTILS::__v9_vec9_toMat9x9(eigenMVec, eigenMVec);
                     M9_temp = MATHUTILS::__S_Mat9x9_multiply(M9_temp, eigenValues[i]);
                     projectedH = MATHUTILS::__Mat9x9_add(projectedH, M9_temp);
                 }
             }
 
-            //MATHUTILS::Matrix9x12d PFPxTransPos = MATHUTILS::__Transpose12x9(PFPx);
-            MATHUTILS::Matrix12x12d Hessian;// = MATHUTILS::__M12x9_M9x12_Multiply(MATHUTILS::__M12x9_M9x9_Multiply(PFPx, projectedH), PFPxTransPos);
+            MATHUTILS::Matrix12x12d Hessian;
             MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPx, projectedH, Hessian);
-            int Hidx = matIndex[idx];//int Hidx = atomicAdd(_cpNum + 4, 1);
-
+            int Hidx = matIndex[idx];
             H12x12[Hidx] = Hessian;
             D4Index[Hidx] = make_uint4(MMCVIDI.x, MMCVIDI.y, MMCVIDI.z, MMCVIDI.w);
         }
-    }
+    } // MMCVIDI.x >= 0
     else {
         int v0I = -MMCVIDI.x - 1;
         if (MMCVIDI.z < 0) {
@@ -2209,9 +2175,10 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                 MMCVIDI.x = v0I;
                 double3 v0 = MATHUTILS::__minus(_vertexes[MMCVIDI.z], _vertexes[MMCVIDI.x]);
                 double3 v1 = MATHUTILS::__minus(_vertexes[MMCVIDI.w], _vertexes[MMCVIDI.y]);
-                double c = MATHUTILS::__norm(MATHUTILS::__v_vec_cross(v0, v1)) /*/ MATHUTILS::__norm(v0)*/;
+                double c = MATHUTILS::__norm(MATHUTILS::__v_vec_cross(v0, v1));
                 double I1 = c * c;
                 if (I1 == 0) return;
+
                 double dis;
                 MATHUTILS::__distancePointPoint(_vertexes[MMCVIDI.x], _vertexes[MMCVIDI.y], dis);
                 double I2 = dis / dHat;
@@ -2249,7 +2216,8 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 #elif (RANK == 6)
                 double p1 = -Kappa * 2 * (2 * dHat * dHat * pow(log(I2), 6) * (I1 - eps_x) * (I2 - 1) * (I2 - 1)) / (eps_x * eps_x);
                 double p2 = -Kappa * 2 * (2 * I1 * dHat * dHat * pow(log(I2), 5) * (I1 - 2 * eps_x) * (I2 - 1) * (3 * I2 + I2 * log(I2) - 3)) / (I2 * (eps_x * eps_x));
-#endif    
+#endif
+
                 MATHUTILS::Vector9 flatten_pk1 = MATHUTILS::__add9(MATHUTILS::__s_vec9_multiply(flatten_g1, p1), MATHUTILS::__s_vec9_multiply(flatten_g2, p2));
                 MATHUTILS::Vector12 gradient_vec = MATHUTILS::__M12x9_v9_multiply(PFPx, flatten_pk1);
 
@@ -2285,6 +2253,7 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                 double lambda11 = -Kappa * (4 * dHat * dHat * pow(log(I2), 6) * (I1 - eps_x) * (I2 - 1) * (I2 - 1)) / (eps_x * eps_x);
                 double lambda12 = -Kappa * (4 * dHat * dHat * pow(log(I2), 6) * (I1 - eps_x) * (I2 - 1) * (I2 - 1)) / (eps_x * eps_x);
 #endif
+
                 MATHUTILS::Matrix3x3d Tx, Ty, Tz;
                 MATHUTILS::__set_Mat_val(Tx, 0, 0, 0, 0, 0, 1, 0, -1, 0);
                 MATHUTILS::__set_Mat_val(Ty, 0, 0, -1, 0, 0, 0, 1, 0, 0);
@@ -2314,7 +2283,7 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                 double lambda20 = Kappa * (4 * I1 * dHat * dHat * log(I2) * log(I2) * (I1 - 2 * eps_x) * (24 * I2 + 2 * log(I2) - 3 * I2 * I2 * log(I2) * log(I2) + 12 * I2 * log(I2) - 12 * I2 * I2 + I2 * log(I2) * log(I2) - 14 * I2 * I2 * log(I2) - 12)) / (I2 * (eps_x * eps_x));
 #elif (RANK == 6)
                 double lambda20 = Kappa * (4 * I1 * dHat * dHat * pow(log(I2), 4) * (I1 - 2 * eps_x) * (60 * I2 + 3 * log(I2) - 3 * I2 * I2 * log(I2) * log(I2) + 18 * I2 * log(I2) - 30 * I2 * I2 + I2 * log(I2) * log(I2) - 21 * I2 * I2 * log(I2) - 30)) / (I2 * (eps_x * eps_x));
-#endif       
+#endif
 
 #if (RANK == 1)
                 double lambdag1g = Kappa * 4 * c * F.m[2][2] * ((2 * dHat * dHat * (I1 - eps_x) * (I2 - 1) * (I2 + 2 * I2 * log(I2) - 1)) / (I2 * eps_x * eps_x));
@@ -2325,6 +2294,7 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 #elif (RANK == 6)
                 double lambdag1g = -Kappa * 4 * c * F.m[2][2] * (4 * dHat * dHat * pow(log(I2), 5) * (I1 - eps_x) * (I2 - 1) * (3 * I2 + I2 * log(I2) - 3)) / (I2 * (eps_x * eps_x));
 #endif
+
                 double eigenValues[2];
                 int eigenNum = 0;
                 double2 eigenVecs[2];
@@ -2343,11 +2313,9 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                     }
                 }
 
-                //MATHUTILS::Matrix9x12d PFPxTransPos = MATHUTILS::__Transpose12x9(PFPx);
-                MATHUTILS::Matrix12x12d Hessian;// = MATHUTILS::__M12x9_M9x12_Multiply(MATHUTILS::__M12x9_M9x9_Multiply(PFPx, projectedH), PFPxTransPos);
+                MATHUTILS::Matrix12x12d Hessian;
                 MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPx, projectedH, Hessian);
-                int Hidx = matIndex[idx];//int Hidx = atomicAdd(_cpNum + 4, 1);
-
+                int Hidx = matIndex[idx];
                 H12x12[Hidx] = Hessian;
                 D4Index[Hidx] = make_uint4(MMCVIDI.x, MMCVIDI.y, MMCVIDI.z, MMCVIDI.w);
             }
@@ -2480,13 +2448,10 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                 MATHUTILS::Matrix6x3d PFPxTransPos = MATHUTILS::__Transpose3x6(PFPx);
                 MATHUTILS::Matrix6x6d Hessian = MATHUTILS::__M6x3_M3x6_Multiply(MATHUTILS::__M6x3_M3x3_Multiply(PFPxTransPos, H), PFPx);
 #endif
-                int Hidx = matIndex[idx];//int Hidx = atomicAdd(_cpNum + 2, 1);
-
+                int Hidx = matIndex[idx];
                 H6x6[Hidx] = Hessian;
                 D2Index[Hidx] = make_uint2(v0I, MMCVIDI.y);
-
             }
-
         }
         else if (MMCVIDI.w < 0) {
             if (MMCVIDI.y < 0) {
@@ -2629,10 +2594,9 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                     }
                 }
 
-                //MATHUTILS::Matrix9x12d PFPxTransPos = MATHUTILS::__Transpose12x9(PFPx);
-                MATHUTILS::Matrix12x12d Hessian;// = MATHUTILS::__M12x9_M9x12_Multiply(MATHUTILS::__M12x9_M9x9_Multiply(PFPx, projectedH), PFPxTransPos);
+                MATHUTILS::Matrix12x12d Hessian;
                 MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPx, projectedH, Hessian);
-                int Hidx = matIndex[idx];//int Hidx = atomicAdd(_cpNum + 4, 1);
+                int Hidx = matIndex[idx];
 
                 H12x12[Hidx] = Hessian;
                 D4Index[Hidx] = make_uint4(MMCVIDI.x, MMCVIDI.y, MMCVIDI.z, MMCVIDI.w);
@@ -2648,14 +2612,12 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                          PFPxT);
                 double I5 = pow(dis / d_hat_sqrt, 2);
                 MATHUTILS::Vector4 fnn;
-                fnn.v[0] = fnn.v[1] = fnn.v[2] = 0;// = fnn.v[3] = fnn.v[4] = 1;
-                fnn.v[3] = dis / d_hat_sqrt;
-                //MATHUTILS::Vector4 flatten_pk1 = MATHUTILS::__s_vec4_multiply(fnn, 2 * Kappa * -(dHat * dHat * (I5 - 1) * (I5 + 2 * I5 * log(I5) - 1)) / I5);
+                fnn.v[0] = fnn.v[1] = fnn.v[2] = 0;                
                 MATHUTILS::Vector4 q0;
                 q0.v[0] = q0.v[1] = q0.v[2] = 0;
                 q0.v[3] = 1;
                 MATHUTILS::Matrix4x4d H;
-                //MATHUTILS::__init_Mat4x4_val(H, 0);
+                
 #if (RANK == 1)
                 MATHUTILS::Vector4 flatten_pk1 = MATHUTILS::__s_vec4_multiply(fnn, 2 * Kappa * -(dHat * dHat * (I5 - 1) * (I5 + 2 * I5 * log(I5) - 1)) / I5);
 #elif (RANK == 2)
@@ -2796,24 +2758,19 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 #ifdef NEWF
                 H = MATHUTILS::__S_Mat4x4_multiply(MATHUTILS::__v4_vec4_toMat4x4(q0, q0), lambda0);
 
-                MATHUTILS::Matrix9x9d Hessian;// = MATHUTILS::__M9x4_M4x9_Multiply(MATHUTILS::__M9x4_M4x4_Multiply(PFPxT, H), MATHUTILS::__Transpose9x4(PFPxT));
+                MATHUTILS::Matrix9x9d Hessian;
                 MATHUTILS::__M9x4_S4x4_MT4x9_Multiply(PFPxT, H, Hessian);
 #else
 
                 MATHUTILS::Vector6 q0 = MATHUTILS::__Mat3x2_to_vec6_double(fnn);
-
                 q0 = MATHUTILS::__s_vec6_multiply(q0, 1.0 / sqrt(I5));
-
                 MATHUTILS::Matrix6x6d H;
                 MATHUTILS::__init_Mat6x6(H, 0);
-
                 H = MATHUTILS::__S_Mat6x6_multiply(MATHUTILS::__v6_vec6_toMat6x6(q0, q0), lambda0);
-
                 MATHUTILS::Matrix9x6d PFPxTransPos = MATHUTILS::__Transpose6x9(PFPx);
                 MATHUTILS::Matrix9x9d Hessian = MATHUTILS::__M9x6_M6x9_Multiply(MATHUTILS::__M9x6_M6x6_Multiply(PFPxTransPos, H), PFPx);
 #endif
-                int Hidx = matIndex[idx];//int Hidx = atomicAdd(_cpNum + 3, 1);
-
+                int Hidx = matIndex[idx];
                 H9x9[Hidx] = Hessian;
                 D3Index[Hidx] = make_uint3(v0I, MMCVIDI.y, MMCVIDI.z);
             }
@@ -2838,7 +2795,7 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
             q0.v[8] = 1;
 
             MATHUTILS::Matrix9x9d H;
-            //MATHUTILS::__init_Mat9x9(H, 0);
+
 #else
             double3 v0 = MATHUTILS::__minus(_vertexes[MMCVIDI.y], _vertexes[v0I]);
             double3 v1 = MATHUTILS::__minus(_vertexes[MMCVIDI.z], _vertexes[v0I]);
@@ -2849,24 +2806,16 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 
             double3 normal = MATHUTILS::__normalized(MATHUTILS::__v_vec_cross(MATHUTILS::__minus(_vertexes[MMCVIDI.z], _vertexes[MMCVIDI.y]), MATHUTILS::__minus(_vertexes[MMCVIDI.w], _vertexes[MMCVIDI.y])));
             double dis = MATHUTILS::__v_vec_dot(v0, normal);
-            //if (abs(dis) > dHat_sqrt) return;
             MATHUTILS::Matrix12x9d PDmPx;
-            //bool is_flip = false;
 
             if (dis > 0) {
-                //is_flip = true;
                 normal = make_double3(-normal.x, -normal.y, -normal.z);
-                //pDmpx_pt_flip(_vertexes[v0I], _vertexes[MMCVIDI.y], _vertexes[MMCVIDI.z], _vertexes[MMCVIDI.w], dHat_sqrt, PDmPx);
-                //printf("dHat_sqrt = %f,   dis = %f\n", dHat_sqrt, dis);
             }
             else {
                 dis = -dis;
-                //pDmpx_pt(_vertexes[v0I], _vertexes[MMCVIDI.y], _vertexes[MMCVIDI.z], _vertexes[MMCVIDI.w], dHat_sqrt, PDmPx);
-                //printf("dHat_sqrt = %f,   dis = %f\n", dHat_sqrt, dis);
             }
 
             double3 pos0 = MATHUTILS::__add(_vertexes[v0I], MATHUTILS::__s_vec_multiply(normal, dHat_sqrt - dis));
-
 
             double3 u0 = MATHUTILS::__minus(_vertexes[MMCVIDI.y], pos0);
             double3 u1 = MATHUTILS::__minus(_vertexes[MMCVIDI.z], pos0);
@@ -2877,26 +2826,19 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 
             MATHUTILS::__Inverse(Dm, DmInv);
 
-            MATHUTILS::Matrix3x3d F;//, Ftest;
+            MATHUTILS::Matrix3x3d F;
             MATHUTILS::__M_Mat_multiply(Ds, DmInv, F);
-            //MATHUTILS::__M_Mat_multiply(Dm, DmInv, Ftest);
 
             double3 FxN = MATHUTILS::__M_v_multiply(F, normal);
             double I5 = MATHUTILS::__squaredNorm(FxN);
 
-            //printf("I5 = %f,   dist/dHat_sqrt = %f\n", I5, (dis / dHat_sqrt)* (dis / dHat_sqrt));
-
-
             MATHUTILS::Matrix9x12d PFPx = __computePFDsPX3D_double(DmInv);
-
             MATHUTILS::Matrix3x3d fnn;
-
             MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
-
             MATHUTILS::__M_Mat_multiply(F, nn, fnn);
-
             MATHUTILS::Vector9 tmp = MATHUTILS::__Mat3x3_to_vec9_double(fnn);
 #endif
+
 #if (RANK == 1)
             double lambda0 = Kappa * (2 * dHat * dHat * (6 * I5 + 2 * I5 * log(I5) - 7 * I5 * I5 - 6 * I5 * I5 * log(I5) + 1)) / I5;
             if (dis * dis < gassThreshold * dHat) {
@@ -2955,37 +2897,22 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
 #ifdef NEWF
 
             H = MATHUTILS::__S_Mat9x9_multiply(MATHUTILS::__v9_vec9_toMat9x9(q0, q0), lambda0);
-
-            MATHUTILS::Matrix12x12d Hessian;// = MATHUTILS::__M12x9_M9x12_Multiply(MATHUTILS::__M12x9_M9x9_Multiply(PFPxT, H), MATHUTILS::__Transpose12x9(PFPxT));
+            MATHUTILS::Matrix12x12d Hessian;
             MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPxT, H, Hessian);
 #else
 
-            //MATHUTILS::Matrix3x3d Q0;
-
-            //MATHUTILS::Matrix3x3d fnn;
-
-            //MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
-
-            //MATHUTILS::__M_Mat_multiply(F, nn, fnn);
-
             MATHUTILS::Vector9 q0 = MATHUTILS::__Mat3x3_to_vec9_double(fnn);
-
             q0 = MATHUTILS::__s_vec9_multiply(q0, 1.0 / sqrt(I5));
-
             MATHUTILS::Matrix9x9d H = MATHUTILS::__S_Mat9x9_multiply(MATHUTILS::__v9_vec9_toMat9x9(q0, q0), lambda0);
-
             MATHUTILS::Matrix12x9d PFPxTransPos = MATHUTILS::__Transpose9x12(PFPx);
             MATHUTILS::Matrix12x12d Hessian = MATHUTILS::__M12x9_M9x12_Multiply(MATHUTILS::__M12x9_M9x9_Multiply(PFPxTransPos, H), PFPx);
 #endif
 
-            int Hidx = matIndex[idx];//int Hidx = atomicAdd(_cpNum + 4, 1);
-
+            int Hidx = matIndex[idx];
             H12x12[Hidx] = Hessian;
             D4Index[Hidx] = make_uint4(v0I, MMCVIDI.y, MMCVIDI.z, MMCVIDI.w);
 
         }
-
-
     }
 }
 
@@ -3071,7 +2998,7 @@ __global__
 void _calFrictionGradient_gd(const double3* _vertexes,
     const double3* _o_vertexes,
     const double3* _normal,
-    const const uint32_t* _last_collisionPair_gd,
+    const uint32_t* _last_collisionPair_gd,
     double3* _gradient,
     int number,
     double dt,
@@ -3106,7 +3033,7 @@ void _calFrictionGradient_gd(const double3* _vertexes,
 __global__
 void _calFrictionGradient(const double3* _vertexes,
     const double3* _o_vertexes,
-    const const int4* _last_collisionPair,
+    const int4* _last_collisionPair,
     double3* _gradient,
     int number,
     double dt,
@@ -3267,7 +3194,7 @@ void _calFrictionGradient(const double3* _vertexes,
 }
 
 __global__
-void _calBarrierGradient(const double3* _vertexes, const double3* _rest_vertexes, const const int4* _collisionPair, double3* _gradient, double dHat, double Kappa, int number) {
+void _calBarrierGradient(const double3* _vertexes, const double3* _rest_vertexes, const int4* _collisionPair, double3* _gradient, double dHat, double Kappa, int number) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= number) return;
     int4 MMCVIDI = _collisionPair[idx];
@@ -3959,14 +3886,15 @@ void _calBarrierGradient(const double3* _vertexes, const double3* _rest_vertexes
     }
 }
 
+// f = m * (x_tital - x_prev)
 __global__
 void _calKineticGradient(double3* vertexes, double3* xTilta, double3* gradient, double* masses, int numbers) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numbers) return;
-    double3 deltaX = MATHUTILS::__minus(vertexes[idx], xTilta[idx]);
-    //masses[idx] = 1;
+    // delta_x = x_prev - x_tilta
+    double3 deltaX = MATHUTILS::__minus(vertexes[idx], xTilta[idx]); 
+    // gradient = mass * delta_x
     gradient[idx] = make_double3(deltaX.x * masses[idx], deltaX.y * masses[idx], deltaX.z * masses[idx]);
-    //printf("%f  %f  %f\n", gradient[idx].x, gradient[idx].y, gradient[idx].z);
 }
 
 __global__
@@ -4331,7 +4259,6 @@ void _computeGroundEnergy_Reduction(double* squeue, const double3* vertexes, con
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4387,7 +4314,6 @@ void _reduct_min_groundTimeStep_to_double(const double3* vertexes, const uint32_
     //printf("%f\n", temp);
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4439,7 +4365,6 @@ void _reduct_min_InjectiveTimeStep_to_double(const double3* vertexes, const uint
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4525,7 +4450,6 @@ void _reduct_min_selfTimeStep_to_double(const double3* vertexes, const int4* _cc
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4574,7 +4498,6 @@ void _reduct_max_cfl_to_double(const double3* moveDir, double* max_double_val, u
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4623,7 +4546,6 @@ void _reduct_double3Sqn_to_double(const double3* A, double* D, int number) {
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4671,7 +4593,6 @@ void _reduct_double3Dot_to_double(const double3* A, const double3* B, double* D,
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4719,7 +4640,6 @@ void _getKineticEnergy_Reduction_3D(double3* _vertexes, double3* _xTilta, double
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4772,7 +4692,6 @@ void _getBendingEnergy_Reduction(double* squeue, const double3* vertexes, const 
     //printf("%f    %f\n\n\n", lenRate, volRate);
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4822,7 +4741,6 @@ void _getFEMEnergy_Reduction_3D(double* squeue, const double3* vertexes, const u
     //printf("%f    %f\n\n\n", lenRate, volRate);
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4867,7 +4785,6 @@ void _computeSoftConstraintEnergy_Reduction(double* squeue, const double3* verte
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4913,7 +4830,6 @@ void _get_triangleFEMEnergy_Reduction_3D(double* squeue, const double3* vertexes
     //printf("%f    %f\n\n\n", lenRate, volRate);
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -4956,7 +4872,6 @@ void _getRestStableNHKEnergy_Reduction_3D(double* squeue, const double* volume, 
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -5000,7 +4915,6 @@ void _getBarrierEnergy_Reduction_3D(double* squeue, const double3* vertexes, con
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -5045,7 +4959,6 @@ void _getDeltaEnergy_Reduction(double* squeue, const double3* b, const double3* 
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -5091,7 +5004,6 @@ void __add_reduction(double* mem, int numbers) {
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -5173,7 +5085,6 @@ void _updateBoundaryMoveDir(double3* _vertexes, int* _btype, double3* _moveDir, 
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numbers) return;
 
-    double massSum = 0;
     double angleX = PI / 2.5 * ipc_dt * alpha;
     MATHUTILS::Matrix3x3d rotationL, rotationR;
     MATHUTILS::__set_Mat_val(rotationL, 1, 0, 0, 0, cos(angleX), sin(angleX), 0, -sin(angleX), cos(angleX));
@@ -5190,18 +5101,6 @@ void _updateBoundaryMoveDir(double3* _vertexes, int* _btype, double3* _moveDir, 
 //    if ((_btype[idx]) < 0) {
 //        _moveDir[idx] = MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationR, _vertexes[idx]), _vertexes[idx]);
 //    }
-}
-
-__global__
-void _computeXTilta(int* _btype, double3* _velocities, double3* _o_vertexes, double3* _xTilta, double ipc_dt, double rate, int numbers) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numbers) return;
-
-    double3 gravityDtSq = make_double3(0, 0, 0);//MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);//Vector3d(0, gravity, 0) * IPC_dt * IPC_dt;
-    if (_btype[idx] == 0) {
-        gravityDtSq = MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);
-    }
-    _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq));//(mesh.V_prev[vI] + (mesh.velocities[vI] * IPC_dt + gravityDtSq));
 }
 
 
@@ -5241,7 +5140,6 @@ void _edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, cons
     uint3 face = _faces[idx];
     //idx = idx + number - 1;
 
-
     AABB _bv;
 
     double3 _v = _vertexes[face.x];
@@ -5256,9 +5154,8 @@ void _edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, cons
     //printf("%f\n", instance->bboxDiagSize2);
     double gapl = 0;//sqrt(dHat);
     //double dHat = gapl * gapl;// *instance->bboxDiagSize2;
-    unsigned int num_found = 0;
-    do
-    {
+
+    do {
         const uint32_t node_id = *--stack_ptr;
         const uint32_t L_idx = _edge_nodes[node_id].m_left_idx;
         const uint32_t R_idx = _edge_nodes[node_id].m_right_idx;
@@ -5309,7 +5206,7 @@ void _edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, cons
 }
 
 __global__
-void _calFrictionLastH_gd(const double3* _vertexes, const double* g_offset, const double3* g_normal, const const uint32_t* _collisionPair_environment, double* lambda_lastH_gd, uint32_t* _collisionPair_last_gd, double dHat,
+void _calFrictionLastH_gd(const double3* _vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _collisionPair_environment, double* lambda_lastH_gd, uint32_t* _collisionPair_last_gd, double dHat,
     double Kappa, int number) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= number) return;
@@ -5327,7 +5224,7 @@ void _calFrictionLastH_gd(const double3* _vertexes, const double* g_offset, cons
 }
 
 __global__
-void _calFrictionLastH_DistAndTan(const double3* _vertexes, const const int4* _collisionPair, double* lambda_lastH, double2* distCoord, MATHUTILS::Matrix3x2d* tanBasis, int4* _collisionPair_last, double dHat,
+void _calFrictionLastH_DistAndTan(const double3* _vertexes, const int4* _collisionPair, double* lambda_lastH, double2* distCoord, MATHUTILS::Matrix3x2d* tanBasis, int4* _collisionPair_last, double dHat,
     double Kappa, uint32_t* _cpNum_last, int number) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= number) return;
@@ -5748,10 +5645,7 @@ void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
-
     _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, mc_cpNum, mc_MatIndex, m_instance->dHat, mKappa, numbers);
-
-
 }
 
 
@@ -6074,8 +5968,7 @@ void GIPC::upperBoundKappa(double& kappa)
 }
 
 
-void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
-{
+void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
 
     if (h_cpNum[0] > 0) {
         double3* _GE = instance->cudaFb;
@@ -6113,7 +6006,9 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance)
 
 void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
 
+    // f = m * (x_tilta - x_prev) saved in cudaFb
     calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, instance->cudaFb, instance->cudaVertMass, m_vertexNum);
+
     CUDA_SAFE_CALL(cudaMemset(mc_cpNum, 0, 5 * sizeof(uint32_t)));
 
     calBarrierGradientAndHessian(instance->cudaFb, m_instance->Kappa);
@@ -6263,13 +6158,17 @@ int GIPC::calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, i
         return PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, m_vertexNum, m_tetrahedraNum, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
     }
     else if (preconditioner_type == 1) {
-        std::cout << "not support preconditioner type right now!" << std::endl;
+        std::cerr << "not support preconditioner type right now!" << std::endl;
         // int cgCount = MASPCG_Process(&instance, &m_pcg_data, m_BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, cpNum, pcg_threshold);
         // if (cgCount == 3000) {
         //     printf("MASPCG fail, turn to PCG\n");
         //     cgCount = PCG_Process(&instance, &m_pcg_data, m_BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
         //     printf("PCG finish:  %d\n", cgCount);
         // }
+        return 0;
+    } else {
+        std::cerr << "precondtioner type should be 0/1 right now!" << std::endl;
+        return 0;
     }
 
 }
@@ -6346,8 +6245,6 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
 
     stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, mc_moveDir, instance->cudaBoundaryType, alpha, false, m_vertexNum);
 
-    bool rehash = true;
-
     buildBVH();
     //buildCP();
     //if (h_cpNum[0] > 0) system("pause");
@@ -6368,7 +6265,6 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
 
     buildCP();
     //if (h_cpNum[0] > 0) system("pause");
-    //rehash = false;
 
     //buildCollisionSets(mesh, sh, gd, true);
     double testingE = computeEnergy(instance);
@@ -6466,18 +6362,12 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
     int iterCap = 10000, k = 0;
     CUDA_SAFE_CALL(cudaMemset(mc_moveDir, 0, m_vertexNum * sizeof(double3)));
 
-    std::cout << "m_maxCOllisionPairNum~~~~~~" << m_maxCOllisionPairNum << std::endl;
-    std::cout << "m_totalCollisionPairs~~~~~~" << m_totalCollisionPairs << std::endl;
-    std::cout << "m_total_Cg_count~~~~~~" << m_total_Cg_count << std::endl;
     m_total_Cg_count = 0;
     m_totalCollisionPairs = 0;
 
     for (; k < iterCap; ++k) {
 
         m_totalCollisionPairs += h_cpNum[0];
-        std::cout << "h_cpNum[0]~~~~~~~" << h_cpNum[0] << std::endl;
-        std::cout << "maxCOllisionPairNum~in for~~~~~" << m_maxCOllisionPairNum << std::endl;
-        std::cout << "totalCollisionPairs~in for~~~~~" << m_totalCollisionPairs << std::endl;
         m_maxCOllisionPairNum = (m_maxCOllisionPairNum > h_cpNum[0]) ? m_maxCOllisionPairNum : h_cpNum[0];
         
         m_BH->updateDNum(m_triangleNum, m_tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, m_tri_edge_num);
@@ -6673,7 +6563,6 @@ void GIPC::IPC_Solver() {
     double alpha = 1;
 
 
-
     if (m_isRotate) {
         updateBoundaryMoveDir(m_instance, alpha);
         buildBVH_FULLCCD(alpha);
@@ -6690,7 +6579,6 @@ void GIPC::IPC_Solver() {
 
         updateBoundaryMoveDir(m_instance, alpha);
         stepForward(m_instance->cudaVertPos, m_instance->cudaTempDouble3Mem, m_instance->cudaMoveDir, m_instance->cudaBoundaryType, 1, true, m_vertexNum);
-        bool rehash = true;
         buildBVH();
         int numOfIntersect = 0;
         while (isIntersected(m_instance)) {

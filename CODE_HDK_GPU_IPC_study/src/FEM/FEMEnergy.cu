@@ -1443,22 +1443,23 @@ namespace FEMENERGY {
         return bend_energy;
     }
 
+    // x_tilta = x_prev + v*dt + 1/2*g*(dt)^2
     __global__
     void _computeXTilta(int* _btype, double3* _velocities, double3* _o_vertexes, double3* _xTilta, double ipc_dt, double rate, int numbers) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= numbers) return;
 
-        double3 gravityDtSq = make_double3(0, 0, 0); //MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);//Vector3d(0, gravity, 0) * IPC_dt * IPC_dt;
+        double3 gravityDtSq = make_double3(0, 0, 0);
         if (_btype[idx] == 0) {
             gravityDtSq = MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);
         }
-        _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq)); //(mesh.V_prev[vI] + (mesh.velocities[vI] * IPC_dt + gravityDtSq));
+        _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq)); 
     }
 
     void computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate) {
         int numbers = instance->numVertices;
         const unsigned int threadNum = default_threads;
-        int blockNum = (numbers + threadNum - 1) / threadNum;//
+        int blockNum = (numbers + threadNum - 1) / threadNum;
         _computeXTilta <<<blockNum, threadNum>>> (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
     }
 
