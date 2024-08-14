@@ -77,7 +77,7 @@ public:
 	void suggestKappa(double& kappa);
 	void upperBoundKappa(double& kappa);
 
-	int solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0, double& time1, double& time2, double& time3, double& time4);
+	int solve_subIP(std::unique_ptr<GeometryManager>& instance);
 	void buildFrictionSets();
 	bool Inverse_Physics(std::unique_ptr<GeometryManager>& instance);
 

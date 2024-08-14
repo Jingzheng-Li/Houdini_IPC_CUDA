@@ -6485,7 +6485,8 @@ double timemakePd = 0;
 #include<fstream>
 
 std::vector<int> iterV;
-int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0, double& time1, double& time2, double& time3, double& time4) {
+int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
+
     int iterCap = 10000, k = 0;
 
     CUDA_SAFE_CALL(cudaMemset(mc_moveDir, 0, m_vertexNum * sizeof(double3)));
@@ -6494,20 +6495,8 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
     for (; k < iterCap; ++k) {
         totalCollisionPairs += h_cpNum[0];
         maxCOllisionPairNum = (maxCOllisionPairNum > h_cpNum[0]) ? maxCOllisionPairNum : h_cpNum[0];
-        cudaEvent_t start, end0, end1 , end2, end3, end4;
-        cudaEventCreate(&start);
-        cudaEventCreate(&end0);
-        cudaEventCreate(&end1);
-        cudaEventCreate(&end2);
-        cudaEventCreate(&end3);
-        cudaEventCreate(&end4);
-
+        
         m_BH->updateDNum(m_triangleNum, m_tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, m_tri_edge_num);
-
-        //printf("collision num  %d\n", h_cpNum[0]);
-
-        cudaEventRecord(start);
-
 
         timemakePd += computeGradientAndHessian(instance);
 
@@ -6518,10 +6507,9 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
         if (k && gradVanish) {
             break;
         }
-        cudaEventRecord(end0);
+
         total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], m_pcg_data->m_P_type);
 
-        cudaEventRecord(end1);
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 
         alpha = MATHUTILS::__m_min(alpha, ground_largestFeasibleStepSize(slackness_a, m_pcg_data->m_squeue));
@@ -6548,45 +6536,24 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance, double& time0,
             }
         }
 
-        cudaEventRecord(end2);
         //printf("alpha:  %f\n", alpha);
 
         bool isStop = lineSearch(instance, alpha, alpha_CFL);
-        cudaEventRecord(end3);
         postLineSearch(instance, alpha);
-        cudaEventRecord(end4);
+
         //m_BH->m_FREE_DEVICE_MEM();
         //if (h_cpNum[0] > 0) return;
         CUDA_SAFE_CALL(cudaDeviceSynchronize());
-        float time00, time11, time22, time33, time44;
-        cudaEventElapsedTime(&time00, start, end0);
-        cudaEventElapsedTime(&time11, end0, end1);
-        //total_Cg_time += time1;
-        cudaEventElapsedTime(&time22, end1, end2);
-        cudaEventElapsedTime(&time33, end2, end3);
-        cudaEventElapsedTime(&time44, end3, end4);
-        time0 += time00;
-        time1 += time11;
-        time2 += time22;
-        time3 += time33;
-        time4 += time44;
-        ////*cflTime = ptime;
-        //printf("time0 = %f,  time1 = %f,  time2 = %f,  time3 = %f,  time4 = %f\n", time00, time11, time22, time33, time44);
-        (cudaEventDestroy(start));
-        (cudaEventDestroy(end0));
-        (cudaEventDestroy(end1));
-        (cudaEventDestroy(end2));
-        (cudaEventDestroy(end3));
-        (cudaEventDestroy(end4));
-        totalTimeStep += alpha;
 
     }
+
     //iterV.push_back(k);
     //std::ofstream outiter("iterCount.txt");
     //for (int ii = 0;ii < iterV.size();ii++) {
     //    outiter << iterV[ii] << std::endl;
     //}
     //outiter.close();
+    
     printf("\n\n Kappa: %f  iteration k:  %d\n\n\n", m_instance->Kappa, k);
     return k;
    
@@ -6715,18 +6682,6 @@ GIPC::~GIPC() {
 
 
 
-int totalNT = 0;
-double totalTime = 0;
-int total_Frames = 0;
-double ttime0 = 0;
-double ttime1 = 0;
-double ttime2 = 0;
-double ttime3 = 0;
-double ttime4 = 0;
-// bool isRotate = true;
-
-
-
 void GIPC::IPC_Solver() {
 
     CHECK_ERROR(m_instance, "not initialize m_instance");
@@ -6736,12 +6691,7 @@ void GIPC::IPC_Solver() {
     CHECK_ERROR(m_BH, "not initialize m_BH");
 
 
-    //double animation_fullRate = 0;
-    cudaEvent_t start, end0;
-    cudaEventCreate(&start);
-    cudaEventCreate(&end0);
     double alpha = 1;
-    cudaEventRecord(start);
 
 
 
@@ -6793,19 +6743,17 @@ void GIPC::IPC_Solver() {
     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
     buildFrictionSets();
 #endif
+
     m_animation_fullRate = m_animation_subRate;
-    double time0 = 0;
-    double time1 = 0;
-    double time2 = 0;
-    double time3 = 0;
-    double time4 = 0;
+
 
     while (true) {
         tempMalloc_closeConstraint();
+
         CUDA_SAFE_CALL(cudaMemset(mc_close_cpNum, 0, sizeof(uint32_t)));
         CUDA_SAFE_CALL(cudaMemset(mc_close_gpNum, 0, sizeof(uint32_t)));
 
-        totalNT += solve_subIP(m_instance, time0, time1, time2, time3, time4);
+        solve_subIP(m_instance);
 
         double2 minMaxDist1 = minMaxGroundDist();
         double2 minMaxDist2 = minMaxSelfDist();
@@ -6875,39 +6823,9 @@ void GIPC::IPC_Solver() {
     updateVelocities(m_instance);
 
     FEMENERGY::computeXTilta(m_instance, 1);
-    cudaEventRecord(end0);
+
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    float tttime;
-    cudaEventElapsedTime(&tttime, start, end0);
-    totalTime += tttime;
-    total_Frames++;
-    printf("average time cost:     %f,    frame id:   %d\n", totalTime / totalNT, total_Frames);
-    printf("boundary alpha: %f\n  finished a step\n", alpha);
 
-
-    ttime0 += time0;
-    ttime1 += time1;
-    ttime2 += time2;
-    ttime3 += time3;
-    ttime4 += time4;
-
-    std::ofstream outTime("timeCost.txt");
-
-    outTime << "time0: " << ttime0 / 1000.0 << std::endl;
-    outTime << "time1: " << ttime1 / 1000.0 << std::endl;
-    outTime << "time2: " << ttime2 / 1000.0 << std::endl;
-    outTime << "time3: " << ttime3 / 1000.0 << std::endl;
-    outTime << "time4: " << ttime4 / 1000.0 << std::endl;
-    outTime << "time_makePD: " << timemakePd / 1000.0 << std::endl;
-
-    outTime << "totalTime: " << totalTime / 1000.0 << std::endl;
-    outTime << "total iter: " << totalNT << std::endl;
-    outTime << "frames: " << total_Frames << std::endl;
-    outTime << "totalCollisionNum: " << totalCollisionPairs << std::endl;
-    outTime << "averageCollision: " << totalCollisionPairs/totalNT << std::endl;
-    outTime << "maxCOllisionPairNum: " << maxCOllisionPairNum << std::endl;
-    outTime << "totalCgTime: " << total_Cg_count << std::endl;
-    outTime.close();
 
 }
 
