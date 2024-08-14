@@ -26,7 +26,7 @@ GAS_CUDA_GIPC::GAS_CUDA_GIPC(const SIM_DataFactory* factory) : BaseClass(factory
 
 GAS_CUDA_GIPC::~GAS_CUDA_GIPC() {
     if (GeometryManager::instance) {
-        // GeometryManager::instance->freeGeometryManager();
+        GeometryManager::instance->freeGeometryManager();
     }
 }
 

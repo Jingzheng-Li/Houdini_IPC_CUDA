@@ -37,7 +37,7 @@ GAS_Read_Buffer::GAS_Read_Buffer(const SIM_DataFactory* factory) : BaseClass(fac
 GAS_Read_Buffer::~GAS_Read_Buffer() {
 	FIRSTFRAME::hou_initialized = false;
     if (GeometryManager::instance) {
-        // GeometryManager::instance->freeGeometryManager();
+        GeometryManager::instance->freeGeometryManager();
     }
 }
 
@@ -595,9 +595,6 @@ void GAS_Read_Buffer::initSIMIPC() {
         instance->GIPC_ptr = std::make_unique<GIPC>(instance);
     }
 	instance->GIPC_ptr->buildCP();
-	// personal intuition, maybe not correct
-	// instance->GIPC_ptr->h_close_gpNum = instance->GIPC_ptr->h_gpNum;
-
 
 
 	FEMENERGY::computeXTilta(instance, 1);

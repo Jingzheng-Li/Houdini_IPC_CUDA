@@ -11,7 +11,7 @@
                 "USE_SNK",
                 "SVD_DOUBLE",
                 "ADAPTIVE_KAPPA",
-                // "USE_FRICTION"
+                "USE_FRICTION"
             ],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c11",

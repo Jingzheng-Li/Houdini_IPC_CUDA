@@ -26,7 +26,7 @@ GAS_CUDA_LBVH::GAS_CUDA_LBVH(const SIM_DataFactory* factory) : BaseClass(factory
 
 GAS_CUDA_LBVH::~GAS_CUDA_LBVH() {
     if (GeometryManager::instance) {
-        // GeometryManager::instance->freeGeometryManager();
+        GeometryManager::instance->freeGeometryManager();
     }
 }
 

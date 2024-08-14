@@ -23,7 +23,7 @@ GAS_Write_Buffer::GAS_Write_Buffer(const SIM_DataFactory* factory) : BaseClass(f
 
 GAS_Write_Buffer::~GAS_Write_Buffer() {
     if (GeometryManager::instance) {
-        // GeometryManager::instance->freeGeometryManager();
+        GeometryManager::instance->freeGeometryManager();
     }
 }
 

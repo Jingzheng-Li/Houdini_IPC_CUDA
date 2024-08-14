@@ -6682,11 +6682,36 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     h_cpNum_last[3] = 0;
     h_cpNum_last[4] = 0;
 
+    h_close_cpNum = 0;
+    h_close_gpNum = 0;
+
+    m_isRotate = true;
 
 }
 
 
-GIPC::~GIPC() { }
+GIPC::~GIPC() {
+    mc_vertexes = nullptr;
+    mc_rest_vertexes = nullptr;
+    mc_faces = nullptr;
+    mc_edges = nullptr;
+    mc_surfVerts = nullptr;
+
+    mc_targetVert = nullptr;
+    mc_targetInd = nullptr;
+    mc_moveDir = nullptr;
+    mc_collisonPairs = nullptr;
+    mc_ccd_collisonPairs = nullptr;
+    mc_cpNum = nullptr;
+    mc_MatIndex = nullptr;
+    mc_close_cpNum = nullptr;
+    mc_environment_collisionPair = nullptr;
+    mc_gpNum = nullptr;
+    mc_close_gpNum = nullptr;
+    mc_groundNormal = nullptr;
+    mc_groundOffset = nullptr;
+
+}
 
 
 
@@ -6698,7 +6723,7 @@ double ttime1 = 0;
 double ttime2 = 0;
 double ttime3 = 0;
 double ttime4 = 0;
-bool isRotate = true;
+// bool isRotate = true;
 
 
 
@@ -6720,7 +6745,7 @@ void GIPC::IPC_Solver() {
 
 
 
-    if (isRotate) {
+    if (m_isRotate) {
         updateBoundaryMoveDir(m_instance, alpha);
         buildBVH_FULLCCD(alpha);
         buildFullCP(alpha);
@@ -6756,14 +6781,6 @@ void GIPC::IPC_Solver() {
         suggestKappa(m_instance->Kappa);
     }
     initKappa(m_instance);
-
-    // uint32_t temp_gpNum;
-    // uint32_t temp_close_gpNum;
-    // cudaMemcpy(&temp_gpNum, mc_gpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(&temp_close_gpNum, mc_close_gpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    // std::cout << "temp_gpNum~~~~~~" << temp_gpNum << std::endl;
-    // std::cout << "temp_close_gpNum~~~~~~" << temp_close_gpNum << std::endl;
-
 
 
 #ifdef USE_FRICTION
