@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/local/cuda/include",
+                "/opt/hfs19.5/toolkit/include"
+            ],
+            "defines": [
+                "USE_SNK",
+                "SVD_DOUBLE",
+                "ADAPTIVE_KAPPA",
+                "USE_FRICTION"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
