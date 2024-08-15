@@ -723,6 +723,7 @@ void _calFrictionHessian(const double3* _vertexes, const double3* _o_vertexes, c
     double eps = sqrt(eps2);
     double3 relDX3D;
     if (MMCVIDI.x >= 0) {
+        
         IPCFRICTION::computeRelDX_EE(MATHUTILS::__minus(_vertexes[MMCVIDI.x], _o_vertexes[MMCVIDI.x]),
             MATHUTILS::__minus(_vertexes[MMCVIDI.y], _o_vertexes[MMCVIDI.y]),
             MATHUTILS::__minus(_vertexes[MMCVIDI.z], _o_vertexes[MMCVIDI.z]),

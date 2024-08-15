@@ -37,14 +37,6 @@ GeometryManager::GeometryManager() :
     cudaTempDouble(nullptr),
     cudaDmInverses(nullptr),
     cudaTempMat3x3(nullptr),
-    cudaH12x12(nullptr),
-    cudaH9x9(nullptr),
-    cudaH6x6(nullptr),
-    cudaH3x3(nullptr),
-    cudaD4Index(nullptr),
-    cudaD3Index(nullptr),
-    cudaD2Index(nullptr),
-    cudaD1Index(nullptr),
     cudaCloseGPNum(nullptr),
     cudaCloseCPNum(nullptr),
     cudaTargetVert(nullptr),
@@ -125,14 +117,6 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaTempMat3x3);
     CUDAFreeSafe(instance->cudaBoundaryType);
     CUDAFreeSafe(instance->cudaTempBoundaryType);
-    CUDAFreeSafe(instance->cudaH12x12);
-    CUDAFreeSafe(instance->cudaH9x9);
-    CUDAFreeSafe(instance->cudaH6x6);
-    CUDAFreeSafe(instance->cudaH3x3);
-    CUDAFreeSafe(instance->cudaD4Index);
-    CUDAFreeSafe(instance->cudaD3Index);
-    CUDAFreeSafe(instance->cudaD2Index);
-    CUDAFreeSafe(instance->cudaD1Index);
     CUDAFreeSafe(instance->cudaCloseGPNum);
     CUDAFreeSafe(instance->cudaCloseCPNum);
     CUDAFreeSafe(instance->cudaTargetVert);

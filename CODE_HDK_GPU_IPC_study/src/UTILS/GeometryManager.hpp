@@ -184,15 +184,6 @@ public:
     double relative_dhat;
     double fDhat;
 
-    MATHUTILS::Matrix12x12d* cudaH12x12;
-    MATHUTILS::Matrix9x9d* cudaH9x9;
-    MATHUTILS::Matrix6x6d* cudaH6x6;
-    MATHUTILS::Matrix3x3d* cudaH3x3;
-    uint32_t* cudaD1Index; // pIndex, DpeIndex, DptIndex;
-    uint3* cudaD3Index;
-    uint4* cudaD4Index;
-    uint2* cudaD2Index;
-
     uint32_t softNum;
     double3* cudaTargetVert;
     uint32_t* cudaTargetIndex;

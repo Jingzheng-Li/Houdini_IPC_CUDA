@@ -45,11 +45,11 @@ BHessian::BHessian() {};
 BHessian::~BHessian() {};
 
 void BHessian::CUDA_MALLOC_BHESSIAN(const int& tet_number, const int& surfvert_number, const int& surface_number, const int& surfEdge_number, const int& triangle_num, const int& tri_Edge_number) {
+    
     CUDAMallocSafe(m_H12x12, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
     CUDAMallocSafe(m_H9x9, (2 * (surfEdge_number + surfvert_number) + triangle_num));
     CUDAMallocSafe(m_H6x6, 2 * (surfvert_number + surfEdge_number));
     CUDAMallocSafe(m_H3x3, 2 * surfvert_number);
-
     CUDAMallocSafe(m_D4Index, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
     CUDAMallocSafe(m_D3Index, (2 * (surfEdge_number + surfvert_number)+ triangle_num));
     CUDAMallocSafe(m_D2Index, 2 * (surfvert_number + surfEdge_number));
