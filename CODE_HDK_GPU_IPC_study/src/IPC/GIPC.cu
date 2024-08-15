@@ -2783,8 +2783,7 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
             dis = sqrt(dis);
             double d_hat_sqrt = sqrt(dHat);
             MATHUTILS::Matrix12x9d PFPxT;
-            GIPCPDERIV::pFpx_pt2(_vertexes[v0I], _vertexes[MMCVIDI.y], _vertexes[MMCVIDI.z], _vertexes[MMCVIDI.w], d_hat_sqrt,
-                     PFPxT);
+            GIPCPDERIV::pFpx_pt2(_vertexes[v0I], _vertexes[MMCVIDI.y], _vertexes[MMCVIDI.z], _vertexes[MMCVIDI.w], d_hat_sqrt, PFPxT);
             double I5 = pow(dis / d_hat_sqrt, 2);
             MATHUTILS::Vector9 tmp;
             tmp.v[0] = tmp.v[1] = tmp.v[2] = tmp.v[3] = tmp.v[4] = tmp.v[5] = tmp.v[6] = tmp.v[7] = 0;
@@ -2881,18 +2880,20 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
             MATHUTILS::Vector12 gradient_vec = MATHUTILS::__M12x9_v9_multiply(MATHUTILS::__Transpose9x12(PFPx), flatten_pk1);
 #endif
 
-            atomicAdd(&(_gradient[v0I].x), gradient_vec.v[0]);
-            atomicAdd(&(_gradient[v0I].y), gradient_vec.v[1]);
-            atomicAdd(&(_gradient[v0I].z), gradient_vec.v[2]);
-            atomicAdd(&(_gradient[MMCVIDI.y].x), gradient_vec.v[3]);
-            atomicAdd(&(_gradient[MMCVIDI.y].y), gradient_vec.v[4]);
-            atomicAdd(&(_gradient[MMCVIDI.y].z), gradient_vec.v[5]);
-            atomicAdd(&(_gradient[MMCVIDI.z].x), gradient_vec.v[6]);
-            atomicAdd(&(_gradient[MMCVIDI.z].y), gradient_vec.v[7]);
-            atomicAdd(&(_gradient[MMCVIDI.z].z), gradient_vec.v[8]);
-            atomicAdd(&(_gradient[MMCVIDI.w].x), gradient_vec.v[9]);
-            atomicAdd(&(_gradient[MMCVIDI.w].y), gradient_vec.v[10]);
-            atomicAdd(&(_gradient[MMCVIDI.w].z), gradient_vec.v[11]);
+            {
+                atomicAdd(&(_gradient[v0I].x), gradient_vec.v[0]);
+                atomicAdd(&(_gradient[v0I].y), gradient_vec.v[1]);
+                atomicAdd(&(_gradient[v0I].z), gradient_vec.v[2]);
+                atomicAdd(&(_gradient[MMCVIDI.y].x), gradient_vec.v[3]);
+                atomicAdd(&(_gradient[MMCVIDI.y].y), gradient_vec.v[4]);
+                atomicAdd(&(_gradient[MMCVIDI.y].z), gradient_vec.v[5]);
+                atomicAdd(&(_gradient[MMCVIDI.z].x), gradient_vec.v[6]);
+                atomicAdd(&(_gradient[MMCVIDI.z].y), gradient_vec.v[7]);
+                atomicAdd(&(_gradient[MMCVIDI.z].z), gradient_vec.v[8]);
+                atomicAdd(&(_gradient[MMCVIDI.w].x), gradient_vec.v[9]);
+                atomicAdd(&(_gradient[MMCVIDI.w].y), gradient_vec.v[10]);
+                atomicAdd(&(_gradient[MMCVIDI.w].z), gradient_vec.v[11]);
+            }
 
 #ifdef NEWF
 
@@ -2929,8 +2930,8 @@ void _calSelfCloseVal(const double3* _vertexes, const int4* _collisionPair, int4
         _close_collisionPair[tidx] = MMCVIDI;
         _close_collisionVal[tidx] = dist2;
     }
-
 }
+
 
 __global__
 void _checkSelfCloseVal(const double3* _vertexes, int* _isChange, int4* _close_collisionPair, double* _close_collisionVal, int number) {
