@@ -1132,21 +1132,7 @@ namespace FEMENERGY {
 
         MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_double(DmInverses[idx]);
 
-        // if (idx >= 0 && idx <= 10) {
-        //     printf("%i \n", idx);
-        //     printf("%f \n", DmInverses[idx].m[0][0]);
-        //     printf("%f \n", vertexes[idx].x);
-        //     printf("%i \n", tetrahedras[idx].x);
-        //     printf("%f \n", Hessians[idx].m[0][0]);
-        //     printf("%f \n", offset);
-        //     printf("%f \n", volume);
-        //     printf("%f \n", gradient[idx].x);
-        //     printf("%f \n", tetrahedraNum);
-        //     printf("%f \n", lenRate);
-        //     printf("%f \n", volRate);
-        //     printf("%f \n", IPC_dt);
-        //     printf("%f \n", PFPX);
-        // }
+
 
         MATHUTILS::Matrix3x3d Ds;
         __calculateDms3D_double(vertexes, tetrahedras[idx], Ds);

@@ -295,9 +295,6 @@ namespace FEMENERGY {
         pI3pF.m[2][1] = F.m[0][2] * F.m[1][0] - F.m[0][0] * F.m[1][2];
         pI3pF.m[2][2] = F.m[0][0] * F.m[1][1] - F.m[0][1] * F.m[1][0];
 
-
-        //printf("volRate and LenRate:  %f    %f\n", volumRate, lengthRate);
-
         MATHUTILS::Matrix3x3d PEPF, tempA, tempB;
         tempA = MATHUTILS::__S_Mat_multiply(F, u * (1 - 1 / (I2 + 1)));
         tempB = MATHUTILS::__S_Mat_multiply(pI3pF, (r * (I3 - 1 - u * 3 / (r * 4))));
@@ -309,7 +306,6 @@ namespace FEMENERGY {
     MATHUTILS::Matrix3x3d computePEPF_ARAP_double(const MATHUTILS::Matrix3x3d& F, const MATHUTILS::Matrix3x3d& Sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double& lengthRate) {
 
         MATHUTILS::Matrix3x3d R, S;
-
         S = MATHUTILS::__M_Mat_multiply(MATHUTILS::__M_Mat_multiply(V, Sigma), MATHUTILS::__Transpose3x3(V));//V * sigma * V.transpose();
         R = MATHUTILS::__M_Mat_multiply(U, MATHUTILS::__Transpose3x3(V));
         MATHUTILS::Matrix3x3d g = MATHUTILS::__Mat3x3_minus(F, R);
@@ -1125,49 +1121,35 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x3d* DmInverses, 
         const double3* vertexes, 
         const uint4* tetrahedras,
-        MATHUTILS::Matrix12x12d* Hessians, uint32_t offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
+        MATHUTILS::Matrix12x12d* Hessians, 
+        uint32_t offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
 
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= tetrahedraNum) return;
 
-        MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_double(DmInverses[idx]);
-
-        // if (idx >= 0 && idx <= 10) {
-        //     printf("%i \n", idx);
-        //     printf("%f \n", DmInverses[idx].m[0][0]);
-        //     printf("%f \n", vertexes[idx].x);
-        //     printf("%i \n", tetrahedras[idx].x);
-        //     printf("%f \n", Hessians[idx].m[0][0]);
-        //     printf("%f \n", offset);
-        //     printf("%f \n", volume);
-        //     printf("%f \n", gradient[idx].x);
-        //     printf("%f \n", tetrahedraNum);
-        //     printf("%f \n", lenRate);
-        //     printf("%f \n", volRate);
-        //     printf("%f \n", IPC_dt);
-        //     printf("%f \n", PFPX);
-        // }
+        // calculate part(F)/part(x) = part(Ds)/part(x) * Dm^-1, and vectorize tensor into 9x12 matrix
+        MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_double(DmInverses[idx]); 
 
         MATHUTILS::Matrix3x3d Ds;
-        __calculateDms3D_double(vertexes, tetrahedras[idx], Ds);
+        __calculateDms3D_double(vertexes, tetrahedras[idx], Ds); // get Ds
         MATHUTILS::Matrix3x3d F;
-        __M_Mat_multiply(Ds, DmInverses[idx], F);
+        __M_Mat_multiply(Ds, DmInverses[idx], F); // get F = Ds * Dm^-1
 
         MATHUTILS::Matrix3x3d U, V, Sigma;
         MATHUTILS::SVD(F, U, V, Sigma);
 
+        // get Piola-Kirchhoff stress PK1 = part(E)/part(F)
     #ifdef USE_SNK
         MATHUTILS::Matrix3x3d Iso_PEPF = __computePEPF_StableNHK3D_double(F, Sigma, U, V, lenRate, volRate);
     #else
+        // PK1 = mu * (F - R)
         MATHUTILS::Matrix3x3d Iso_PEPF = computePEPF_ARAP_double(F, Sigma, U, V, lenRate);
     #endif
 
-        MATHUTILS::Matrix3x3d PEPF = Iso_PEPF;
-        MATHUTILS::Vector9 pepf = MATHUTILS::__Mat3x3_to_vec9_double(PEPF);
-
+        MATHUTILS::Matrix3x3d PEPF = Iso_PEPF; 
+        MATHUTILS::Vector9 pepf = MATHUTILS::__Mat3x3_to_vec9_double(PEPF);  // vectorize Matrix3x3
         MATHUTILS::Matrix12x9d PFPXTranspose = MATHUTILS::__Transpose9x12(PFPX);
         MATHUTILS::Vector12 f = MATHUTILS::__s_vec12_multiply(MATHUTILS::__M12x9_v9_multiply(PFPXTranspose, pepf), IPC_dt * IPC_dt * volume[idx]);
-        //printf("%f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n", f.v[0], f.v[1], f.v[2], f.v[3], f.v[4], f.v[5], f.v[6], f.v[7], f.v[8], f.v[9], f.v[10], f.v[11]);
 
         {
             atomicAdd(&(gradient[tetrahedras[idx].x].x), f.v[0]);
@@ -1190,7 +1172,6 @@ namespace FEMENERGY {
     #ifdef USE_SNK
         MATHUTILS::Matrix9x9d Hq;
         //__project_StabbleNHK_H_3D(make_double3(Sigma.m[0][0], Sigma.m[1][1], Sigma.m[2][2]), U, V, lenRate, volRate,Hq);
-
         __project_StabbleNHK_H_3D_makePD(Hq, F, Sigma, U, V, lenRate, volRate);
     #else
         MATHUTILS::Matrix9x9d Hq = project_ARAP_H_3D(Sigma, U, V, lenRate);

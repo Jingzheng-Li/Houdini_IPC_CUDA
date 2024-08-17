@@ -723,7 +723,7 @@ void _calFrictionHessian(const double3* _vertexes, const double3* _o_vertexes, c
     double eps = sqrt(eps2);
     double3 relDX3D;
     if (MMCVIDI.x >= 0) {
-        
+
         IPCFRICTION::computeRelDX_EE(MATHUTILS::__minus(_vertexes[MMCVIDI.x], _o_vertexes[MMCVIDI.x]),
             MATHUTILS::__minus(_vertexes[MMCVIDI.y], _o_vertexes[MMCVIDI.y]),
             MATHUTILS::__minus(_vertexes[MMCVIDI.z], _o_vertexes[MMCVIDI.z]),
@@ -848,8 +848,7 @@ void _calFrictionHessian(const double3* _vertexes, const double3* _o_vertexes, c
 
             MATHUTILS::Matrix6x2d TM2 = MATHUTILS::__M6x2_M2x2_Multiply(T, projH);
 
-            MATHUTILS::Matrix6x6d HessianBlock = MATHUTILS::__s_M6x6_Multiply(__M6x2_M6x2T_Multiply(TM2, T),
-                coef * lastH[idx]);
+            MATHUTILS::Matrix6x6d HessianBlock = MATHUTILS::__s_M6x6_Multiply(__M6x2_M6x2T_Multiply(TM2, T), coef * lastH[idx]);
 
             int Hidx = atomicAdd(_cpNum + 2, 1);
             Hidx += offset2;
@@ -914,8 +913,7 @@ void _calFrictionHessian(const double3* _vertexes, const double3* _o_vertexes, c
 
             MATHUTILS::Matrix9x2d TM2 = MATHUTILS::__M9x2_M2x2_Multiply(T, projH);
 
-            MATHUTILS::Matrix9x9d HessianBlock = MATHUTILS::__s_M9x9_Multiply(__M9x2_M9x2T_Multiply(TM2, T),
-                coef * lastH[idx]);
+            MATHUTILS::Matrix9x9d HessianBlock = MATHUTILS::__s_M9x9_Multiply(__M9x2_M9x2T_Multiply(TM2, T), coef * lastH[idx]);
             int Hidx = atomicAdd(_cpNum + 3, 1);
             Hidx += offset3;
             H9x9[Hidx] = HessianBlock;
@@ -980,8 +978,7 @@ void _calFrictionHessian(const double3* _vertexes, const double3* _o_vertexes, c
 
             MATHUTILS::Matrix12x2d TM2 = MATHUTILS::__M12x2_M2x2_Multiply(T, projH);
 
-            MATHUTILS::Matrix12x12d HessianBlock = MATHUTILS::__s_M12x12_Multiply(__M12x2_M12x2T_Multiply(TM2, T),
-                coef * lastH[idx]);
+            MATHUTILS::Matrix12x12d HessianBlock = MATHUTILS::__s_M12x12_Multiply(__M12x2_M12x2T_Multiply(TM2, T), coef * lastH[idx]);
             int Hidx = atomicAdd(_cpNum + 4, 1);
             Hidx += offset4;
             H12x12[Hidx] = HessianBlock;

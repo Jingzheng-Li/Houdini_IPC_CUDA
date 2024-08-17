@@ -1,3 +1,0 @@
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/OpenCL_CUDA_Transpose_code/build/CMakeFiles/HDK_DOP_gasopencl_cuda.dir
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/OpenCL_CUDA_Transpose_code/build/CMakeFiles/edit_cache.dir
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/OpenCL_CUDA_Transpose_code/build/CMakeFiles/rebuild_cache.dir
