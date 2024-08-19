@@ -1122,7 +1122,9 @@ namespace FEMENERGY {
         const double3* vertexes, 
         const uint4* tetrahedras,
         MATHUTILS::Matrix12x12d* Hessians, 
-        uint32_t offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
+        uint32_t offset, const double* volume, 
+        double3* gradient, 
+        int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
 
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= tetrahedraNum) return;
@@ -1149,6 +1151,7 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x3d PEPF = Iso_PEPF; 
         MATHUTILS::Vector9 pepf = MATHUTILS::__Mat3x3_to_vec9_double(PEPF);  // vectorize Matrix3x3
         MATHUTILS::Matrix12x9d PFPXTranspose = MATHUTILS::__Transpose9x12(PFPX);
+        // f = V * (part(F)^T @ vec(part(E)/part(F)) * dt^2
         MATHUTILS::Vector12 f = MATHUTILS::__s_vec12_multiply(MATHUTILS::__M12x9_v9_multiply(PFPXTranspose, pepf), IPC_dt * IPC_dt * volume[idx]);
 
         {
@@ -1179,7 +1182,6 @@ namespace FEMENERGY {
 
         MATHUTILS::Matrix12x12d H;
         MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPXTranspose, Hq, H);
-
         Hessians[idx + offset] = MATHUTILS::__s_M12x12_Multiply(H, volume[idx] * IPC_dt * IPC_dt);
     }
 
@@ -1191,19 +1193,16 @@ namespace FEMENERGY {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= triangleNum) return;
 
+        // stretch shear bending
         MATHUTILS::Matrix6x9d PFPX = __computePFDsPX3D_6x9_double(trimInverses[idx]);
-
         MATHUTILS::Matrix3x2d Ds;
         __calculateDs2D_double(vertexes, triangles[idx], Ds);
         MATHUTILS::Matrix3x2d F = MATHUTILS::__M3x2_M2x2_Multiply(Ds, trimInverses[idx]);
-
         MATHUTILS::Matrix3x2d PEPF = __computePEPF_BaraffWitkinStretch_double(F, stretchStiff, shearhStiff);
-
         MATHUTILS::Vector6 pepf = MATHUTILS::__Mat3x2_to_vec6_double(PEPF);
 
         MATHUTILS::Matrix9x6d PFPXTranspose = MATHUTILS::__Transpose6x9(PFPX);
         MATHUTILS::Vector9 f = MATHUTILS::__s_vec9_multiply(MATHUTILS::__M9x6_v6_multiply(PFPXTranspose, pepf), IPC_dt * IPC_dt * area[idx]);
-        //printf("%f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n", f.v[0], f.v[1], f.v[2], f.v[3], f.v[4], f.v[5], f.v[6], f.v[7], f.v[8], f.v[9], f.v[10], f.v[11]);
 
         {
             atomicAdd(&(gradient[triangles[idx].x].x), f.v[0]);
@@ -1331,7 +1330,6 @@ namespace FEMENERGY {
             }
             Hessians[idx + offset] = Zero;
             Indices[idx + offset] = make_uint4(0, 1, 2, 3);
-            //
             return;
         }
         auto x0 = vertexes[edge.x];
@@ -1347,7 +1345,6 @@ namespace FEMENERGY {
         Eigen::Matrix<double, 3, 1> x2_eigen = Eigen::Matrix<double, 3, 1>(x2.x, x2.y, x2.z);
         Eigen::Matrix<double, 3, 1> x3_eigen = Eigen::Matrix<double, 3, 1>(x3.x, x3.y, x3.z);
         double t = edgeTheta(x0_eigen, x1_eigen, x2_eigen, x3_eigen, &grad_transpose, &H);
-        //            cout << "t: " << t << endl;
 
         auto rest_x0 = rest_vertexes[edge.x];
         auto rest_x1 = rest_vertexes[edge.y];
@@ -1386,14 +1383,17 @@ namespace FEMENERGY {
             atomicAdd(&(gradient[adj.y].y), f.v[10]);
             atomicAdd(&(gradient[adj.y].z), f.v[11]);
         }
+
         MATHUTILS::Matrix12x12d d_H;
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 12; j++) {
                 d_H.m[i][j] = IPC_dt * IPC_dt * length * H(i, j) * bendStiff;
             }
         }
+
         Hessians[idx + offset] = d_H;
         Indices[idx + offset] = make_uint4(edge.x, edge.y, adj.x, adj.y);
+
     }
 
 
