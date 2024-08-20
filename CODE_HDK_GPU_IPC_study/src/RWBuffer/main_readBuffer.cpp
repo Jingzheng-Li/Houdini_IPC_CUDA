@@ -429,6 +429,8 @@ void GAS_Read_Buffer::loadSIMParams() {
 
 	instance->animation = false;
 	instance->collision_detection_buff_scale = 1;
+	double motion_rate = 1.0;
+	instance->animation_subRate = 1.0 / motion_rate;
 	
 }
 
@@ -455,6 +457,8 @@ void GAS_Read_Buffer::initSIMFEM() {
 
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaDmInverses, instance->DMInverse.data(), instance->numTetElements * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTriDmInverses, instance->TriDMInverse.data(), instance->numTriElements * sizeof(MATHUTILS::Matrix2x2d), cudaMemcpyHostToDevice));
+
+	// FEMENERGY::computeXTilta(instance, 1);
 	
 }
 
@@ -502,22 +506,28 @@ void GAS_Read_Buffer::initSIMBVH() {
 
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestVertPos, instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
 
-	// build LBVH here
+	// build LBVH
 	instance->LBVH_F_ptr->Construct();
 	instance->LBVH_E_ptr->Construct();
 
+	std::vector<AABB> boundVolumes(2 * instance->numSurfEdges - 1);
+	std::vector<Node> Nodes(2 * instance->numSurfEdges - 1);
+	CUDA_SAFE_CALL(cudaMemcpy(&boundVolumes[0], instance->LBVH_E_ptr->mc_boundVolumes, (2 * instance->numSurfEdges - 1) * sizeof(AABB), cudaMemcpyDeviceToHost));
+	CUDA_SAFE_CALL(cudaMemcpy(&Nodes[0], instance->LBVH_E_ptr->mc_nodes, (2 * instance->numSurfEdges - 1) * sizeof(Node), cudaMemcpyDeviceToHost));
+
 }
-
-
 
 
 void GAS_Read_Buffer::initSIMIPC() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
-	// ipc.init()
+	// init IPC
 	AABB AABBScene = instance->LBVH_F_ptr->m_scene;
-	CHECK_ERROR((AABBScene.m_upper.x >= AABBScene.m_lower.x) && (AABBScene.m_upper.y >= AABBScene.m_lower.y) && (AABBScene.m_upper.z >= AABBScene.m_lower.z), "AABB maybe error, please check again");
+	CHECK_ERROR((AABBScene.m_upper.x >= AABBScene.m_lower.x) && 
+				(AABBScene.m_upper.y >= AABBScene.m_lower.y) && 
+				(AABBScene.m_upper.z >= AABBScene.m_lower.z), 
+				"AABB maybe error, please check again");
 	std::cout << "SceneSize upper/lower: ~~" << AABBScene.m_upper.x << " " << AABBScene.m_lower.x << std::endl;
 
 	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene.m_upper, AABBScene.m_lower));
@@ -532,7 +542,6 @@ void GAS_Read_Buffer::initSIMIPC() {
 	}
 	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numTetElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
 
-
 	// init PCGData_ptr
 	if (!instance->PCGData_ptr) {
 		instance->PCGData_ptr = std::make_unique<PCGData>();
@@ -540,34 +549,14 @@ void GAS_Read_Buffer::initSIMIPC() {
 	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numTetElements);
 	instance->PCGData_ptr->m_P_type = 0;
 	instance->PCGData_ptr->m_b = instance->cudaFb;
-	instance->cudaMoveDir = instance->PCGData_ptr->m_dx;
+	instance->cudaMoveDir = instance->PCGData_ptr->m_dx; // cudaMovedir will be m_dx
 
-
-
-
-
-
-
-
-
-
-	// 这个地方非常乱 一定要非常非常小心
-
-	double motion_rate = 1.0;
-	instance->animation_subRate = 1.0 / motion_rate;
 
     if (!instance->GIPC_ptr) {
         instance->GIPC_ptr = std::make_unique<GIPC>(instance);
     }
 	instance->GIPC_ptr->buildCP();
 
-
 	FEMENERGY::computeXTilta(instance, 1);
-
-	std::vector<AABB> boundVolumes(2 * instance->numSurfEdges - 1);
-	std::vector<Node> Nodes(2 * instance->numSurfEdges - 1);
-	CUDA_SAFE_CALL(cudaMemcpy(&boundVolumes[0], instance->LBVH_E_ptr->mc_boundVolumes, (2 * instance->numSurfEdges - 1) * sizeof(AABB), cudaMemcpyDeviceToHost));
-	CUDA_SAFE_CALL(cudaMemcpy(&Nodes[0], instance->LBVH_E_ptr->mc_nodes, (2 * instance->numSurfEdges - 1) * sizeof(Node), cudaMemcpyDeviceToHost));
-
 
 }
