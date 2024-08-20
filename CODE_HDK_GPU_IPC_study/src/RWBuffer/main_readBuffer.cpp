@@ -256,8 +256,8 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	Eigen::MatrixX3i &surffaces = instance->surfFace;
 	Eigen::MatrixX2i &surfedges = instance->surfEdge;
 
-	// get triangle surface
-	MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex);
+	// get edges
+	MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex); 
 	instance->numTriEdges = instance->triEdges.rows();
 
 	CUDAMallocSafe(instance->cudaTargetVert, instance->softNum);
@@ -288,7 +288,6 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	instance->numSurfFaces = surffaces.rows();
 	instance->numSurfEdges = surfedges.rows();
 
-
 }
 
 
@@ -308,7 +307,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaTempDouble, maxNumbers);
 	CUDAMallocSafe(instance->cudaTempMat3x3, maxNumbers);
 
-	instance->IPC_dt = 0.01;
 	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * instance->collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
 	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * instance->collision_detection_buff_scale;
 
@@ -323,7 +321,8 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaEnvCollisionPairs, numVerts);
 	CUDAMallocSafe(instance->cudaGroundNormal, 5);
 	CUDAMallocSafe(instance->cudaGroundOffset, 5);
-	double h_offset[5] = {-1, -1, 1, -1, 1};
+	// bottom left right near far
+	double h_offset[5] = {0, -2, 2, -2, 2};
 	double3 H_normal[5];
 	H_normal[0] = make_double3(0, 1, 0);
     H_normal[1] = make_double3(1, 0, 0);
@@ -380,6 +379,8 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 void GAS_Read_Buffer::loadSIMParams() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+
+	instance->IPC_dt = 0.01;
 
 	instance->density = 1e3;
 	instance->YoungModulus = 1e5;
