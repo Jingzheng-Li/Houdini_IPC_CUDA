@@ -142,6 +142,7 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	}
 	CHECK_ERROR(ptidx==num_points, "Failed to get all points");
 
+
 	CUDAMallocSafe(instance->cudaVertPos, num_points);
 	CUDAMallocSafe(instance->cudaVertVel, num_points);
 	CUDAMallocSafe(instance->cudaVertMass, num_points);
@@ -319,6 +320,8 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDAMallocSafe(instance->cudaCPNum, 5);
 	CUDAMallocSafe(instance->cudaGPNum, 1);
 	CUDAMallocSafe(instance->cudaEnvCollisionPairs, numVerts);
+
+	// update ground collisions
 	CUDAMallocSafe(instance->cudaGroundNormal, 5);
 	CUDAMallocSafe(instance->cudaGroundOffset, 5);
 	// bottom left right near far
@@ -332,16 +335,37 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundOffset, &h_offset, 5 * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundNormal, &H_normal, 5 * sizeof(double3), cudaMemcpyHostToDevice));
 
+	/////////////////////////////
+	// init meanMass & meanVolume
+	/////////////////////////////
+	double sumMass = 0;
+	double sumVolume = 0;
+	for (int i = 0; i < instance->numVertices; i++) {
+		double mass = instance->vertMass[i];
+		sumMass += mass;
+	}
+	for (int i = 0; i < instance->numTetElements; i++) {
+		double vlm = instance->tetVolume[i];
+		sumVolume += vlm;
+	}
+	for (int i = 0; i < instance->numTriElements; i++) {
+		double vlm = instance->triArea[i];
+		sumVolume += vlm;
+	}
+	instance->meanMass = sumMass / instance->numVertices;
+	instance->meanVolume = sumVolume / instance->numVertices;
+	printf("meanMass: %f\n", instance->meanMass);
+	printf("meanVolum: %f\n", instance->meanVolume);
+
+
 	CUDAMallocSafe(instance->cudaXTilta, instance->numVertices);
 	CUDAMallocSafe(instance->cudaFb, instance->numVertices);
 	CUDAMallocSafe(instance->cudaTempDouble3Mem, instance->numVertices);
-
 
 	CUDAMallocSafe(instance->cudaCloseCPNum, 1);
 	CUDAMallocSafe(instance->cudaCloseGPNum, 1);
 	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseCPNum, 0, sizeof(uint32_t)));
 	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseGPNum, 0, sizeof(uint32_t)));
-
 
 	CHECK_ERROR(instance->vertPos.rows() == instance->numVertices, "numVerts not match with Eigen");
 	CHECK_ERROR(instance->tetElement.rows() == instance->numTetElements, "numTetEles not match with Eigen");
@@ -409,43 +433,9 @@ void GAS_Read_Buffer::loadSIMParams() {
 }
 
 
-
 void GAS_Read_Buffer::initSIMFEM() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMFEM geoinstance not initialized");
-
-	/////////////////////////////
-	// init meanMass & meanVolume
-	/////////////////////////////
-	double sumMass = 0;
-	double sumVolume = 0;
-	for (int i = 0; i < instance->numVertices; i++) {
-		double mass = instance->vertMass[i];
-		sumMass += mass;
-	}
-	for (int i = 0; i < instance->numTetElements; i++) {
-		double vlm = instance->tetVolume[i];
-		sumVolume += vlm;
-	}
-	for (int i = 0; i < instance->numTriElements; i++) {
-		double vlm = instance->triArea[i];
-		sumVolume += vlm;
-	}
-	
-	instance->meanMass = sumMass / instance->numVertices;
-	instance->meanVolume = sumVolume / instance->numVertices;
-	printf("meanMass: %f\n", instance->meanMass);
-	printf("meanVolum: %f\n", instance->meanVolume);
-
-	/////////////////////////////
-	// init meanMass & meanVolume
-	/////////////////////////////
-	double angleX = -MATHUTILS::PI / 4, angleY = -MATHUTILS::PI / 4, angleZ = MATHUTILS::PI / 2;
-	MATHUTILS::Matrix3x3d rotation, rotationZ, rotationY, rotationX;
-	MATHUTILS::__set_Mat_val(rotation, 1, 0, 0, 0, 1, 0, 0, 0, 1);
-	MATHUTILS::__set_Mat_val(rotationZ, cos(angleZ), -sin(angleZ), 0, sin(angleZ), cos(angleZ), 0, 0, 0, 1);
-	MATHUTILS::__set_Mat_val(rotationY, cos(angleY), 0, -sin(angleY), 0, 1, 0, sin(angleY), 0, cos(angleY));
-	MATHUTILS::__set_Mat_val(rotationX, 1, 0, 0, 0, cos(angleX), -sin(angleX), 0, sin(angleX), cos(angleX));
 
 	for (int i = 0; i < instance->numTetElements; i++) {
 		MATHUTILS::Matrix3x3d DM;
@@ -455,7 +445,6 @@ void GAS_Read_Buffer::initSIMFEM() {
 		instance->DMInverse.push_back(DM_inverse);
 	}
 
-
 	for (int i = 0; i < instance->numTriElements; i++) {
 		MATHUTILS::Matrix2x2d DM;
 		MATHUTILS::Matrix2x2d DM_inverse;
@@ -464,11 +453,9 @@ void GAS_Read_Buffer::initSIMFEM() {
 		instance->TriDMInverse.push_back(DM_inverse);
 	}
 
-
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaDmInverses, instance->DMInverse.data(), instance->numTetElements * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTriDmInverses, instance->TriDMInverse.data(), instance->numTriElements * sizeof(MATHUTILS::Matrix2x2d), cudaMemcpyHostToDevice));
 	
-
 }
 
 void GAS_Read_Buffer::initSIMBVH() {
@@ -511,40 +498,17 @@ void GAS_Read_Buffer::initSIMBVH() {
 	instance->LBVH_F_ptr->CUDA_MALLOC_LBVH(instance->numSurfFaces);
 
 	// calcuate Morton Code and sort MC together with face index
-	SortMesh::sortMesh(instance, instance->LBVH_F_ptr);
+	SortMesh::sortMesh(instance, instance->LBVH_F_ptr->getSceneSize());
 
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestVertPos, instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
 
-	// buildBVH()
+	// build LBVH here
 	instance->LBVH_F_ptr->Construct();
 	instance->LBVH_E_ptr->Construct();
 
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 这里要大的修正一下 把ipc指针也初始化在这里！！
-// 之前的函数应该都没有什么大问题 后面的函数倒是需要大的修改一下啊!!!!!
 
 
 void GAS_Read_Buffer::initSIMIPC() {

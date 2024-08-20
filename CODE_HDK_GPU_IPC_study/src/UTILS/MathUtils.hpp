@@ -68,13 +68,11 @@ namespace MATHUTILS {
 	};
 
 
-	struct Matrix3x3f
-    {
+	struct Matrix3x3f {
         float m[3][3];
     };
 
-    struct MasMatrixSymf
-    {
+    struct MasMatrixSymf {
         Matrix3x3f M[32 * (32 + 1) / 2];
     };
 

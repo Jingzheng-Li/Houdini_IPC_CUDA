@@ -248,7 +248,6 @@ void sortGeometry(std::unique_ptr<GeometryManager>& instance, const AABB* _MaxBv
     thrust::sort_by_key(thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash), thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash) + vertex_num, thrust::device_ptr<uint32_t>(instance->cudaSortIndex));
 
     updateVertexes(instance->cudaOriginVertPos, instance->cudaVertPos, instance->cudaTempDouble, instance->cudaVertMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraints, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
-	
 
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertPos, instance->cudaOriginVertPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertMass, instance->cudaTempDouble, vertex_num * sizeof(double), cudaMemcpyDeviceToDevice));
@@ -288,7 +287,7 @@ AABB* calcuMaxSceneSize(std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
 	return LBVH_F_ptr->getSceneSize();
 }
 
-void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
+void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, AABB* LBVHScenesize) {
 
 	int numVerts = instance->numVertices;
 	int numTetEles = instance->numTetElements;
@@ -298,40 +297,17 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_
 	int numSurfEdges = instance->numSurfEdges;
 	int numSurfFaces = instance->numSurfFaces;
 
-    sortGeometry(instance, calcuMaxSceneSize(LBVH_F_ptr), numVerts, numTetEles, numTriEles);
-    // CUDA_KERNEL_CHECK();
+	// sort geometry vertex via Morton Code together with verts/mass/constraints...
+    sortGeometry(instance, LBVHScenesize, numVerts, numTetEles, numTriEles);
 
+	// update surface through new vert order
     updateSurfaces(instance->cudaSortMapVertIndex, instance->cudaSurfFace, numVerts, numSurfFaces);
-	// CUDA_KERNEL_CHECK();
 
     updateSurfaceEdges(instance->cudaSortMapVertIndex, instance->cudaSurfEdge, numVerts, numSurfEdges);
-	// CUDA_KERNEL_CHECK();
 
     updateTriEdges_adjVerts(instance->cudaSortMapVertIndex, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numVerts, numTriEdges);
-	// CUDA_KERNEL_CHECK();
 
     updateSurfaceVerts(instance->cudaSortMapVertIndex, instance->cudaSurfVert, numVerts, numSurfVerts);
-	// CUDA_KERNEL_CHECK();
-
-
-	//////////////////////
-	// check the result //
-	//////////////////////
-	// Eigen::MatrixXi tempsurfface(numSurfFaces, 3);
-	// Eigen::MatrixXi tempsurfedge(numSurfEdges, 2);
-	// Eigen::VectorXi tempsurfvert(numSurfVerts);
-	// CUDAMemcpyDToHSafe(tempsurfface, instance->cudaSurfFace);
-	// CUDAMemcpyDToHSafe(tempsurfedge, instance->cudaSurfEdge);
-	// CUDAMemcpyDToHSafe(tempsurfvert, instance->cudaSurfVert);
-	// std::cout << "gettempsurfface~" << tempsurfface.row(0) << std::endl;
-	// std::cout << "gettempsurfedge~" << tempsurfedge.row(0) << std::endl;
-	// std::cout << "gettempsurfvert~" << tempsurfvert(0) << std::endl;
-
-	// Eigen::VectorXi tempsortmapvertindex(numVerts);
-	// CUDAMemcpyDToHSafe(tempsortmapvertindex, instance->cudaSortMapVertIndex);
-	// for (int i = 0; i< numVerts; i++) {
-	// 	std::cout << tempsortmapvertindex(i) << ", ";
-	// }
 
 }
 

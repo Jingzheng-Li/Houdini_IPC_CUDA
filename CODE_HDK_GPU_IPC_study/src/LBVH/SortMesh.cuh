@@ -4,6 +4,6 @@
 
 namespace SortMesh {
     
-    void sortMesh(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_F>& LBVH_F_ptr);
+    void sortMesh(std::unique_ptr<GeometryManager>& instance, AABB* LBVHSceneSize);
 
 };
