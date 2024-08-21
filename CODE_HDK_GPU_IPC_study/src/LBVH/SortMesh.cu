@@ -348,16 +348,16 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, AABB* LBVHSc
 void SortMesh::sortPreconditioner(std::unique_ptr<GeometryManager>& instance) {
 
 	updateNeighborInfo(
-		instance->PCGData_ptr->MP.d_neighborList, 
-		instance->PCGData_ptr->MP.d_neighborListInit, 
-		instance->PCGData_ptr->MP.d_neighborNum, 
-		instance->PCGData_ptr->MP.d_neighborNumInit, 
-		instance->PCGData_ptr->MP.d_neighborStart, 
-		instance->PCGData_ptr->MP.d_neighborStartTemp, 
+		instance->MAS_ptr->d_neighborList, 
+		instance->MAS_ptr->d_neighborListInit, 
+		instance->MAS_ptr->d_neighborNum, 
+		instance->MAS_ptr->d_neighborNumInit, 
+		instance->MAS_ptr->d_neighborStart, 
+		instance->MAS_ptr->d_neighborStartTemp, 
 		instance->cudaSortIndex, 
 		instance->cudaSortMapVertIndex, 
 		instance->numVertices,
-		instance->PCGData_ptr->MP.neighborListSize);
+		instance->MAS_ptr->neighborListSize);
 
 }
 

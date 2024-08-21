@@ -1797,7 +1797,7 @@ void MASPreconditioner::setPreconditioner(const std::unique_ptr<BHessian>& BH, c
                               d_neighborListInit,
                               neighborListSize * sizeof(unsigned int),
                               cudaMemcpyDeviceToDevice));
-    //CUDA_SAFE_CALL(cudaMemcpy(ipc.pcg_data.MP.d_neighborStart, tetMesh.neighborStart.data(), ipc.vertexNum * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    //CUDA_SAFE_CALL(cudaMemcpy(ipc.instance->MAS_ptr->d_neighborStart, tetMesh.neighborStart.data(), ipc.vertexNum * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(d_neighborNum,
                               d_neighborNumInit,
                               totalNodes * sizeof(unsigned int),

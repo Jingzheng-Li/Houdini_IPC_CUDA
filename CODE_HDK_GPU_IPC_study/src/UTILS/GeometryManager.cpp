@@ -80,10 +80,10 @@ void GeometryManager::freeCUDAptr() {
         instance->BH_ptr->CUDA_FREE_BHESSIAN();
         instance->BH_ptr.reset();
     }
-    // if (instance->MAS_ptr) {
-    //     instance->MAS_ptr->CUDA_FREE_MAS();
-    //     instance->MAS_ptr.reset();
-    // }
+    if (instance->MAS_ptr) {
+        instance->MAS_ptr->CUDA_FREE_MAS();
+        instance->MAS_ptr.reset();
+    }
     if (instance->PCGData_ptr) {
         instance->PCGData_ptr->CUDA_FREE_PCGDATA();
         instance->PCGData_ptr.reset();

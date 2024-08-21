@@ -43,7 +43,6 @@ void PCGData::CUDA_FREE_PCGDATA() {
     if (m_precondType == 1) {
         CUDAFreeSafe(mc_filterTempVec3);
         CUDAFreeSafe(mc_preconditionTempVec3);
-        MP.CUDA_FREE_MAS();   
     }
 }
 
@@ -1528,7 +1527,7 @@ int MASPCG_Process(
     int cpNum, 
     double threshold) {
 
-    pcg_data->MP.setPreconditioner(BH, instance->cudaVertMass, cpNum);
+    instance->MAS_ptr->setPreconditioner(BH, instance->cudaVertMass, cpNum);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     double deltaN = 0;
     double delta0 = 0;
@@ -1539,7 +1538,7 @@ int MASPCG_Process(
 
     PCG_constraintFilter(instance, pcg_data->mc_b, pcg_data->mc_filterTempVec3, vertexNum);
 
-    pcg_data->MP.preconditioning(pcg_data->mc_filterTempVec3, pcg_data->mc_preconditionTempVec3);
+    instance->MAS_ptr->preconditioning(pcg_data->mc_filterTempVec3, pcg_data->mc_preconditionTempVec3);
     //Solve_PCG_Preconditioning24(mesh, pcg_data->P24, pcg_data->P, pcg_data->restP, pcg_data->filterTempVec3, pcg_data->preconditionTempVec3, vertexNum);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     delta0 = My_PCG_General_v_v_Reduction_Algorithm(instance, pcg_data, pcg_data->mc_filterTempVec3, pcg_data->mc_preconditionTempVec3, vertexNum);
@@ -1576,7 +1575,7 @@ int MASPCG_Process(
         //deltaN = My_PCG_add_Reduction_Algorithm(4, mesh, pcg_data, vertexNum, alpha);
         PCG_Update_Dx_R(pcg_data->mc_c, pcg_data->mc_dx, pcg_data->mc_q, pcg_data->mc_r, alpha, vertexNum);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-        pcg_data->MP.preconditioning(pcg_data->mc_r, pcg_data->mc_s);
+        instance->MAS_ptr->preconditioning(pcg_data->mc_r, pcg_data->mc_s);
         //Solve_PCG_Preconditioning24(mesh, pcg_data->P24, pcg_data->P, pcg_data->restP, pcg_data->r, pcg_data->s, vertexNum);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
         deltaN = My_PCG_General_v_v_Reduction_Algorithm(instance, pcg_data, pcg_data->mc_r, pcg_data->mc_s, vertexNum);

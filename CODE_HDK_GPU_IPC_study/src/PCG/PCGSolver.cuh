@@ -32,8 +32,6 @@ public:
 	
 	int m_precondType;
 
-	MASPreconditioner MP;
-
 public:
     void CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum);
     void CUDA_FREE_PCGDATA();
