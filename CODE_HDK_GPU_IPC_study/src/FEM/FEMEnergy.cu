@@ -842,7 +842,7 @@ namespace FEMENERGY {
     }
 
     __device__
-    MATHUTILS::Matrix6x9d __computePFDsPX3D_6x9_double(const MATHUTILS::Matrix2x2d& InverseDm) {
+    MATHUTILS::Matrix6x9d __computePFPX3D_6x9_double(const MATHUTILS::Matrix2x2d& InverseDm) {
         MATHUTILS::Matrix6x9d matOut;
         MATHUTILS::__init_Mat6x9_val(matOut, 0);
         double d0 = InverseDm.m[0][0], d2 = InverseDm.m[0][1];
@@ -1001,7 +1001,7 @@ namespace FEMENERGY {
     }
 
     __device__
-    MATHUTILS::Matrix9x12d __computePFPX3D_double(const MATHUTILS::Matrix3x3d& InverseDm) {
+    MATHUTILS::Matrix9x12d __computePFPX3D_9x12_double(const MATHUTILS::Matrix3x3d& InverseDm) {
         MATHUTILS::Matrix9x12d matOut;
         MATHUTILS::__init_Mat9x12_val(matOut, 0);
         double m = InverseDm.m[0][0], n = InverseDm.m[0][1], o = InverseDm.m[0][2];
@@ -1124,7 +1124,7 @@ namespace FEMENERGY {
         if (idx >= tetrahedraNum) return;
 
         // calculate part(F)/part(x) = part(Ds)/part(x) * Dm^-1, and vectorize tensor into 9x12 matrix
-        MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_double(DmInverses[idx]); 
+        MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_9x12_double(DmInverses[idx]); 
 
         MATHUTILS::Matrix3x3d Ds;
         __calculateDms3D_double(vertexes, tetrahedras[idx], Ds); // get Ds
@@ -1188,7 +1188,7 @@ namespace FEMENERGY {
         if (idx >= triangleNum) return;
 
         // stretch shear bending
-        MATHUTILS::Matrix6x9d PFPX = __computePFDsPX3D_6x9_double(trimInverses[idx]);
+        MATHUTILS::Matrix6x9d PFPX = __computePFPX3D_6x9_double(trimInverses[idx]);
         MATHUTILS::Matrix3x2d Ds;
         __calculateDs2D_double(vertexes, triangles[idx], Ds);
         MATHUTILS::Matrix3x2d F = MATHUTILS::__M3x2_M2x2_Multiply(Ds, trimInverses[idx]);
@@ -1227,7 +1227,7 @@ namespace FEMENERGY {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= triangleNum) return;
 
-        MATHUTILS::Matrix6x9d PFPX = __computePFDsPX3D_6x9_double(trimInverses[idx]);
+        MATHUTILS::Matrix6x9d PFPX = __computePFPX3D_6x9_double(trimInverses[idx]);
 
         MATHUTILS::Matrix3x2d Ds;
         __calculateDs2D_double(vertexes, triangles[idx], Ds);
@@ -1261,7 +1261,7 @@ namespace FEMENERGY {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= tetrahedraNum) return;
 
-        MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_double(DmInverses[idx]);
+        MATHUTILS::Matrix9x12d PFPX = __computePFPX3D_9x12_double(DmInverses[idx]);
 
         MATHUTILS::Matrix3x3d Ds;
         __calculateDms3D_double(vertexes, tetrahedras[idx], Ds);

@@ -1711,7 +1711,7 @@ void _calBarrierHessian(const double3* _vertexes, const double3* _rest_vertexes,
 
                 fnn = MATHUTILS::__M3x2_M2x2_Multiply(F, nn);
 
-                MATHUTILS::Matrix6x9d PFPx = __computePFDsPX3D_6x9_double(DmInv);
+                MATHUTILS::Matrix6x9d PFPx = __computePFPX3D_6x9_double(DmInv);
 #endif
 
 #if (RANK == 1)
@@ -2713,7 +2713,7 @@ void _calBarrierGradientAndHessian(const double3* _vertexes, const double3* _res
                 MATHUTILS::Vector6 flatten_pk1 = MATHUTILS::__s_vec6_multiply(tmp, (4 * Kappa * dHat * dHat * log(I5) * log(I5) * log(I5) * log(I5) * log(I5) * (I5 - 1) * (3 * I5 + I5 * log(I5) - 3)) / I5);
 #endif
 
-                MATHUTILS::Matrix6x9d PFPx = __computePFDsPX3D_6x9_double(DmInv);
+                MATHUTILS::Matrix6x9d PFPx = __computePFPX3D_6x9_double(DmInv);
 
                 MATHUTILS::Vector9 gradient_vec = MATHUTILS::__M9x6_v6_multiply(MATHUTILS::__Transpose6x9(PFPx), flatten_pk1);
 #endif
@@ -3744,7 +3744,7 @@ void _calBarrierGradient(const double3* _vertexes, const double3* _rest_vertexes
                 MATHUTILS::Vector6 flatten_pk1 = MATHUTILS::__s_vec6_multiply(tmp, (4 * Kappa * dHat * dHat * log(I5) * log(I5) * log(I5) * log(I5) * log(I5) * (I5 - 1) * (3 * I5 + I5 * log(I5) - 3)) / I5);
 #endif
 
-                MATHUTILS::Matrix6x9d PFPx = __computePFDsPX3D_6x9_double(DmInv);
+                MATHUTILS::Matrix6x9d PFPx = __computePFPX3D_6x9_double(DmInv);
 
                 MATHUTILS::Vector9 gradient_vec = MATHUTILS::__M9x6_v6_multiply(MATHUTILS::__Transpose6x9(PFPx), flatten_pk1);
 #endif

@@ -62,7 +62,7 @@ namespace FEMENERGY {
     MATHUTILS::Matrix6x12d __computePFDsPX3D_6x12_double(const MATHUTILS::Matrix2x2d& InverseDm);
 
     __device__
-    MATHUTILS::Matrix6x9d __computePFDsPX3D_6x9_double(const MATHUTILS::Matrix2x2d& InverseDm);
+    MATHUTILS::Matrix6x9d __computePFPX3D_6x9_double(const MATHUTILS::Matrix2x2d& InverseDm);
 
     __device__
     MATHUTILS::Matrix3x6d __computePFDsPX3D_3x6_double(const double& InverseDm);
@@ -80,7 +80,7 @@ namespace FEMENERGY {
     MATHUTILS::Matrix6x9d __computePFDmPX3D_6x9_double(const MATHUTILS::Matrix9x4d& PDmPx, const MATHUTILS::Matrix3x2d& Ds, const MATHUTILS::Matrix2x2d& DmInv);
 
     __device__
-    MATHUTILS::Matrix9x12d __computePFPX3D_double(const MATHUTILS::Matrix3x3d& InverseDm);
+    MATHUTILS::Matrix9x12d __computePFPX3D_9x12_double(const MATHUTILS::Matrix3x3d& InverseDm);
 
     __global__
     void _calculate_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,

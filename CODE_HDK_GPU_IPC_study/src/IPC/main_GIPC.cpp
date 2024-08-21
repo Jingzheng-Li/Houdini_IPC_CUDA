@@ -35,6 +35,21 @@ bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,
                                     SIM_Time time,
                                     SIM_Time timestep) {
 
+
+    SIM_ConstObjectArray affs;
+	object->getConstAffectors(affs, "SIM_RelationshipCollide");
+    for (exint afi = 0; afi < affs.entries(); ++afi) {
+		const SIM_Object* aff = affs(afi);
+		if (aff == object) continue;
+		const SIM_Data *collidedata = aff->getConstNamedSubData("Colliders");
+		if (collidedata == nullptr) continue;
+		CHECK_ERROR_SOLVER(collidedata->getDataType() == "SIM_ColliderLabel", "Invalid collider data type");
+		const SIM_ColliderLabel* colliderLabel = SIM_DATA_CASTCONST(collidedata, SIM_ColliderLabel);
+		CHECK_ERROR_SOLVER(!colliderLabel, "Invalid collider label");
+    }
+    std::cout << "run affs ~~~~~~" << std::endl;
+
+
     IPC_Solver();
 
     return true;
@@ -43,11 +58,8 @@ bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,
 void GAS_CUDA_GIPC::IPC_Solver() {
     auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "IPC_Solver geoinstance not initialized");
-
-    // if (!instance->GIPC_ptr) {
-    //     instance->GIPC_ptr = std::make_unique<GIPC>(instance);
-    // }
     CHECK_ERROR(instance->GIPC_ptr, "IPC_Solver GIPC_ptr not initialized");
+
 
     instance->GIPC_ptr->IPC_Solver();
     
