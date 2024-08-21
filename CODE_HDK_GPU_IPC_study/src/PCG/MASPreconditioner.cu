@@ -14,8 +14,6 @@
 #include "cooperative_groups.h"
 using namespace cooperative_groups;
 
-// using namespace std;
-
 template <class F>
 __device__ __host__ inline F __mm_min(F a, F b)
 {
@@ -1856,19 +1854,23 @@ void MASPreconditioner::preconditioning(const double3* R, double3* Z)
     //(cudaEventDestroy(end2));
 }
 
-void MASPreconditioner::initPreconditioner(int vertNum, int totalNeighborNum, int4* m_collisonPairs)
-{
+
+
+
+MASPreconditioner::MASPreconditioner() {}
+
+MASPreconditioner::~MASPreconditioner() {}
+
+void MASPreconditioner::CUDA_MALLOC_MAS(int vertNum, int totalNeighborNum, int4* m_collisonPairs) {
     //bankSize = 32;
     computeNumLevels(vertNum);
     _collisonPairs = m_collisonPairs;
 
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_denseLevel, vertNum * sizeof(int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_coarseTable, vertNum * sizeof(int4)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_coarseSpaceTables,
-                              vertNum * levelnum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_coarseSpaceTables, vertNum * levelnum * sizeof(int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_levelSize, (levelnum + 1) * sizeof(int2)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_goingNext,
-                              vertNum * levelnum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_goingNext, vertNum * levelnum * sizeof(unsigned int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_prefixOriginal, vertNum * sizeof(unsigned int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_nextPrefix, vertNum * sizeof(unsigned int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_nextPrefixSum, vertNum * sizeof(unsigned int)));
@@ -1880,21 +1882,17 @@ void MASPreconditioner::initPreconditioner(int vertNum, int totalNeighborNum, in
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborStartTemp, vertNum * sizeof(int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborNum, vertNum * sizeof(int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborListInit, totalNeighborNum * sizeof(int)));
-    //CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborStart, vertNum * sizeof(int)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborNumInit, vertNum * sizeof(int)));
 
     int totalCluster = ReorderRealtime(0) * 1.05;
 
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_Mat96,
-                              totalCluster / BANKSIZE * sizeof(MATHUTILS::Matrix96x96T)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_inverseMat96,
-                              totalCluster / BANKSIZE * sizeof(MATHUTILS::MasMatrixSymf)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_Mat96, totalCluster / BANKSIZE * sizeof(MATHUTILS::Matrix96x96T)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_inverseMat96, totalCluster / BANKSIZE * sizeof(MATHUTILS::MasMatrixSymf)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_multiLevelR, totalCluster * sizeof(Precision_T3)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_multiLevelZ, totalCluster * sizeof(Precision_T3)));
 }
 
-void MASPreconditioner::FreeMAS()
-{
+void MASPreconditioner::CUDA_FREE_MAS() {
 
     CUDA_SAFE_CALL(cudaFree(d_denseLevel));
     CUDA_SAFE_CALL(cudaFree(d_coarseSpaceTables));

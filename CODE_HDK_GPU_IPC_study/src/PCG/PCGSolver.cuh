@@ -16,23 +16,23 @@ public:
 public:
 
 	// TODO: change m_ into mc_
-    double* m_squeue;
-	double3* m_b;
-	MATHUTILS::Matrix3x3d* m_P;
-	double3* m_r;
-	double3* m_c;
-	double3* m_q;
-	double3* m_s;
-	double3* m_z;
-	double3* m_dx;
-	double3* m_tempDx;
+    double* mc_squeue;
+	double3* mc_b;
+	MATHUTILS::Matrix3x3d* mc_P;
+	double3* mc_r;
+	double3* mc_c;
+	double3* mc_q;
+	double3* mc_s;
+	double3* mc_z;
+	double3* mc_dx;
+	double3* mc_tempDx;
 
-	double3* m_filterTempVec3;
-	double3* m_preconditionTempVec3;
+	double3* mc_filterTempVec3;
+	double3* mc_preconditionTempVec3;
+	
 	int m_precondType;
 
 	MASPreconditioner MP;
-	
 
 public:
     void CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum);

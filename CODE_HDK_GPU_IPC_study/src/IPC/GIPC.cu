@@ -5946,8 +5946,8 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
         computeSoftConstraintGradient(_GE);
         computeGroundGradient(_gc,1);
         calBarrierGradient(_gc,1);
-        double gsum = reduction2Kappa(0, _gc, _GE, m_pcg_data->m_squeue, m_vertexNum);
-        double gsnorm = reduction2Kappa(1, _gc, _GE, m_pcg_data->m_squeue, m_vertexNum);
+        double gsum = reduction2Kappa(0, _gc, _GE, m_pcg_data->mc_squeue, m_vertexNum);
+        double gsnorm = reduction2Kappa(1, _gc, _GE, m_pcg_data->mc_squeue, m_vertexNum);
         //CUDA_SAFE_CALL(cudaFree(_gc));
         //CUDA_SAFE_CALL(cudaFree(_GE));
         double minKappa = -gsum / gsnorm;
@@ -6032,7 +6032,7 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         numbers = m_tri_edge_num;
     }
     if (numbers == 0) return 0;
-    double* queue = m_pcg_data->m_squeue;
+    double* queue = m_pcg_data->mc_squeue;
     //CUDA_SAFE_CALL(cudaMalloc((void**)&queue, numbers * sizeof(double)));*/
 
     const unsigned int threadNum = 256;
@@ -6336,7 +6336,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
         computeGradientAndHessian(instance);
 
-        double distToOpt_PN = calcMinMovement(mc_moveDir, m_pcg_data->m_squeue, m_vertexNum);
+        double distToOpt_PN = calcMinMovement(mc_moveDir, m_pcg_data->mc_squeue, m_vertexNum);
 
         bool gradVanish = (distToOpt_PN < sqrt(instance->Newton_solver_threshold * instance->Newton_solver_threshold * instance->bboxDiagSize2 * instance->IPC_dt * instance->IPC_dt));
         if (k && gradVanish) {
@@ -6347,9 +6347,9 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 
-        alpha = MATHUTILS::__m_min(alpha, ground_largestFeasibleStepSize(slackness_a, m_pcg_data->m_squeue));
-        // alpha = MATHUTILS::__m_min(alpha, InjectiveStepSize(0.2, 1e-6, m_pcg_data->m_squeue, instance->cudaTetElement));
-        alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->m_squeue, h_cpNum[0]));
+        alpha = MATHUTILS::__m_min(alpha, ground_largestFeasibleStepSize(slackness_a, m_pcg_data->mc_squeue));
+        // alpha = MATHUTILS::__m_min(alpha, InjectiveStepSize(0.2, 1e-6, m_pcg_data->mc_squeue, instance->cudaTetElement));
+        alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, h_cpNum[0]));
         
         double temp_alpha = alpha;
         double alpha_CFL = alpha;
@@ -6362,13 +6362,13 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
         buildBVH_FULLCCD(temp_alpha);
         buildFullCP(temp_alpha);
         if (h_ccd_cpNum > 0) {
-            double maxSpeed = cfl_largestSpeed(m_pcg_data->m_squeue);
+            double maxSpeed = cfl_largestSpeed(m_pcg_data->mc_squeue);
             alpha_CFL = sqrt(instance->dHat) / maxSpeed * 0.5;
             alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
             if (temp_alpha > 2 * alpha_CFL) {
                 /*buildBVH_FULLCCD(temp_alpha);
                 buildFullCP(temp_alpha);*/
-                alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->m_squeue, h_ccd_cpNum) * ccd_size);
+                alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, h_ccd_cpNum) * ccd_size);
                 alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
             }
         }
@@ -6531,7 +6531,7 @@ void GIPC::IPC_Solver() {
         buildFullCP(alpha);
         if (h_ccd_cpNum > 0) {
             double slackness_m = 0.8;
-            alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->m_squeue, h_ccd_cpNum));
+            alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, h_ccd_cpNum));
         }
         updateBoundary(m_instance, alpha);
         CUDA_SAFE_CALL(cudaMemcpy(

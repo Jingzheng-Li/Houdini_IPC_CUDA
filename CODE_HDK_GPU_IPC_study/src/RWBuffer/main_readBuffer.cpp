@@ -547,21 +547,26 @@ void GAS_Read_Buffer::initSIMPCG() {
 		instance->PCGData_ptr = std::make_unique<PCGData>(instance);
 	}
 	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numTetElements);
-	instance->PCGData_ptr->m_b = instance->cudaFb;
-	instance->cudaMoveDir = instance->PCGData_ptr->m_dx; // cudaMovedir will be m_dx
+	instance->PCGData_ptr->mc_b = instance->cudaFb;
+	instance->cudaMoveDir = instance->PCGData_ptr->mc_dx; // cudaMovedir will be mc_dx
 
 
 	// init MAS preconditioner
 	CHECK_ERROR(instance->precondType == 0 || instance->precondType == 1, "conjugate gradient preconditioner only support MAS right now");
+	if (instance->precondType == 1) {
+		if (!instance->MAS_ptr) {
+			instance->MAS_ptr = std::make_unique<MASPreconditioner>();
+		}
+	}
+
 
 	if (instance->precondType == 1) {
 		std::vector<unsigned int> neighborList;
 		std::vector<unsigned int> neighborStart;
 		std::vector<unsigned int> neighborNum;
 		int neighborListSize = MATHUTILS::__getVertNeighbours(instance->numVertices, instance->tetElement, instance->triElement, neighborList, neighborStart, neighborNum);
-		instance->PCGData_ptr->MP.initPreconditioner(instance->numVertices, neighborListSize, instance->cudaCollisionPairs);
+		instance->PCGData_ptr->MP.CUDA_MALLOC_MAS(instance->numVertices, neighborListSize, instance->cudaCollisionPairs);
 		instance->PCGData_ptr->MP.neighborListSize = neighborListSize;
-
 		CUDA_SAFE_CALL(cudaMemcpy(instance->PCGData_ptr->MP.d_neighborListInit, neighborList.data(), neighborListSize * sizeof(unsigned int), cudaMemcpyHostToDevice));
 		CUDA_SAFE_CALL(cudaMemcpy(instance->PCGData_ptr->MP.d_neighborStart, neighborStart.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));
 		CUDA_SAFE_CALL(cudaMemcpy(instance->PCGData_ptr->MP.d_neighborNumInit, neighborNum.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));

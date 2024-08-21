@@ -76,15 +76,19 @@ void GeometryManager::freeCUDAptr() {
         instance->LBVH_F_ptr->CUDA_FREE_LBVH();
         instance->LBVH_F_ptr.reset();
     }
-    if (instance->PCGData_ptr) {
-        instance->PCGData_ptr->CUDA_FREE_PCGDATA();
-        instance->PCGData_ptr.reset();
-    }
     if (instance->BH_ptr) {
         instance->BH_ptr->CUDA_FREE_BHESSIAN();
         instance->BH_ptr.reset();
     }
-    // instance->GIPC_ptr->;
+    // if (instance->MAS_ptr) {
+    //     instance->MAS_ptr->CUDA_FREE_MAS();
+    //     instance->MAS_ptr.reset();
+    // }
+    if (instance->PCGData_ptr) {
+        instance->PCGData_ptr->CUDA_FREE_PCGDATA();
+        instance->PCGData_ptr.reset();
+    }
+
 }
 
 void GeometryManager::freeCUDA() {
