@@ -330,6 +330,8 @@ namespace MATHUTILS {
 
 	void __getTetSurface(Eigen::VectorXi& surfVerts, Eigen::MatrixX3i& surfFaces, Eigen::MatrixX2i& surfEdges, Eigen::MatrixX3d& vertexes, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles);
 
+	int __getVertNeighbours(int vertexNum, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles, std::vector<unsigned int>& neighborList, std::vector<unsigned int>& neighborStart, std::vector<unsigned int>& neighborNum);
+
 	template <typename TargetType, typename ScalarType, int Rows, int Cols>
 	std::vector<TargetType> __convertEigenToVector(const Eigen::Matrix<ScalarType, Rows, Cols>& matrix) {
 		static_assert(Rows == Eigen::Dynamic && (Cols == 2 || Cols == 3 || Cols == 4), "The matrix must have a dynamic number of rows and 2, 3, or 4 columns.");

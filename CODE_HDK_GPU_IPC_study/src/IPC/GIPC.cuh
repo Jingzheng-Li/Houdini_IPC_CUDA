@@ -22,8 +22,6 @@ public:
 	void buildFullCP(const double& alpha);
 	void buildBVH();
 
-	AABB* calcuMaxSceneSize();
-
 	void buildBVH_FULLCCD(const double& alpha);
 
 	void GroundCollisionDetect();

@@ -5,6 +5,8 @@
 #include "LBVH/SortMesh.cuh"
 
 #include "LBVH/LBVH.cuh"
+#include "PCG/BHessian.cuh"
+#include "PCG/MASPreconditioner.cuh"
 #include "PCG/PCGSolver.cuh"
 #include "FEMEnergy.cuh"
 #include "IPC/GIPC.cuh"
@@ -75,6 +77,7 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 		initSIMFEM();
 		initSIMBVH();
+		initSIMPCG();
 		initSIMIPC();
 
 		FIRSTFRAME::hou_initialized = true;
@@ -273,7 +276,6 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMemcpyHToDSafe(instance->triEdges, instance->cudaTriEdges);
 	CUDAMemcpyHToDSafe(instance->triEdgeAdjVertex, instance->cudaTriEdgeAdjVertex);
 
-
 	// get tetrahedra surface
 	MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement, instance->triElement);
 
@@ -405,6 +407,7 @@ void GAS_Read_Buffer::loadSIMParams() {
 	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
 
 	instance->IPC_dt = 0.01;
+	instance->precondType = 1;
 
 	instance->density = 1e3;
 	instance->YoungModulus = 1e5;
@@ -515,26 +518,23 @@ void GAS_Read_Buffer::initSIMBVH() {
 	CUDA_SAFE_CALL(cudaMemcpy(&boundVolumes[0], instance->LBVH_E_ptr->mc_boundVolumes, (2 * instance->numSurfEdges - 1) * sizeof(AABB), cudaMemcpyDeviceToHost));
 	CUDA_SAFE_CALL(cudaMemcpy(&Nodes[0], instance->LBVH_E_ptr->mc_nodes, (2 * instance->numSurfEdges - 1) * sizeof(Node), cudaMemcpyDeviceToHost));
 
-}
 
-
-void GAS_Read_Buffer::initSIMIPC() {
-	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
-
-	// init IPC
 	AABB AABBScene = instance->LBVH_F_ptr->m_scene;
-	CHECK_ERROR((AABBScene.m_upper.x >= AABBScene.m_lower.x) && 
-				(AABBScene.m_upper.y >= AABBScene.m_lower.y) && 
-				(AABBScene.m_upper.z >= AABBScene.m_lower.z), 
-				"AABB maybe error, please check again");
-	std::cout << "SceneSize upper/lower: ~~" << AABBScene.m_upper.x << " " << AABBScene.m_lower.x << std::endl;
-
 	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene.m_upper, AABBScene.m_lower));
 	instance->dTol = 1e-18 * instance->bboxDiagSize2;
 	instance->minKappaCoef = 1e11;
 	instance->dHat = instance->relative_dhat * instance->relative_dhat * instance->bboxDiagSize2;
 	instance->fDhat = 1e-6 * instance->bboxDiagSize2;
+	CHECK_ERROR((AABBScene.m_upper.x >= AABBScene.m_lower.x) && 
+				(AABBScene.m_upper.y >= AABBScene.m_lower.y) && 
+				(AABBScene.m_upper.z >= AABBScene.m_lower.z), 
+				"AABB maybe error, please check again");
+
+}
+
+void GAS_Read_Buffer::initSIMPCG() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
 	// init BH_ptr
 	if (instance->BH_ptr) {
@@ -544,12 +544,38 @@ void GAS_Read_Buffer::initSIMIPC() {
 
 	// init PCGData_ptr
 	if (!instance->PCGData_ptr) {
-		instance->PCGData_ptr = std::make_unique<PCGData>();
+		instance->PCGData_ptr = std::make_unique<PCGData>(instance);
 	}
 	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numTetElements);
-	instance->PCGData_ptr->m_PrecondType = 0;
 	instance->PCGData_ptr->m_b = instance->cudaFb;
 	instance->cudaMoveDir = instance->PCGData_ptr->m_dx; // cudaMovedir will be m_dx
+
+
+	// init MAS preconditioner
+	CHECK_ERROR(instance->precondType == 0 || instance->precondType == 1, "conjugate gradient preconditioner only support MAS right now");
+
+	if (instance->precondType == 1) {
+		std::vector<unsigned int> neighborList;
+		std::vector<unsigned int> neighborStart;
+		std::vector<unsigned int> neighborNum;
+		int neighborListSize = MATHUTILS::__getVertNeighbours(instance->numVertices, instance->tetElement, instance->triElement, neighborList, neighborStart, neighborNum);
+		instance->PCGData_ptr->MP.initPreconditioner(instance->numVertices, neighborListSize, instance->cudaCollisionPairs);
+		instance->PCGData_ptr->MP.neighborListSize = neighborListSize;
+
+		CUDA_SAFE_CALL(cudaMemcpy(instance->PCGData_ptr->MP.d_neighborListInit, neighborList.data(), neighborListSize * sizeof(unsigned int), cudaMemcpyHostToDevice));
+		CUDA_SAFE_CALL(cudaMemcpy(instance->PCGData_ptr->MP.d_neighborStart, neighborStart.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));
+		CUDA_SAFE_CALL(cudaMemcpy(instance->PCGData_ptr->MP.d_neighborNumInit, neighborNum.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));
+	}
+
+	if (instance->precondType == 1) {
+		SortMesh::sortPreconditioner(instance);
+	}
+}
+
+
+void GAS_Read_Buffer::initSIMIPC() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
 
     if (!instance->GIPC_ptr) {

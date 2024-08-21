@@ -6,7 +6,9 @@
 // update PCGData 
 /////////////////////////////
 
-PCGData::PCGData() {};
+PCGData::PCGData(std::unique_ptr<GeometryManager>& instance) {
+    m_precondType = instance->precondType;
+};
 
 PCGData::~PCGData() {};
 
@@ -21,6 +23,11 @@ void PCGData::CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum
     CUDAMallocSafe(m_dx, vertexNum);
     CUDA_SAFE_CALL(cudaMemset(m_z, 0, vertexNum * sizeof(double3)));
 
+    if (m_precondType == 1) {
+        CUDAMallocSafe(m_preconditionTempVec3, vertexNum);
+        CUDAMallocSafe(m_filterTempVec3, vertexNum);
+    }
+
 }
 
 void PCGData::CUDA_FREE_PCGDATA() {
@@ -32,57 +39,12 @@ void PCGData::CUDA_FREE_PCGDATA() {
     CUDAFreeSafe(m_q);
     CUDAFreeSafe(m_s);
     CUDAFreeSafe(m_dx);
-
+    if (m_precondType == 1) {
+        CUDAFreeSafe(m_filterTempVec3);
+        CUDAFreeSafe(m_preconditionTempVec3);
+        MP.FreeMAS();   
+    }
 }
-
-
-/////////////////////////////
-// update BHessian 
-/////////////////////////////
-
-BHessian::BHessian() {};
-
-BHessian::~BHessian() {};
-
-void BHessian::CUDA_MALLOC_BHESSIAN(const int& tet_number, const int& surfvert_number, const int& surface_number, const int& surfEdge_number, const int& triangle_num, const int& tri_Edge_number) {
-    
-    CUDAMallocSafe(mc_H12x12, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
-    CUDAMallocSafe(mc_H9x9, (2 * (surfEdge_number + surfvert_number) + triangle_num));
-    CUDAMallocSafe(mc_H6x6, 2 * (surfvert_number + surfEdge_number));
-    CUDAMallocSafe(mc_H3x3, 2 * surfvert_number);
-    CUDAMallocSafe(mc_D4Index, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
-    CUDAMallocSafe(mc_D3Index, (2 * (surfEdge_number + surfvert_number)+ triangle_num));
-    CUDAMallocSafe(mc_D2Index, 2 * (surfvert_number + surfEdge_number));
-    CUDAMallocSafe(mc_D1Index, 2 * surfvert_number);
-
-}
-
-void BHessian::CUDA_FREE_BHESSIAN() {
-    CUDAFreeSafe(mc_H12x12);
-    CUDAFreeSafe(mc_H9x9);
-    CUDAFreeSafe(mc_H6x6);
-    CUDAFreeSafe(mc_H3x3);
-    CUDAFreeSafe(mc_D1Index);
-    CUDAFreeSafe(mc_D2Index);
-    CUDAFreeSafe(mc_D3Index);
-    CUDAFreeSafe(mc_D4Index);    
-
-}
-
-
-void BHessian::updateDNum(const int& tri_Num, const int& tet_number, const uint32_t* cpNums, const uint32_t* last_cpNums, const int& tri_edge_number) {
-    m_DNum[1] = cpNums[1];
-    m_DNum[2] = cpNums[2] + tri_Num;
-    m_DNum[3] = tet_number + cpNums[3] + tri_edge_number;
-
-#ifdef USE_FRICTION
-    m_DNum[1] += last_cpNums[1];
-    m_DNum[2] += last_cpNums[2];
-    m_DNum[3] += last_cpNums[3];
-#endif
-
-}
-
 
 
 namespace PCGSOLVER {
@@ -1369,7 +1331,10 @@ void PCG_Update_Dx_R(const double3* c, double3* dx, const double3* q, double3* r
 }
 
 
-double My_PCG_General_v_v_Reduction_Algorithm(std::unique_ptr<GeometryManager>& instance, PCGData* pcg_data, double3* A, double3* B, int vertexNum) {
+double My_PCG_General_v_v_Reduction_Algorithm(
+    std::unique_ptr<GeometryManager>& instance,     
+    std::unique_ptr<PCGData>& pcg_data, 
+    double3* A, double3* B, int vertexNum) {
 
     int numbers = vertexNum;
     const unsigned int threadNum = default_threads;
@@ -1508,32 +1473,7 @@ int PCG_Process(
     double meanVolumn, 
     double threshold) {
 
-
-    // std::vector<MATHUTILS::Matrix3x3d> mpvec0(vertexNum);
-    // cudaError_t err = cudaMemcpy(mpvec0.data(), pcg_data->m_P, vertexNum * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
-    // for (int k = 0; k < 5; k++) {
-    //     for (int i = 0; i < 3; ++i) {
-    //         for (int j = 0; j < 3; ++j) {
-    //             std::cout << "mpvec before0: "<< mpvec0[k].m[i][j] << " ";
-    //         }
-    //     }
-    //     std::cout << std::endl;
-    // }
-
-
     construct_P2(instance, pcg_data, BH, vertexNum);
-
-    // std::vector<MATHUTILS::Matrix3x3d> mpvec(vertexNum);
-    // cudaError_t err = cudaMemcpy(mpvec.data(), pcg_data->m_P, vertexNum * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost);
-    // for (int k = 0; k < 5; k++) {
-    //     for (int i = 0; i < 3; ++i) {
-    //         for (int j = 0; j < 3; ++j) {
-    //             std::cout << "mpvec before: "<< mpvec[k].m[i][j] << " ";
-    //         }
-    //     }
-    //     std::cout << std::endl;
-    // }
-
 
     double deltaN = 0;
     double delta0 = 0;
@@ -1572,6 +1512,91 @@ int PCG_Process(
     }
     return cgCounts;
 }
+
+
+
+int MASPCG_Process(
+    std::unique_ptr<GeometryManager>& instance, 
+    std::unique_ptr<PCGData>& pcg_data, 
+    const std::unique_ptr<BHessian>& BH, 
+    double3* _mvDir, 
+    int vertexNum, 
+    int tetrahedraNum, 
+    double IPC_dt, 
+    double meanVolumn, 
+    int cpNum, 
+    double threshold) {
+
+    pcg_data->MP.setPreconditioner(BH, instance->cudaVertMass, cpNum);
+    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    double deltaN = 0;
+    double delta0 = 0;
+    double deltaO = 0;
+    //PCG_initDX(pcg_data->dx, pcg_data->z, 0.5, vertexNum);
+    CUDA_SAFE_CALL(cudaMemset(pcg_data->m_dx, 0x0, vertexNum * sizeof(double3)));
+    CUDA_SAFE_CALL(cudaMemset(pcg_data->m_r, 0x0, vertexNum * sizeof(double3)));
+
+    PCG_constraintFilter(instance, pcg_data->m_b, pcg_data->m_filterTempVec3, vertexNum);
+
+    pcg_data->MP.preconditioning(pcg_data->m_filterTempVec3, pcg_data->m_preconditionTempVec3);
+    //Solve_PCG_Preconditioning24(mesh, pcg_data->P24, pcg_data->P, pcg_data->restP, pcg_data->filterTempVec3, pcg_data->preconditionTempVec3, vertexNum);
+    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    delta0 = My_PCG_General_v_v_Reduction_Algorithm(instance, pcg_data, pcg_data->m_filterTempVec3, pcg_data->m_preconditionTempVec3, vertexNum);
+
+    CUDA_SAFE_CALL(cudaMemcpy(pcg_data->m_r, pcg_data->m_filterTempVec3, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
+
+    PCG_constraintFilter(instance, pcg_data->m_preconditionTempVec3, pcg_data->m_filterTempVec3, vertexNum);
+
+    CUDA_SAFE_CALL(cudaMemcpy(pcg_data->m_c, pcg_data->m_filterTempVec3, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
+
+    deltaN = My_PCG_General_v_v_Reduction_Algorithm(instance, pcg_data, pcg_data->m_r, pcg_data->m_c, vertexNum);
+    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    //delta0 = My_PCG_add_Reduction_Algorithm(1, mesh, pcg_data, vertexNum);
+    //Solve_PCG_AX_B2(mesh, pcg_data->z, pcg_data->r, BH, vertexNum);
+    //deltaN = My_PCG_add_Reduction_Algorithm(2, mesh, pcg_data, vertexNum);
+    //std::cout << "gpu  delta0:   " << delta0 << "      deltaN:   " << deltaN << std::endl;
+    //double errorRate = std::min(1e-8 * 0.5 * IPC_dt / std::pow(meanVolumn, 1), 1e-4);
+    double errorRate = threshold/* * IPC_dt * IPC_dt*/;
+    //printf("cg error Rate:   %f        meanVolumn: %f\n", errorRate, meanVolumn);
+    int cgCounts = 0;
+    while (cgCounts<3000 && deltaN > errorRate * delta0) {
+
+        cgCounts++;
+        //std::cout << "delta0:   " << delta0 << "      deltaN:   " << deltaN << "      iteration_counts:      " << cgCounts << std::endl;
+        //CUDA_SAFE_CALL(cudaMemset(pcg_data->q, 0, vertexNum * sizeof(double3)));
+        Solve_PCG_AX_B2(instance, pcg_data->m_c, pcg_data->m_q, BH, vertexNum);
+        //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        double tempSum = My_PCG_add_Reduction_Algorithm(3, instance, pcg_data, vertexNum);
+        //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        double alpha = deltaN / tempSum;
+        deltaO = deltaN;
+        //deltaN = 0;
+        //CUDA_SAFE_CALL(cudaMemset(pcg_data->s, 0, vertexNum * sizeof(double3)));
+        //deltaN = My_PCG_add_Reduction_Algorithm(4, mesh, pcg_data, vertexNum, alpha);
+        PCG_Update_Dx_R(pcg_data->m_c, pcg_data->m_dx, pcg_data->m_q, pcg_data->m_r, alpha, vertexNum);
+        //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        pcg_data->MP.preconditioning(pcg_data->m_r, pcg_data->m_s);
+        //Solve_PCG_Preconditioning24(mesh, pcg_data->P24, pcg_data->P, pcg_data->restP, pcg_data->r, pcg_data->s, vertexNum);
+        //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        deltaN = My_PCG_General_v_v_Reduction_Algorithm(instance, pcg_data, pcg_data->m_r, pcg_data->m_s, vertexNum);
+        //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        double rate = deltaN / deltaO;
+        PCG_FinalStep_UpdateC(instance, pcg_data->m_c, pcg_data->m_s, rate, vertexNum);
+        //cudaDeviceSynchronize();
+        //std::cout << "gpu  delta0:   " << delta0 << "      deltaN:   " << deltaN << std::endl;
+    }
+    
+    _mvDir = pcg_data->m_dx;
+    //CUDA_SAFE_CALL(cudaMemcpy(pcg_data->z, _mvDir, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
+    //printf("cg counts = %d\n", cgCounts);
+    if (cgCounts == 0) {
+        printf("indefinite exit\n");
+        //exit(0);
+    }
+    return cgCounts;
+}
+
+
 
 
 }; // namespace PCGSOLVER

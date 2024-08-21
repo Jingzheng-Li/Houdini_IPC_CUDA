@@ -15,9 +15,9 @@ class AABB;
 class LBVH_E;
 class LBVH_F;
 class BHessian;
+class MASPreconditioner;
 class PCGData;
 class GIPC;
-class BHessian;
 
 class GeometryManager {
 public:
@@ -142,6 +142,7 @@ public:
 
     int collision_detection_buff_scale;
 
+    int precondType;
     double density;
     double YoungModulus;
     double PoissonRate;
@@ -187,6 +188,7 @@ public:
     uint32_t softNum;
     double3* cudaTargetVert;
     uint32_t* cudaTargetIndex;
+
 
 };
 

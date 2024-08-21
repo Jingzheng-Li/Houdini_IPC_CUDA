@@ -5096,37 +5096,14 @@ void _updateBoundaryMoveDir(double3* _vertexes, int* _btype, double3* _moveDir, 
         if ((_btype[idx]) == 1) {
         _moveDir[idx] = make_double3(mvl,0,0);//MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationL, _vertexes[idx]), _vertexes[idx]);
     }
-//    if ((_btype[idx]) > 0) {
-//        _moveDir[idx] = MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationL, _vertexes[idx]), _vertexes[idx]);
-//    }
-//    if ((_btype[idx]) < 0) {
-//        _moveDir[idx] = MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationR, _vertexes[idx]), _vertexes[idx]);
-//    }
+    // if ((_btype[idx]) > 0) {
+    //     _moveDir[idx] = MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationL, _vertexes[idx]), _vertexes[idx]);
+    // }
+    // if ((_btype[idx]) < 0) {
+    //     _moveDir[idx] = MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationR, _vertexes[idx]), _vertexes[idx]);
+    // }
 }
 
-
-__global__
-void _updateNeighborNum(unsigned int* _neighborNumInit, unsigned int* _neighborNum, const uint32_t* sortMapVertIndex, int numbers) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numbers) return;
-
-    _neighborNum[idx] = _neighborNumInit[sortMapVertIndex[idx]];
-}
-
-__global__
-void _updateNeighborList(unsigned int* _neighborListInit, unsigned int* _neighborList, unsigned int* _neighborNum, unsigned int* _neighborStart, unsigned int* _neighborStartTemp, const uint32_t* sortIndex, const uint32_t* sortMapVertIndex, int numbers) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numbers) return;
-
-    int startId = _neighborStartTemp[idx];
-    int o_startId = _neighborStart[sortIndex[idx]];
-    int neiNum = _neighborNum[idx];
-    for (int i = 0; i < neiNum; i++) {
-        _neighborList[startId + i] = sortMapVertIndex[_neighborListInit[o_startId + i]];
-    }
-    //_neighborStart[sortMapVertIndex[idx]] = startId;
-    //_neighborNum[idx] = _neighborNum[sortMapVertIndex[idx]];
-}
 
 
 __global__
@@ -5631,10 +5608,6 @@ void GIPC::buildBVH() {
     m_bvh_e->Construct();
 }
 
-AABB* GIPC::calcuMaxSceneSize() {
-    return m_bvh_f->getSceneSize();
-}
-
 void GIPC::buildBVH_FULLCCD(const double& alpha) {
     m_bvh_f->ConstructFullCCD(mc_moveDir, alpha);
     m_bvh_e->ConstructFullCCD(mc_moveDir, alpha);
@@ -5912,17 +5885,6 @@ void stepForward(double3* _vertexes, double3* _vertexesTemp, double3* _moveDir, 
 }
 
 
-void updateNeighborInfo(unsigned int* _neighborList, unsigned int* d_neighborListInit, unsigned int* _neighborNum, unsigned int* _neighborNumInit, unsigned int* _neighborStart, unsigned int* _neighborStartTemp, const uint32_t* sortIndex, const uint32_t* sortMapVertIndex, const int& numbers, const int& neighborListSize) {
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateNeighborNum << <blockNum, threadNum >> > (_neighborNumInit, _neighborNum, sortIndex, numbers);
-    thrust::exclusive_scan(thrust::device_ptr<unsigned int>(_neighborNum), thrust::device_ptr<unsigned int>(_neighborNum) + numbers, thrust::device_ptr<unsigned int>(_neighborStartTemp));
-    _updateNeighborList << <blockNum, threadNum >> > (d_neighborListInit, _neighborList, _neighborNum, _neighborStart, _neighborStartTemp, sortIndex, sortMapVertIndex, numbers);
-    CUDA_SAFE_CALL(cudaMemcpy(d_neighborListInit, _neighborList, neighborListSize * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-    CUDA_SAFE_CALL(cudaMemcpy(_neighborStart, _neighborStartTemp, numbers * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-    CUDA_SAFE_CALL(cudaMemcpy(_neighborNumInit, _neighborNum, numbers * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-
-}
 
 
 
@@ -6155,17 +6117,17 @@ double GIPC::computeEnergy(std::unique_ptr<GeometryManager>& instance) {
 
 int GIPC::calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type) {
     if (preconditioner_type == 0) {
-        return PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, m_vertexNum, m_tetrahedraNum, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
+        int cgCount = PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, m_vertexNum, m_tetrahedraNum, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
+        return cgCount;
     }
     else if (preconditioner_type == 1) {
-        std::cerr << "not support preconditioner type right now!" << std::endl;
-        // int cgCount = MASPCG_Process(&instance, &m_pcg_data, m_BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, cpNum, pcg_threshold);
-        // if (cgCount == 3000) {
-        //     printf("MASPCG fail, turn to PCG\n");
-        //     cgCount = PCG_Process(&instance, &m_pcg_data, m_BH, _moveDir, vertexNum, tetrahedraNum, IPC_dt, meanVolumn, pcg_threshold);
-        //     printf("PCG finish:  %d\n", cgCount);
-        // }
-        return 0;
+        int cgCount = PCGSOLVER::MASPCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, m_vertexNum, m_tetrahedraNum, m_instance->IPC_dt, m_instance->meanVolume, cpNum, m_instance->pcg_threshold);
+        if (cgCount == 3000) {
+            printf("MASPCG fail, turn to PCG\n");
+            cgCount = PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, mc_moveDir, m_vertexNum, m_tetrahedraNum, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
+            printf("PCG finish:  %d\n", cgCount);
+        }
+        return cgCount;
     } else {
         std::cerr << "precondtioner type should be 0/1 right now!" << std::endl;
         return 0;
@@ -6376,12 +6338,12 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
         double distToOpt_PN = calcMinMovement(mc_moveDir, m_pcg_data->m_squeue, m_vertexNum);
 
-        bool gradVanish = (distToOpt_PN < sqrt(m_instance->Newton_solver_threshold * m_instance->Newton_solver_threshold * m_instance->bboxDiagSize2 * m_instance->IPC_dt * m_instance->IPC_dt));
+        bool gradVanish = (distToOpt_PN < sqrt(instance->Newton_solver_threshold * instance->Newton_solver_threshold * instance->bboxDiagSize2 * instance->IPC_dt * instance->IPC_dt));
         if (k && gradVanish) {
             break;
         }
 
-        m_total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], m_pcg_data->m_PrecondType);
+        m_total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], instance->precondType);
 
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 
@@ -6401,7 +6363,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
         buildFullCP(temp_alpha);
         if (h_ccd_cpNum > 0) {
             double maxSpeed = cfl_largestSpeed(m_pcg_data->m_squeue);
-            alpha_CFL = sqrt(m_instance->dHat) / maxSpeed * 0.5;
+            alpha_CFL = sqrt(instance->dHat) / maxSpeed * 0.5;
             alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
             if (temp_alpha > 2 * alpha_CFL) {
                 /*buildBVH_FULLCCD(temp_alpha);
@@ -6420,7 +6382,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
     }
     
-    printf("\n\n Kappa: %f  iteration k:  %d\n\n\n", m_instance->Kappa, k);
+    printf("\n\n Kappa: %f  iteration k:  %d\n\n\n", instance->Kappa, k);
     return k;
    
 }

@@ -1783,5 +1783,69 @@ namespace MATHUTILS {
 	}
 
 
+	int __getVertNeighbours(int vertexNum, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles, std::vector<unsigned int>& neighborList, std::vector<unsigned int>& neighborStart, std::vector<unsigned int>& neighborNum) {
+
+		std::vector<std::vector<unsigned int>> vertNeighbors;
+
+		vertNeighbors.resize(vertexNum);
+		std::set<std::pair<uint64_t, uint64_t>> SFEdges_set;
+		for (int i = 0; i < tetrahedras.rows(); i++) {
+			uint64_t edgI[4] = { tetrahedras(i, 0), tetrahedras(i, 1), tetrahedras(i, 2), tetrahedras(i, 3) };
+			if (SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[0], edgI[1])) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[1], edgI[0])) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint64_t, uint64_t>(edgI[0], edgI[1]));
+			}
+			if (SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[0], edgI[2])) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[2], edgI[0])) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint64_t, uint64_t>(edgI[0], edgI[2]));
+			}
+			if (SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[0], edgI[3])) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[3], edgI[0])) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint64_t, uint64_t>(edgI[0], edgI[3]));
+			}
+			if (SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[1], edgI[2])) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[2], edgI[1])) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint64_t, uint64_t>(edgI[1], edgI[2]));
+			}
+			if (SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[1], edgI[3])) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[3], edgI[1])) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint64_t, uint64_t>(edgI[1], edgI[3]));
+			}
+			if (SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[2], edgI[3])) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint64_t, uint64_t>(edgI[3], edgI[2])) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint64_t, uint64_t>(edgI[2], edgI[3]));
+			}
+		}
+
+
+		for (int i = 0; i < triangles.rows(); i++) {
+			const auto& cTri = triangles.row(i);
+			if (SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.y(), cTri.x())) == SFEdges_set.end() &&
+				SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.x(), cTri.y())) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint32_t, uint32_t>(cTri.x(), cTri.y()));
+			}
+			if (SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.z(), cTri.y())) == SFEdges_set.end() &&
+				SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.y(), cTri.z())) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint32_t, uint32_t>(cTri.y(), cTri.z()));
+			}
+			if (SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.x(), cTri.z())) == SFEdges_set.end() &&
+				SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.z(), cTri.x())) == SFEdges_set.end()) {
+				SFEdges_set.insert(std::pair<uint32_t, uint32_t>(cTri.z(), cTri.x()));
+			}
+		}
+
+		for (const auto& edgI : SFEdges_set) {
+			vertNeighbors[edgI.first].push_back(edgI.second);
+			vertNeighbors[edgI.second].push_back(edgI.first);
+		}
+		//neighborStart.push_back(0);
+		neighborNum.resize(vertexNum);
+		int offset = 0;
+		for (int i = 0; i < vertexNum; i++) {
+			for (int j = 0; j < vertNeighbors[i].size(); j++) {
+				neighborList.push_back(vertNeighbors[i][j]);
+			}
+			neighborStart.push_back(offset);
+			offset += vertNeighbors[i].size();
+			neighborNum[i] = vertNeighbors[i].size();
+		}
+
+		return neighborStart[vertexNum - 1] + neighborNum[vertexNum - 1];
+	}
+
 }
 

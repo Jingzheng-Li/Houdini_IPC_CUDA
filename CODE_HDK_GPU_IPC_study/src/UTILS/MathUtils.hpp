@@ -1,5 +1,9 @@
 #pragma once
 
+using Precision_T = double;
+using Precision_TM = float;
+using Precision_T3 = float3;
+
 namespace MATHUTILS {
 	const static double PI = 3.141592653589793238462643383279502884197169399;
 

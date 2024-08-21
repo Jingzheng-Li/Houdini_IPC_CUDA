@@ -24,6 +24,7 @@ protected:
     void loadSIMParams();
     void initSIMFEM();
     void initSIMBVH();
+    void initSIMPCG();
     void initSIMIPC();
 
 private:

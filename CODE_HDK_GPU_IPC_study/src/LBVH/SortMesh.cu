@@ -1,7 +1,7 @@
 
 #include "SortMesh.cuh"
-#include "UTILS/MathUtils.cuh"
 #include "LBVH.cuh"
+#include "PCG/PCGSolver.cuh"
 
 #include <thrust/sort.h>
 #include <thrust/sequence.h>
@@ -283,9 +283,42 @@ void updateSurfaceVerts(uint32_t* sortIndex, uint32_t* _sVerts, const int& offse
     _updateSurfVerts << <blockNum, threadNum >> > (sortIndex, _sVerts, offset_num, numbers);
 }
 
-AABB* calcuMaxSceneSize(std::unique_ptr<LBVH_F>& LBVH_F_ptr) {
-	return LBVH_F_ptr->getSceneSize();
+
+__global__
+void _updateNeighborNum(unsigned int* _neighborNumInit, unsigned int* _neighborNum, const uint32_t* sortMapVertIndex, int numbers) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numbers) return;
+
+    _neighborNum[idx] = _neighborNumInit[sortMapVertIndex[idx]];
 }
+
+__global__
+void _updateNeighborList(unsigned int* _neighborListInit, unsigned int* _neighborList, unsigned int* _neighborNum, unsigned int* _neighborStart, unsigned int* _neighborStartTemp, const uint32_t* sortIndex, const uint32_t* sortMapVertIndex, int numbers) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numbers) return;
+
+    int startId = _neighborStartTemp[idx];
+    int o_startId = _neighborStart[sortIndex[idx]];
+    int neiNum = _neighborNum[idx];
+    for (int i = 0; i < neiNum; i++) {
+        _neighborList[startId + i] = sortMapVertIndex[_neighborListInit[o_startId + i]];
+    }
+    //_neighborStart[sortMapVertIndex[idx]] = startId;
+    //_neighborNum[idx] = _neighborNum[sortMapVertIndex[idx]];
+}
+
+void updateNeighborInfo(unsigned int* _neighborList, unsigned int* d_neighborListInit, unsigned int* _neighborNum, unsigned int* _neighborNumInit, unsigned int* _neighborStart, unsigned int* _neighborStartTemp, const uint32_t* sortIndex, const uint32_t* sortMapVertIndex, const int& numbers, const int& neighborListSize) {
+    const unsigned int threadNum = default_threads;
+    int blockNum = (numbers + threadNum - 1) / threadNum;//
+    _updateNeighborNum << <blockNum, threadNum >> > (_neighborNumInit, _neighborNum, sortIndex, numbers);
+    thrust::exclusive_scan(thrust::device_ptr<unsigned int>(_neighborNum), thrust::device_ptr<unsigned int>(_neighborNum) + numbers, thrust::device_ptr<unsigned int>(_neighborStartTemp));
+    _updateNeighborList << <blockNum, threadNum >> > (d_neighborListInit, _neighborList, _neighborNum, _neighborStart, _neighborStartTemp, sortIndex, sortMapVertIndex, numbers);
+    CUDA_SAFE_CALL(cudaMemcpy(d_neighborListInit, _neighborList, neighborListSize * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(_neighborStart, _neighborStartTemp, numbers * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(_neighborNumInit, _neighborNum, numbers * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+
+}
+
 
 void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, AABB* LBVHScenesize) {
 
@@ -308,6 +341,23 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, AABB* LBVHSc
     updateTriEdges_adjVerts(instance->cudaSortMapVertIndex, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numVerts, numTriEdges);
 
     updateSurfaceVerts(instance->cudaSortMapVertIndex, instance->cudaSurfVert, numVerts, numSurfVerts);
+
+}
+
+
+void SortMesh::sortPreconditioner(std::unique_ptr<GeometryManager>& instance) {
+
+	updateNeighborInfo(
+		instance->PCGData_ptr->MP.d_neighborList, 
+		instance->PCGData_ptr->MP.d_neighborListInit, 
+		instance->PCGData_ptr->MP.d_neighborNum, 
+		instance->PCGData_ptr->MP.d_neighborNumInit, 
+		instance->PCGData_ptr->MP.d_neighborStart, 
+		instance->PCGData_ptr->MP.d_neighborStartTemp, 
+		instance->cudaSortIndex, 
+		instance->cudaSortMapVertIndex, 
+		instance->numVertices,
+		instance->PCGData_ptr->MP.neighborListSize);
 
 }
 
