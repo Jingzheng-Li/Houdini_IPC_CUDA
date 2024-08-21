@@ -11,17 +11,17 @@ class MASPreconditioner {
 public:
 	MASPreconditioner();
 	~MASPreconditioner();
-	void CUDA_MALLOC_MAS(int vertNum, int totalNeighborNum, int4* m_collisonPairs);
+	void CUDA_MALLOC_MAS(int vertNum, int totalNeighborNum, int4* _collisonPairs);
 	void CUDA_FREE_MAS();
 
 public:
 	int neighborListSize;
-	unsigned int* d_neighborList;
-	unsigned int* d_neighborStart;
-	unsigned int* d_neighborStartTemp;
-	unsigned int* d_neighborNum;
-	unsigned int* d_neighborListInit;
-	unsigned int* d_neighborNumInit;
+	unsigned int* mc_neighborList;
+	unsigned int* mc_neighborStart;
+	unsigned int* mc_neighborStartTemp;
+	unsigned int* mc_neighborNum;
+	unsigned int* mc_neighborListInit;
+	unsigned int* mc_neighborNumInit;
 
 public:
 	void computeNumLevels(int vertNum);
@@ -60,24 +60,23 @@ private:
 	int totalNumberClusters;
 	//int bankSize;
 	int2 h_clevelSize;
-	int4* _collisonPairs;
+	int4* mc_collisonPairs;
 
-	int2* d_levelSize;
-	int* d_coarseSpaceTables;
-	int* d_prefixOriginal;
-	int* d_prefixSumOriginal;
-	int* d_goingNext;
-	int* d_denseLevel;
-	int4* d_coarseTable;
-	unsigned int* d_fineConnectMask;
-	unsigned int* d_nextConnectMask;
-	unsigned int* d_nextPrefix;
-	unsigned int* d_nextPrefixSum;
+	int2* mc_levelSize;
+	int* mc_coarseSpaceTables;
+	int* mc_prefixOriginal;
+	int* mc_prefixSumOriginal;
+	int* mc_goingNext;
+	int* mc_denseLevel;
+	int4* mc_coarseTable;
+	unsigned int* mc_fineConnectMask;
+	unsigned int* mc_nextConnectMask;
+	unsigned int* mc_nextPrefix;
+	unsigned int* mc_nextPrefixSum;
 
-	MATHUTILS::Matrix96x96T* d_Mat96;
-    MATHUTILS::MasMatrixSymf* d_inverseMat96;
-	Precision_T3* d_multiLevelR;
-	Precision_T3* d_multiLevelZ;
-
+	MATHUTILS::Matrix96x96T* mc_Mat96;
+    MATHUTILS::MasMatrixSymf* mc_inverseMat96;
+	Precision_T3* mc_multiLevelR;
+	Precision_T3* mc_multiLevelZ;
 
 };

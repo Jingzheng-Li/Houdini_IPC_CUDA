@@ -566,9 +566,9 @@ void GAS_Read_Buffer::initSIMPCG() {
 		int neighborListSize = MATHUTILS::__getVertNeighbours(instance->numVertices, instance->tetElement, instance->triElement, neighborList, neighborStart, neighborNum);
 		instance->MAS_ptr->CUDA_MALLOC_MAS(instance->numVertices, neighborListSize, instance->cudaCollisionPairs);
 		instance->MAS_ptr->neighborListSize = neighborListSize;
-		CUDA_SAFE_CALL(cudaMemcpy(instance->MAS_ptr->d_neighborListInit, neighborList.data(), neighborListSize * sizeof(unsigned int), cudaMemcpyHostToDevice));
-		CUDA_SAFE_CALL(cudaMemcpy(instance->MAS_ptr->d_neighborStart, neighborStart.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));
-		CUDA_SAFE_CALL(cudaMemcpy(instance->MAS_ptr->d_neighborNumInit, neighborNum.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));
+		CUDA_SAFE_CALL(cudaMemcpy(instance->MAS_ptr->mc_neighborListInit, neighborList.data(), neighborListSize * sizeof(unsigned int), cudaMemcpyHostToDevice));
+		CUDA_SAFE_CALL(cudaMemcpy(instance->MAS_ptr->mc_neighborStart, neighborStart.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));
+		CUDA_SAFE_CALL(cudaMemcpy(instance->MAS_ptr->mc_neighborNumInit, neighborNum.data(), instance->numVertices * sizeof(unsigned int), cudaMemcpyHostToDevice));
 	}
 
 	if (instance->precondType == 1) {

@@ -307,13 +307,13 @@ void _updateNeighborList(unsigned int* _neighborListInit, unsigned int* _neighbo
     //_neighborNum[idx] = _neighborNum[sortMapVertIndex[idx]];
 }
 
-void updateNeighborInfo(unsigned int* _neighborList, unsigned int* d_neighborListInit, unsigned int* _neighborNum, unsigned int* _neighborNumInit, unsigned int* _neighborStart, unsigned int* _neighborStartTemp, const uint32_t* sortIndex, const uint32_t* sortMapVertIndex, const int& numbers, const int& neighborListSize) {
+void updateNeighborInfo(unsigned int* _neighborList, unsigned int* mc_neighborListInit, unsigned int* _neighborNum, unsigned int* _neighborNumInit, unsigned int* _neighborStart, unsigned int* _neighborStartTemp, const uint32_t* sortIndex, const uint32_t* sortMapVertIndex, const int& numbers, const int& neighborListSize) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
     _updateNeighborNum << <blockNum, threadNum >> > (_neighborNumInit, _neighborNum, sortIndex, numbers);
     thrust::exclusive_scan(thrust::device_ptr<unsigned int>(_neighborNum), thrust::device_ptr<unsigned int>(_neighborNum) + numbers, thrust::device_ptr<unsigned int>(_neighborStartTemp));
-    _updateNeighborList << <blockNum, threadNum >> > (d_neighborListInit, _neighborList, _neighborNum, _neighborStart, _neighborStartTemp, sortIndex, sortMapVertIndex, numbers);
-    CUDA_SAFE_CALL(cudaMemcpy(d_neighborListInit, _neighborList, neighborListSize * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+    _updateNeighborList << <blockNum, threadNum >> > (mc_neighborListInit, _neighborList, _neighborNum, _neighborStart, _neighborStartTemp, sortIndex, sortMapVertIndex, numbers);
+    CUDA_SAFE_CALL(cudaMemcpy(mc_neighborListInit, _neighborList, neighborListSize * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(_neighborStart, _neighborStartTemp, numbers * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(_neighborNumInit, _neighborNum, numbers * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
 
@@ -348,12 +348,12 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, AABB* LBVHSc
 void SortMesh::sortPreconditioner(std::unique_ptr<GeometryManager>& instance) {
 
 	updateNeighborInfo(
-		instance->MAS_ptr->d_neighborList, 
-		instance->MAS_ptr->d_neighborListInit, 
-		instance->MAS_ptr->d_neighborNum, 
-		instance->MAS_ptr->d_neighborNumInit, 
-		instance->MAS_ptr->d_neighborStart, 
-		instance->MAS_ptr->d_neighborStartTemp, 
+		instance->MAS_ptr->mc_neighborList, 
+		instance->MAS_ptr->mc_neighborListInit, 
+		instance->MAS_ptr->mc_neighborNum, 
+		instance->MAS_ptr->mc_neighborNumInit, 
+		instance->MAS_ptr->mc_neighborStart, 
+		instance->MAS_ptr->mc_neighborStartTemp, 
 		instance->cudaSortIndex, 
 		instance->cudaSortMapVertIndex, 
 		instance->numVertices,

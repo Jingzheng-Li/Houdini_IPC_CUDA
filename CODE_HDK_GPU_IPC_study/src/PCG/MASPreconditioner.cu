@@ -1020,7 +1020,7 @@ __global__ void __buildMultiLevelR(
 }
 
 __global__ void __collectFinalZ(double3*            _Z,
-                                const Precision_T3* d_multiLevelZ,
+                                const Precision_T3* mc_multiLevelZ,
                                 const int4*         _coarseTable,
                                 int                 levelnum,
                                 int                 number)
@@ -1029,18 +1029,18 @@ __global__ void __collectFinalZ(double3*            _Z,
     if(idx >= number)
         return;
 
-    Precision_T3 cz;  // = d_multiLevelZ[idx];
-    cz.x          = d_multiLevelZ[idx].x;
-    cz.y          = d_multiLevelZ[idx].y;
-    cz.z          = d_multiLevelZ[idx].z;
+    Precision_T3 cz;  // = mc_multiLevelZ[idx];
+    cz.x          = mc_multiLevelZ[idx].x;
+    cz.y          = mc_multiLevelZ[idx].y;
+    cz.z          = mc_multiLevelZ[idx].z;
     int4 table    = _coarseTable[idx];
     int* tablePtr = &(table.x);
     for(int i = 1; i < __mm_min(levelnum, 4); i++)
     {
         int now = *(tablePtr + i - 1);
-        cz.x += d_multiLevelZ[now].x;
-        cz.y += d_multiLevelZ[now].y;
-        cz.z += d_multiLevelZ[now].z;
+        cz.x += mc_multiLevelZ[now].x;
+        cz.y += mc_multiLevelZ[now].y;
+        cz.z += mc_multiLevelZ[now].z;
     }
 
     _Z[idx].x = cz.x;
@@ -1473,7 +1473,7 @@ void MASPreconditioner::BuildConnectMaskL0()
     int numBlocks = (number + blockSize - 1) / blockSize;
 
     _buildCML0<<<numBlocks, blockSize>>>(
-        d_neighborStart, d_neighborNum, d_neighborList, d_fineConnectMask, number);
+        mc_neighborStart, mc_neighborNum, mc_neighborList, mc_fineConnectMask, number);
 }
 
 void MASPreconditioner::PreparePrefixSumL0()
@@ -1482,7 +1482,7 @@ void MASPreconditioner::PreparePrefixSumL0()
     int blockSize = DEFAULT_BLOCKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
 
-    _preparePrefixSumL0<<<numBlocks, blockSize>>>(d_prefixOriginal, d_fineConnectMask, number);
+    _preparePrefixSumL0<<<numBlocks, blockSize>>>(mc_prefixOriginal, mc_fineConnectMask, number);
 }
 
 void MASPreconditioner::BuildLevel1()
@@ -1490,17 +1490,17 @@ void MASPreconditioner::BuildLevel1()
     int number    = totalNodes;
     int blockSize = BANKSIZE * BANKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
-    //exclusive(d_prefixOriginal, d_prefixSumOriginal); wait to do;
+    //exclusive(mc_prefixOriginal, mc_prefixSumOriginal); wait to do;
     int warpNum = (number + 31) / 32;
-    thrust::exclusive_scan(thrust::device_ptr<int>(d_prefixOriginal),
-                           thrust::device_ptr<int>(d_prefixOriginal) + warpNum,
-                           thrust::device_ptr<int>(d_prefixSumOriginal));
-    _buildLevel1<<<numBlocks, blockSize>>>(d_levelSize,
-                                           d_coarseSpaceTables,
-                                           d_goingNext,
-                                           d_fineConnectMask,
-                                           d_prefixSumOriginal,
-                                           d_prefixOriginal,
+    thrust::exclusive_scan(thrust::device_ptr<int>(mc_prefixOriginal),
+                           thrust::device_ptr<int>(mc_prefixOriginal) + warpNum,
+                           thrust::device_ptr<int>(mc_prefixSumOriginal));
+    _buildLevel1<<<numBlocks, blockSize>>>(mc_levelSize,
+                                           mc_coarseSpaceTables,
+                                           mc_goingNext,
+                                           mc_fineConnectMask,
+                                           mc_prefixSumOriginal,
+                                           mc_prefixOriginal,
                                            number);
 }
 
@@ -1509,12 +1509,12 @@ void MASPreconditioner::BuildConnectMaskLx(int level)
     int number    = totalNodes;
     int blockSize = DEFAULT_BLOCKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
-    _buildConnectMaskLx<<<numBlocks, blockSize>>>(d_neighborStart,
-                                                  d_neighborNum,
-                                                  d_neighborList,
-                                                  d_coarseSpaceTables,
-                                                  d_nextConnectMask,
-                                                  d_fineConnectMask,
+    _buildConnectMaskLx<<<numBlocks, blockSize>>>(mc_neighborStart,
+                                                  mc_neighborNum,
+                                                  mc_neighborList,
+                                                  mc_coarseSpaceTables,
+                                                  mc_nextConnectMask,
+                                                  mc_fineConnectMask,
                                                   level,
                                                   number);
 }
@@ -1524,7 +1524,7 @@ void MASPreconditioner::NextLevelCluster(int level)
     int number    = h_clevelSize.x;
     int blockSize = DEFAULT_BLOCKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
-    _nextLevelCluster<<<numBlocks, blockSize>>>(d_nextConnectMask, d_nextPrefix, number);
+    _nextLevelCluster<<<numBlocks, blockSize>>>(mc_nextConnectMask, mc_nextPrefix, number);
 }
 
 void MASPreconditioner::ComputeNextLevel(int level)
@@ -1533,7 +1533,7 @@ void MASPreconditioner::ComputeNextLevel(int level)
     int blockSize = DEFAULT_BLOCKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
     _computeNextLevel<<<numBlocks, blockSize>>>(
-        d_coarseSpaceTables, d_nextConnectMask, level, number);
+        mc_coarseSpaceTables, mc_nextConnectMask, level, number);
 }
 
 void MASPreconditioner::PrefixSumLx(int level)
@@ -1544,12 +1544,12 @@ void MASPreconditioner::PrefixSumLx(int level)
     int numBlocks  = (number + blockSize - 1) / blockSize;
 
     int warpNum = (number + 31) / 32;
-    thrust::exclusive_scan(thrust::device_ptr<unsigned int>(d_nextPrefix),
-                           thrust::device_ptr<unsigned int>(d_nextPrefix) + warpNum,
-                           thrust::device_ptr<unsigned int>(d_nextPrefixSum));
+    thrust::exclusive_scan(thrust::device_ptr<unsigned int>(mc_nextPrefix),
+                           thrust::device_ptr<unsigned int>(mc_nextPrefix) + warpNum,
+                           thrust::device_ptr<unsigned int>(mc_nextPrefixSum));
 
     _prefixSumLx<<<numBlocks, blockSize>>>(
-        d_levelSize, d_nextPrefix, d_nextPrefixSum, d_nextConnectMask, d_goingNext, level, levelBegin, number);
+        mc_levelSize, mc_nextPrefix, mc_nextPrefixSum, mc_nextConnectMask, mc_goingNext, level, levelBegin, number);
 }
 
 void MASPreconditioner::AggregationKernel()
@@ -1558,7 +1558,7 @@ void MASPreconditioner::AggregationKernel()
     int blockSize = DEFAULT_BLOCKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
     _aggregationKernel<<<numBlocks, blockSize>>>(
-        d_denseLevel, d_coarseTable, d_goingNext, levelnum, number);
+        mc_denseLevel, mc_coarseTable, mc_goingNext, levelnum, number);
 }
 
 
@@ -1594,12 +1594,12 @@ void MASPreconditioner::BuildCollisionConnection(unsigned int* connectionMsk,
     int numBlocks = (number + blockSize - 1) / blockSize;
 
     _buildCollisionConnection<<<numBlocks, blockSize>>>(
-        connectionMsk, coarseTableSpace, _collisonPairs, level, totalNodes, number);
+        connectionMsk, coarseTableSpace, mc_collisonPairs, level, totalNodes, number);
 }
 
 int MASPreconditioner::ReorderRealtime(int cpNum)
 {
-    CUDA_SAFE_CALL(cudaMemset(d_levelSize, 0, levelnum * sizeof(int2)));
+    CUDA_SAFE_CALL(cudaMemset(mc_levelSize, 0, levelnum * sizeof(int2)));
 
 
     BuildConnectMaskL0();
@@ -1607,12 +1607,12 @@ int MASPreconditioner::ReorderRealtime(int cpNum)
 
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     if(cpNum)
-        BuildCollisionConnection(d_fineConnectMask, nullptr, -1, cpNum);
+        BuildCollisionConnection(mc_fineConnectMask, nullptr, -1, cpNum);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     PreparePrefixSumL0();
 
     //vector<unsigned int> h_fineCMsk(totalSize);
-    //CUDA_SAFE_CALL(cudaMemcpy(h_fineCMsk.data(), d_prefixOriginal, totalNodes * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    //CUDA_SAFE_CALL(cudaMemcpy(h_fineCMsk.data(), mc_prefixOriginal, totalNodes * sizeof(unsigned int), cudaMemcpyDeviceToHost));
 
     //for (int i = 0; i < totalNodes; i++) {
     //  /*char s[40];
@@ -1628,15 +1628,15 @@ int MASPreconditioner::ReorderRealtime(int cpNum)
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     for(int level = 1; level < levelnum; level++)
     {
-        CUDA_SAFE_CALL(cudaMemset(d_nextConnectMask, 0, totalNodes * sizeof(int)));
+        CUDA_SAFE_CALL(cudaMemset(mc_nextConnectMask, 0, totalNodes * sizeof(int)));
 
         BuildConnectMaskLx(level);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
         if(cpNum)
-            BuildCollisionConnection(d_nextConnectMask, d_coarseSpaceTables, level, cpNum);
+            BuildCollisionConnection(mc_nextConnectMask, mc_coarseSpaceTables, level, cpNum);
 
 
-        CUDA_SAFE_CALL(cudaMemcpy(&h_clevelSize, d_levelSize + level, sizeof(int2), cudaMemcpyDeviceToHost));
+        CUDA_SAFE_CALL(cudaMemcpy(&h_clevelSize, mc_levelSize + level, sizeof(int2), cudaMemcpyDeviceToHost));
 
         //cout << "hello:    " << h_clevelSize.x << endl;
 
@@ -1644,7 +1644,7 @@ int MASPreconditioner::ReorderRealtime(int cpNum)
 
 
         //vector<unsigned int> h_fineCMsk(totalSize);
-        //CUDA_SAFE_CALL(cudaMemcpy(h_fineCMsk.data(), d_nextPrefix, totalNodes * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+        //CUDA_SAFE_CALL(cudaMemcpy(h_fineCMsk.data(), mc_nextPrefix, totalNodes * sizeof(unsigned int), cudaMemcpyDeviceToHost));
 
         //for (int i = 0; i < totalNodes; i++) {
         //  /*char s[40];
@@ -1662,7 +1662,7 @@ int MASPreconditioner::ReorderRealtime(int cpNum)
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     }
 
-    CUDA_SAFE_CALL(cudaMemcpy(&h_clevelSize, d_levelSize + levelnum, sizeof(int2), cudaMemcpyDeviceToHost));
+    CUDA_SAFE_CALL(cudaMemcpy(&h_clevelSize, mc_levelSize + levelnum, sizeof(int2), cudaMemcpyDeviceToHost));
 
     totalNumberClusters = h_clevelSize.y;
 
@@ -1672,7 +1672,7 @@ int MASPreconditioner::ReorderRealtime(int cpNum)
     return totalNumberClusters;
 
     //vector<unsigned int> h_fineCMsk(totalNumberClusters);
-    //CUDA_SAFE_CALL(cudaMemcpy(h_fineCMsk.data(), d_goingNext, totalNumberClusters * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    //CUDA_SAFE_CALL(cudaMemcpy(h_fineCMsk.data(), mc_goingNext, totalNumberClusters * sizeof(unsigned int), cudaMemcpyDeviceToHost));
 
 
     //for (int i = 0; i < totalNumberClusters; i++) {
@@ -1702,7 +1702,7 @@ void MASPreconditioner::PrepareHessian(const std::unique_ptr<BHessian>& BH, cons
 
     //cout << totalSize / 32 << endl;
     //cudaEventRecord(start);
-    __setMassMat_P96<<<numBlocks, blockSize>>>(masses, d_goingNext, d_Mat96, levelnum, totalNodes);
+    __setMassMat_P96<<<numBlocks, blockSize>>>(masses, mc_goingNext, mc_Mat96, levelnum, totalNodes);
 
     //cudaEventRecord(end0);
 
@@ -1718,12 +1718,12 @@ void MASPreconditioner::PrepareHessian(const std::unique_ptr<BHessian>& BH, cons
                                               BH->mc_D3Index,
                                               BH->mc_D2Index,
                                               BH->mc_D1Index,
-                                              d_Mat96,
+                                              mc_Mat96,
                                               BH->m_DNum[3] * 144,
                                               BH->m_DNum[2] * 81,
                                               BH->m_DNum[1] * 36,
                                               BH->m_DNum[0] * 9,
-                                              d_goingNext,
+                                              mc_goingNext,
                                               levelnum);
 
     //cudaEventRecord(end1);
@@ -1731,7 +1731,7 @@ void MASPreconditioner::PrepareHessian(const std::unique_ptr<BHessian>& BH, cons
     blockSize = 96;
     number    = totalNumberClusters * 3;
     numBlocks = (number + blockSize - 1) / blockSize;
-    __inverse2_P96x96<<<numBlocks, blockSize>>>(d_Mat96, d_inverseMat96, number);
+    __inverse2_P96x96<<<numBlocks, blockSize>>>(mc_Mat96, mc_inverseMat96, number);
 
     //cudaEventRecord(end2);
 
@@ -1757,9 +1757,9 @@ void MASPreconditioner::BuildMultiLevelR(const double3* R)
     int blockSize = DEFAULT_BLOCKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
 
-    //__buildMultiLevelR << <numBlocks, blockSize >> > (R, d_multiLevelR, d_goingNext, levelnum, number);
+    //__buildMultiLevelR << <numBlocks, blockSize >> > (R, mc_multiLevelR, mc_goingNext, levelnum, number);
     __buildMultiLevelR_optimized<<<numBlocks, blockSize>>>(
-        R, d_multiLevelR, d_goingNext, d_fineConnectMask, levelnum, number);
+        R, mc_multiLevelR, mc_goingNext, mc_fineConnectMask, levelnum, number);
     //vector<double3> h_r(totalSize);
     //CUDA_SAFE_CALL(cudaMemcpy(h_r.data(), R, totalNodes * sizeof(double3), cudaMemcpyDeviceToHost));
 
@@ -1776,8 +1776,8 @@ void MASPreconditioner::SchwarzLocalXSym()
     int blockSize = BANKSIZE * BANKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
 
-    //_schwarzLocalXSym1<<<numBlocks, blockSize>>>(d_MatMas, d_multiLevelR, d_multiLevelZ, number);
-    _schwarzLocalXSym3<<<numBlocks, blockSize>>>(d_inverseMat96, d_multiLevelR, d_multiLevelZ, number);
+    //_schwarzLocalXSym1<<<numBlocks, blockSize>>>(d_MatMas, mc_multiLevelR, mc_multiLevelZ, number);
+    _schwarzLocalXSym3<<<numBlocks, blockSize>>>(mc_inverseMat96, mc_multiLevelR, mc_multiLevelZ, number);
 }
 
 void MASPreconditioner::CollectFinalZ(double3* Z)
@@ -1787,19 +1787,19 @@ void MASPreconditioner::CollectFinalZ(double3* Z)
     int blockSize = DEFAULT_BLOCKSIZE;
     int numBlocks = (number + blockSize - 1) / blockSize;
 
-    __collectFinalZ<<<numBlocks, blockSize>>>(Z, d_multiLevelZ, d_coarseTable, levelnum, number);
+    __collectFinalZ<<<numBlocks, blockSize>>>(Z, mc_multiLevelZ, mc_coarseTable, levelnum, number);
 
 }
 
 void MASPreconditioner::setPreconditioner(const std::unique_ptr<BHessian>& BH, const double* masses, int cpNum) {
 
-    CUDA_SAFE_CALL(cudaMemcpy(d_neighborList,
-                              d_neighborListInit,
+    CUDA_SAFE_CALL(cudaMemcpy(mc_neighborList,
+                              mc_neighborListInit,
                               neighborListSize * sizeof(unsigned int),
                               cudaMemcpyDeviceToDevice));
-    //CUDA_SAFE_CALL(cudaMemcpy(ipc.instance->MAS_ptr->d_neighborStart, tetMesh.neighborStart.data(), ipc.vertexNum * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    CUDA_SAFE_CALL(cudaMemcpy(d_neighborNum,
-                              d_neighborNumInit,
+    //CUDA_SAFE_CALL(cudaMemcpy(ipc.instance->MAS_ptr->mc_neighborStart, tetMesh.neighborStart.data(), ipc.vertexNum * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(mc_neighborNum,
+                              mc_neighborNumInit,
                               totalNodes * sizeof(unsigned int),
                               cudaMemcpyDeviceToDevice));
 
@@ -1811,7 +1811,7 @@ void MASPreconditioner::setPreconditioner(const std::unique_ptr<BHessian>& BH, c
     //cudaEventRecord(end0);
 
     CUDA_SAFE_CALL(cudaMemset(
-        d_Mat96, 0, totalNumberClusters / BANKSIZE * sizeof(MATHUTILS::Matrix96x96T)));
+        mc_Mat96, 0, totalNumberClusters / BANKSIZE * sizeof(MATHUTILS::Matrix96x96T)));
 
     PrepareHessian(BH, masses);
 
@@ -1820,10 +1820,10 @@ void MASPreconditioner::setPreconditioner(const std::unique_ptr<BHessian>& BH, c
 
 void MASPreconditioner::preconditioning(const double3* R, double3* Z)
 {
-    CUDA_SAFE_CALL(cudaMemset(d_multiLevelR + totalNodes,
+    CUDA_SAFE_CALL(cudaMemset(mc_multiLevelR + totalNodes,
                               0,
                               (totalNumberClusters - totalNodes) * sizeof(Precision_T3)));
-    CUDA_SAFE_CALL(cudaMemset(d_multiLevelZ, 0, (totalNumberClusters) * sizeof(Precision_T3)));
+    CUDA_SAFE_CALL(cudaMemset(mc_multiLevelZ, 0, (totalNumberClusters) * sizeof(Precision_T3)));
 
     //cudaEvent_t start, end0, end1, end2;
     //cudaEventCreate(&start);
@@ -1861,57 +1861,57 @@ MASPreconditioner::MASPreconditioner() {}
 
 MASPreconditioner::~MASPreconditioner() {}
 
-void MASPreconditioner::CUDA_MALLOC_MAS(int vertNum, int totalNeighborNum, int4* m_collisonPairs) {
+void MASPreconditioner::CUDA_MALLOC_MAS(int vertNum, int totalNeighborNum, int4* _collisonPairs) {
     //bankSize = 32;
     computeNumLevels(vertNum);
-    _collisonPairs = m_collisonPairs;
+    mc_collisonPairs = _collisonPairs;
 
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_denseLevel, vertNum * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_coarseTable, vertNum * sizeof(int4)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_coarseSpaceTables, vertNum * levelnum * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_levelSize, (levelnum + 1) * sizeof(int2)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_goingNext, vertNum * levelnum * sizeof(unsigned int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_prefixOriginal, vertNum * sizeof(unsigned int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_nextPrefix, vertNum * sizeof(unsigned int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_nextPrefixSum, vertNum * sizeof(unsigned int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_prefixSumOriginal, vertNum * sizeof(unsigned int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_fineConnectMask, vertNum * sizeof(unsigned int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_nextConnectMask, vertNum * sizeof(unsigned int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborList, totalNeighborNum * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborStart, vertNum * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborStartTemp, vertNum * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborNum, vertNum * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborListInit, totalNeighborNum * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_neighborNumInit, vertNum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_denseLevel, vertNum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_coarseTable, vertNum * sizeof(int4)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_coarseSpaceTables, vertNum * levelnum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_levelSize, (levelnum + 1) * sizeof(int2)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_goingNext, vertNum * levelnum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_prefixOriginal, vertNum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_nextPrefix, vertNum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_nextPrefixSum, vertNum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_prefixSumOriginal, vertNum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_fineConnectMask, vertNum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_nextConnectMask, vertNum * sizeof(unsigned int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_neighborList, totalNeighborNum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_neighborStart, vertNum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_neighborStartTemp, vertNum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_neighborNum, vertNum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_neighborListInit, totalNeighborNum * sizeof(int)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_neighborNumInit, vertNum * sizeof(int)));
 
     int totalCluster = ReorderRealtime(0) * 1.05;
 
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_Mat96, totalCluster / BANKSIZE * sizeof(MATHUTILS::Matrix96x96T)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_inverseMat96, totalCluster / BANKSIZE * sizeof(MATHUTILS::MasMatrixSymf)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_multiLevelR, totalCluster * sizeof(Precision_T3)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_multiLevelZ, totalCluster * sizeof(Precision_T3)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_Mat96, totalCluster / BANKSIZE * sizeof(MATHUTILS::Matrix96x96T)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_inverseMat96, totalCluster / BANKSIZE * sizeof(MATHUTILS::MasMatrixSymf)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_multiLevelR, totalCluster * sizeof(Precision_T3)));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&mc_multiLevelZ, totalCluster * sizeof(Precision_T3)));
 }
 
 void MASPreconditioner::CUDA_FREE_MAS() {
 
-    CUDA_SAFE_CALL(cudaFree(d_denseLevel));
-    CUDA_SAFE_CALL(cudaFree(d_coarseSpaceTables));
-    CUDA_SAFE_CALL(cudaFree(d_levelSize));
-    CUDA_SAFE_CALL(cudaFree(d_goingNext));
-    CUDA_SAFE_CALL(cudaFree(d_prefixOriginal));
-    CUDA_SAFE_CALL(cudaFree(d_nextPrefix));
-    CUDA_SAFE_CALL(cudaFree(d_nextPrefixSum));
-    CUDA_SAFE_CALL(cudaFree(d_prefixSumOriginal));
-    CUDA_SAFE_CALL(cudaFree(d_fineConnectMask));
-    CUDA_SAFE_CALL(cudaFree(d_nextConnectMask));
-    CUDA_SAFE_CALL(cudaFree(d_neighborList));
-    CUDA_SAFE_CALL(cudaFree(d_neighborListInit));
-    CUDA_SAFE_CALL(cudaFree(d_neighborStart));
-    CUDA_SAFE_CALL(cudaFree(d_neighborStartTemp));
-    CUDA_SAFE_CALL(cudaFree(d_neighborNum));
-    CUDA_SAFE_CALL(cudaFree(d_neighborNumInit));
-    CUDA_SAFE_CALL(cudaFree(d_Mat96));
-    CUDA_SAFE_CALL(cudaFree(d_inverseMat96));
-    CUDA_SAFE_CALL(cudaFree(d_multiLevelR));
-    CUDA_SAFE_CALL(cudaFree(d_multiLevelZ));
+    CUDA_SAFE_CALL(cudaFree(mc_denseLevel));
+    CUDA_SAFE_CALL(cudaFree(mc_coarseSpaceTables));
+    CUDA_SAFE_CALL(cudaFree(mc_levelSize));
+    CUDA_SAFE_CALL(cudaFree(mc_goingNext));
+    CUDA_SAFE_CALL(cudaFree(mc_prefixOriginal));
+    CUDA_SAFE_CALL(cudaFree(mc_nextPrefix));
+    CUDA_SAFE_CALL(cudaFree(mc_nextPrefixSum));
+    CUDA_SAFE_CALL(cudaFree(mc_prefixSumOriginal));
+    CUDA_SAFE_CALL(cudaFree(mc_fineConnectMask));
+    CUDA_SAFE_CALL(cudaFree(mc_nextConnectMask));
+    CUDA_SAFE_CALL(cudaFree(mc_neighborList));
+    CUDA_SAFE_CALL(cudaFree(mc_neighborListInit));
+    CUDA_SAFE_CALL(cudaFree(mc_neighborStart));
+    CUDA_SAFE_CALL(cudaFree(mc_neighborStartTemp));
+    CUDA_SAFE_CALL(cudaFree(mc_neighborNum));
+    CUDA_SAFE_CALL(cudaFree(mc_neighborNumInit));
+    CUDA_SAFE_CALL(cudaFree(mc_Mat96));
+    CUDA_SAFE_CALL(cudaFree(mc_inverseMat96));
+    CUDA_SAFE_CALL(cudaFree(mc_multiLevelR));
+    CUDA_SAFE_CALL(cudaFree(mc_multiLevelZ));
 }
