@@ -5326,7 +5326,7 @@ void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
     // offset
-    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_targetVert, mc_targetInd, _gradient, mc_gpNum, m_BH->m_H3x3, m_BH->m_D1Index, m_instance->softMotionRate,m_animation_fullRate, m_softNum);
+    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_targetVert, mc_targetInd, _gradient, mc_gpNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->softMotionRate,m_animation_fullRate, m_softNum);
     CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
@@ -5341,7 +5341,7 @@ void GIPC::computeGroundGradientAndHessian(double3* _gradient) {
     }
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, m_BH->m_D1Index, m_instance->dHat, m_instance->Kappa, numbers);
+    _computeGroundGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->dHat, m_instance->Kappa, numbers);
     CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
@@ -5407,7 +5407,7 @@ void GIPC::computeGroundGradient(double3* _gradient, double mKappa) {
     int numbers = h_gpNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradient << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->m_H3x3, m_instance->dHat, mKappa, numbers);
+    _computeGroundGradient << <blockNum, threadNum >> > (mc_vertexes, mc_groundOffset, mc_groundNormal, mc_environment_collisionPair, _gradient, mc_gpNum, m_BH->mc_H3x3, m_instance->dHat, mKappa, numbers);
 }
 
 void GIPC::computeSoftConstraintGradient(double3* _gradient) {
@@ -5646,7 +5646,7 @@ void GIPC::calBarrierGradientAndHessian(double3* _gradient, double mKappa) {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
-    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, mc_cpNum, mc_MatIndex, m_instance->dHat, mKappa, numbers);
+    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, _gradient, m_BH->mc_H12x12, m_BH->mc_H9x9, m_BH->mc_H6x6, m_BH->mc_D4Index, m_BH->mc_D3Index, m_BH->mc_D2Index, mc_cpNum, mc_MatIndex, m_instance->dHat, mKappa, numbers);
 }
 
 
@@ -5658,7 +5658,7 @@ void GIPC::calBarrierHessian() {
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
 
-    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, m_BH->m_H12x12, m_BH->m_H9x9, m_BH->m_H6x6, m_BH->m_D4Index, m_BH->m_D3Index, m_BH->m_D2Index, mc_cpNum, mc_MatIndex, m_instance->dHat, m_instance->Kappa, numbers);
+    _calBarrierHessian << <blockNum, threadNum >> > (mc_vertexes, mc_rest_vertexes, mc_collisonPairs, m_BH->mc_H12x12, m_BH->mc_H9x9, m_BH->mc_H6x6, m_BH->mc_D4Index, m_BH->mc_D3Index, m_BH->mc_D2Index, mc_cpNum, mc_MatIndex, m_instance->dHat, m_instance->Kappa, numbers);
 }
 
 void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
@@ -5671,12 +5671,12 @@ void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
         mc_vertexes,
         instance->cudaOriginVertPos,
         mc_collisonPairs_lastH,
-        m_BH->m_H12x12,
-        m_BH->m_H9x9,
-        m_BH->m_H6x6,
-        m_BH->m_D4Index,
-        m_BH->m_D3Index,
-        m_BH->m_D2Index,
+        m_BH->mc_H12x12,
+        m_BH->mc_H9x9,
+        m_BH->mc_H6x6,
+        m_BH->mc_D4Index,
+        m_BH->mc_D3Index,
+        m_BH->mc_D2Index,
         mc_cpNum,
         numbers,
         m_instance->IPC_dt, mc_distCoord,
@@ -5698,8 +5698,8 @@ void GIPC::calFrictionHessian(std::unique_ptr<GeometryManager>& instance) {
         instance->cudaOriginVertPos,
         mc_groundNormal,
         mc_collisonPairs_lastH_gd,
-        m_BH->m_H3x3,
-        m_BH->m_D1Index,
+        m_BH->mc_H3x3,
+        m_BH->mc_D1Index,
         numbers,
         m_instance->IPC_dt,
         m_instance->fDhat * m_instance->IPC_dt * m_instance->IPC_dt,
@@ -6018,17 +6018,17 @@ void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance)
     calFrictionHessian(instance);
 #endif
 
-    calculate_fem_gradient_hessian(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, m_BH->m_H12x12,
+    calculate_fem_gradient_hessian(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, m_BH->mc_H12x12,
                                    h_cpNum[4] + h_cpNum_last[4], instance->cudaTetVolume,
                                    instance->cudaFb, m_tetrahedraNum, m_instance->lengthRate, m_instance->volumeRate, m_instance->IPC_dt);
 
-    CUDA_SAFE_CALL(cudaMemcpy(m_BH->m_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, m_tetrahedraNum * sizeof(uint4),cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(m_BH->mc_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, m_tetrahedraNum * sizeof(uint4),cudaMemcpyDeviceToDevice));
 
-    calculate_bending_gradient_hessian(instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, m_BH->m_H12x12, m_BH->m_D4Index, h_cpNum[4] + h_cpNum_last[4] + m_tetrahedraNum, instance->cudaFb, m_tri_edge_num, m_instance->bendStiff, m_instance->IPC_dt);
+    calculate_bending_gradient_hessian(instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, m_BH->mc_H12x12, m_BH->mc_D4Index, h_cpNum[4] + h_cpNum_last[4] + m_tetrahedraNum, instance->cudaFb, m_tri_edge_num, m_instance->bendStiff, m_instance->IPC_dt);
 
-    calculate_triangle_fem_gradient_hessian(instance->cudaTriDmInverses, instance->cudaVertPos, instance->cudaTriElement, m_BH->m_H9x9, h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, m_triangleNum, m_instance->stretchStiff, m_instance->shearStiff, m_instance->IPC_dt);
+    calculate_triangle_fem_gradient_hessian(instance->cudaTriDmInverses, instance->cudaVertPos, instance->cudaTriElement, m_BH->mc_H9x9, h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, m_triangleNum, m_instance->stretchStiff, m_instance->shearStiff, m_instance->IPC_dt);
 
-    CUDA_SAFE_CALL(cudaMemcpy(m_BH->m_D3Index + h_cpNum[3] + h_cpNum_last[3], instance->cudaTriElement, m_triangleNum * sizeof(uint3), cudaMemcpyDeviceToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(m_BH->mc_D3Index + h_cpNum[3] + h_cpNum_last[3], instance->cudaTriElement, m_triangleNum * sizeof(uint3), cudaMemcpyDeviceToDevice));
 
     // calculate Ground gradient save in H3x3
     computeGroundGradientAndHessian(instance->cudaFb);
@@ -6381,7 +6381,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
             break;
         }
 
-        m_total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], m_pcg_data->m_P_type);
+        m_total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], m_pcg_data->m_PrecondType);
 
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 

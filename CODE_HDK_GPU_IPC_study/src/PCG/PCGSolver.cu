@@ -46,26 +46,26 @@ BHessian::~BHessian() {};
 
 void BHessian::CUDA_MALLOC_BHESSIAN(const int& tet_number, const int& surfvert_number, const int& surface_number, const int& surfEdge_number, const int& triangle_num, const int& tri_Edge_number) {
     
-    CUDAMallocSafe(m_H12x12, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
-    CUDAMallocSafe(m_H9x9, (2 * (surfEdge_number + surfvert_number) + triangle_num));
-    CUDAMallocSafe(m_H6x6, 2 * (surfvert_number + surfEdge_number));
-    CUDAMallocSafe(m_H3x3, 2 * surfvert_number);
-    CUDAMallocSafe(m_D4Index, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
-    CUDAMallocSafe(m_D3Index, (2 * (surfEdge_number + surfvert_number)+ triangle_num));
-    CUDAMallocSafe(m_D2Index, 2 * (surfvert_number + surfEdge_number));
-    CUDAMallocSafe(m_D1Index, 2 * surfvert_number);
+    CUDAMallocSafe(mc_H12x12, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
+    CUDAMallocSafe(mc_H9x9, (2 * (surfEdge_number + surfvert_number) + triangle_num));
+    CUDAMallocSafe(mc_H6x6, 2 * (surfvert_number + surfEdge_number));
+    CUDAMallocSafe(mc_H3x3, 2 * surfvert_number);
+    CUDAMallocSafe(mc_D4Index, (2 * (surfvert_number + surfEdge_number) + tet_number + tri_Edge_number));
+    CUDAMallocSafe(mc_D3Index, (2 * (surfEdge_number + surfvert_number)+ triangle_num));
+    CUDAMallocSafe(mc_D2Index, 2 * (surfvert_number + surfEdge_number));
+    CUDAMallocSafe(mc_D1Index, 2 * surfvert_number);
 
 }
 
 void BHessian::CUDA_FREE_BHESSIAN() {
-    CUDAFreeSafe(m_H12x12);
-    CUDAFreeSafe(m_H9x9);
-    CUDAFreeSafe(m_H6x6);
-    CUDAFreeSafe(m_H3x3);
-    CUDAFreeSafe(m_D1Index);
-    CUDAFreeSafe(m_D2Index);
-    CUDAFreeSafe(m_D3Index);
-    CUDAFreeSafe(m_D4Index);    
+    CUDAFreeSafe(mc_H12x12);
+    CUDAFreeSafe(mc_H9x9);
+    CUDAFreeSafe(mc_H6x6);
+    CUDAFreeSafe(mc_H3x3);
+    CUDAFreeSafe(mc_D1Index);
+    CUDAFreeSafe(mc_D2Index);
+    CUDAFreeSafe(mc_D3Index);
+    CUDAFreeSafe(mc_D4Index);    
 
 }
 
@@ -1341,22 +1341,22 @@ void Solve_PCG_AX_B(const std::unique_ptr<GeometryManager>& instance, const doub
     if (numbers > 0) {
         //unsigned int sharedMsize = sizeof(double) * threadNum;
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX12_b << <blockNum, threadNum >> > (BH->m_H12x12, BH->m_D4Index, c, q, numbers);
+        __PCG_Solve_AX12_b << <blockNum, threadNum >> > (BH->mc_H12x12, BH->mc_D4Index, c, q, numbers);
     }
     numbers = BH->m_DNum[2];
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX9_b << <blockNum, threadNum >> > (BH->m_H9x9, BH->m_D3Index, c, q, numbers);
+        __PCG_Solve_AX9_b << <blockNum, threadNum >> > (BH->mc_H9x9, BH->mc_D3Index, c, q, numbers);
     }
     numbers = BH->m_DNum[1];
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX6_b << <blockNum, threadNum >> > (BH->m_H6x6, BH->m_D2Index, c, q, numbers);
+        __PCG_Solve_AX6_b << <blockNum, threadNum >> > (BH->mc_H6x6, BH->mc_D2Index, c, q, numbers);
     }
     numbers = BH->m_DNum[0];
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX3_b << <blockNum, threadNum >> > (BH->m_H3x3, BH->m_D1Index, c, q, numbers);
+        __PCG_Solve_AX3_b << <blockNum, threadNum >> > (BH->mc_H3x3, BH->mc_D1Index, c, q, numbers);
     }
 
 }
@@ -1404,7 +1404,7 @@ void Solve_PCG_AX_B2(const std::unique_ptr<GeometryManager>& instance, const dou
     int offset2 = (BH->m_DNum[1] * 36 + threadNum - 1) / threadNum;
     int offset1 = (BH->m_DNum[0] + threadNum - 1) / threadNum;
     blockNum = offset1 + offset2 + offset3 + offset4;
-    __PCG_Solve_AXALL_b2 << <blockNum, threadNum >> > (BH->m_H12x12, BH->m_H9x9, BH->m_H6x6, BH->m_H3x3, BH->m_D4Index, BH->m_D3Index, BH->m_D2Index, BH->m_D1Index, c, q, BH->m_DNum[3] * 144, BH->m_DNum[2] * 81, BH->m_DNum[1] * 36, BH->m_DNum[0], offset4, offset3, offset2);
+    __PCG_Solve_AXALL_b2 << <blockNum, threadNum >> > (BH->mc_H12x12, BH->mc_H9x9, BH->mc_H6x6, BH->mc_H3x3, BH->mc_D4Index, BH->mc_D3Index, BH->mc_D2Index, BH->mc_D1Index, c, q, BH->m_DNum[3] * 144, BH->m_DNum[2] * 81, BH->m_DNum[1] * 36, BH->m_DNum[0], offset4, offset3, offset2);
 
 }
 
@@ -1417,22 +1417,22 @@ void construct_P(const std::unique_ptr<GeometryManager>& instance, MATHUTILS::Ma
     numbers = BH->m_DNum[3] * 12;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX12_P << <blockNum, threadNum >> > (BH->m_H12x12, BH->m_D4Index, P, numbers);
+        __PCG_AX12_P << <blockNum, threadNum >> > (BH->mc_H12x12, BH->mc_D4Index, P, numbers);
     }
     numbers = BH->m_DNum[2] * 9;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX9_P << <blockNum, threadNum >> > (BH->m_H9x9, BH->m_D3Index, P, numbers);
+        __PCG_AX9_P << <blockNum, threadNum >> > (BH->mc_H9x9, BH->mc_D3Index, P, numbers);
     }
     numbers = BH->m_DNum[1] * 6;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX6_P << <blockNum, threadNum >> > (BH->m_H6x6, BH->m_D2Index, P, numbers);
+        __PCG_AX6_P << <blockNum, threadNum >> > (BH->mc_H6x6, BH->mc_D2Index, P, numbers);
     }
     numbers = BH->m_DNum[0] * 3;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX3_P << <blockNum, threadNum >> > (BH->m_H3x3, BH->m_D1Index, P, numbers);
+        __PCG_AX3_P << <blockNum, threadNum >> > (BH->mc_H3x3, BH->mc_D1Index, P, numbers);
     }
     blockNum = (vertNum + threadNum - 1) / threadNum;
     //__PCG_inverse_P << <blockNum, threadNum >> > (P, vertNum);
@@ -1455,14 +1455,14 @@ void construct_P2(
     blockNum = (numbers + threadNum - 1) / threadNum;
 
     __PCG_AXALL_P <<<blockNum, threadNum>>> (
-        BH->m_H12x12, 
-        BH->m_H9x9, 
-        BH->m_H6x6, 
-        BH->m_H3x3, 
-        BH->m_D4Index, 
-        BH->m_D3Index, 
-        BH->m_D2Index, 
-        BH->m_D1Index, 
+        BH->mc_H12x12, 
+        BH->mc_H9x9, 
+        BH->mc_H6x6, 
+        BH->mc_H3x3, 
+        BH->mc_D4Index, 
+        BH->mc_D3Index, 
+        BH->mc_D2Index, 
+        BH->mc_D1Index, 
         pcg_data->m_P, 
         BH->m_DNum[3] * 12, 
         BH->m_DNum[2] * 9, 

@@ -13,15 +13,14 @@ public:
 
 public:
 
-    // TODO: 全部切换成mc_*
-    uint32_t* m_D1Index;//pIndex, DpeIndex, DptIndex;
-	uint3* m_D3Index;
-	uint4* m_D4Index;
-	uint2* m_D2Index;
-	MATHUTILS::Matrix12x12d* m_H12x12;
-	MATHUTILS::Matrix3x3d* m_H3x3;
-	MATHUTILS::Matrix6x6d* m_H6x6;
-	MATHUTILS::Matrix9x9d* m_H9x9;
+    uint32_t* mc_D1Index;//pIndex, DpeIndex, DptIndex;
+	uint3* mc_D3Index;
+	uint4* mc_D4Index;
+	uint2* mc_D2Index;
+	MATHUTILS::Matrix12x12d* mc_H12x12;
+	MATHUTILS::Matrix3x3d* mc_H3x3;
+	MATHUTILS::Matrix6x6d* mc_H6x6;
+	MATHUTILS::Matrix9x9d* mc_H9x9;
 
 	uint32_t m_DNum[4];
 
@@ -60,7 +59,7 @@ public:
 	double3* m_dx;
 	double3* m_tempDx;
 
-    int m_P_type;
+    int m_PrecondType;
 	// double3* m_filterTempVec3;
 	// double3* m_preconditionTempVec3;
 

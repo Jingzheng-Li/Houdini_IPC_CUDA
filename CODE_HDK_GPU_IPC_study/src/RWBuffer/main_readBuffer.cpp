@@ -547,7 +547,7 @@ void GAS_Read_Buffer::initSIMIPC() {
 		instance->PCGData_ptr = std::make_unique<PCGData>();
 	}
 	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numTetElements);
-	instance->PCGData_ptr->m_P_type = 0;
+	instance->PCGData_ptr->m_PrecondType = 0;
 	instance->PCGData_ptr->m_b = instance->cudaFb;
 	instance->cudaMoveDir = instance->PCGData_ptr->m_dx; // cudaMovedir will be m_dx
 
