@@ -1394,7 +1394,7 @@ namespace MATHUTILS {
 
 
     __device__ __host__ void __M12x9_S9x9_MT9x12_Multiply(const Matrix12x9d& A, const Matrix9x9d& B, Matrix12x12d& output) {
-        //Matrix12x12d output;
+        //Matrix12x12d output = A^T @ B @ A
         Vector9 tempM;
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 9; j++) {
@@ -1402,7 +1402,7 @@ namespace MATHUTILS {
                 for (int k = 0; k < 9; k++) {
                     temp += A.m[i][k] * B.m[j][k];
                 }
-                tempM.v[j] = temp;
+                tempM.v[j] = temp; // tempM = A^T @ B
             }
 
             for (int j = 0; j < 12; j++) {
@@ -1410,10 +1410,9 @@ namespace MATHUTILS {
                 for (int k = 0; k < 9; k++) {
                     temp += A.m[j][k] * tempM.v[k];
                 }
-                output.m[i][j] = temp;
+                output.m[i][j] = temp; // tempM @ A
             }
         }
-        //return output;
     }
 
     __device__ __host__ Vector4 __s_vec4_multiply(Vector4 a, double b) {

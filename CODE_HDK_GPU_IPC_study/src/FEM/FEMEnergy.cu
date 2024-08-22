@@ -308,6 +308,8 @@ namespace FEMENERGY {
 
     __device__
     MATHUTILS::Matrix9x9d project_ARAP_H_3D(const MATHUTILS::Matrix3x3d& Sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, const double& lengthRate) {
+        // for detail, can refer to Dynamic Deformable chapter 5.5.2, part(P)/part(F) = 2I9x9 - 2H1
+        
         MATHUTILS::Matrix3x3d R, S;
 
         S = MATHUTILS::__M_Mat_multiply(MATHUTILS::__M_Mat_multiply(V, Sigma), MATHUTILS::__Transpose3x3(V));//V * sigma * V.transpose();
@@ -338,12 +340,13 @@ namespace FEMENERGY {
         double lambda1 = 2 / (sz + sy);
         double lambda2 = 2 / (sx + sz);
 
+        // build the filter the non-trivial eigenvalues
         if (sx + sy < 2)lambda0 = 1;
         if (sz + sy < 2)lambda1 = 1;
         if (sx + sz < 2)lambda2 = 1;
 
         MATHUTILS::Matrix9x9d SH, M9_temp;
-        MATHUTILS::__identify_Mat9x9(SH);
+        MATHUTILS::__identify_Mat9x9(SH); // I9x9
         MATHUTILS::Vector9 V9_temp;
 
 
@@ -1142,10 +1145,10 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x3d Iso_PEPF = computePEPF_ARAP_double(F, Sigma, U, V, lenRate);
     #endif
 
-        MATHUTILS::Matrix3x3d PEPF = Iso_PEPF; 
-        MATHUTILS::Vector9 pepf = MATHUTILS::__Mat3x3_to_vec9_double(PEPF);  // vectorize Matrix3x3
-        MATHUTILS::Matrix12x9d PFPXTranspose = MATHUTILS::__Transpose9x12(PFPX);
-        // f = V * (part(F)^T @ vec(part(E)/part(F)) * dt^2
+        MATHUTILS::Matrix3x3d PEPF = Iso_PEPF; // Piola Kirchhoff stress tensor
+        MATHUTILS::Vector9 pepf = MATHUTILS::__Mat3x3_to_vec9_double(PEPF); // vectorize Matrix3x3 to 9x1
+        MATHUTILS::Matrix12x9d PFPXTranspose = MATHUTILS::__Transpose9x12(PFPX); 
+        // f = V * dt^2 * (vec(part(F))^T @ vec(part(E)/part(F)) -> (12x9)x(9x1)=12x1 force vec
         MATHUTILS::Vector12 f = MATHUTILS::__s_vec12_multiply(MATHUTILS::__M12x9_v9_multiply(PFPXTranspose, pepf), IPC_dt * IPC_dt * volume[idx]);
 
         {
@@ -1175,7 +1178,8 @@ namespace FEMENERGY {
     #endif
 
         MATHUTILS::Matrix12x12d H;
-        MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPXTranspose, Hq, H);
+        // H = vec(part(F)/part(x))^T @ vec(part(P)/part(F)) @ vec(part(F)/part(x)) = (12x9)x(9x9)x(9x12) = 12x12
+        MATHUTILS::__M12x9_S9x9_MT9x12_Multiply(PFPXTranspose, Hq, H); 
         Hessians[idx + offset] = MATHUTILS::__s_M12x12_Multiply(H, volume[idx] * IPC_dt * IPC_dt);
     }
 

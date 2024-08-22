@@ -15,7 +15,6 @@ public:
 
 public:
 
-	// TODO: change m_ into mc_
     double* mc_squeue;
 	double3* mc_b;
 	MATHUTILS::Matrix3x3d* mc_P;

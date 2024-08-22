@@ -5,6 +5,8 @@ TODO:
 2. 整理一下代码，把主函数分离出来
 3. 构造各个节点 
 4. 检查tet关键字变量的分配是否正确
+5. 可以把GIPC里面的FEM计算代码都放到FEMEnergy中
+6. 把Integrator拆分出来 放到integrator中 最后的subsolverIP就从integrator中走 GIPC只提供对应的碰撞Hessian
 
 */
 

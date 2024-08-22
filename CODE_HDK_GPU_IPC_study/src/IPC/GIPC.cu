@@ -6249,7 +6249,7 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
     }
 
     if (numOfLineSearch > 8)
-        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! numOfLineSearch: %d\n", numOfLineSearch);
         
     if (alpha < LFStepSize) {
         bool needRecomputeCS = false;
