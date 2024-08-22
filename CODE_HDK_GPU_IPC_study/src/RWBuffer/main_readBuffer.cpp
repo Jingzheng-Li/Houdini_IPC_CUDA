@@ -80,6 +80,10 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		initSIMPCG();
 		initSIMIPC();
 
+		FEMENERGY::computeXTilta(instance, 1); // a small step forward
+
+		CUDA_SAFE_CALL(cudaDeviceSynchronize());
+
 		FIRSTFRAME::hou_initialized = true;
 	}
 
@@ -460,8 +464,6 @@ void GAS_Read_Buffer::initSIMFEM() {
 
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaDmInverses, instance->DMInverse.data(), instance->numTetElements * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaTriDmInverses, instance->TriDMInverse.data(), instance->numTriElements * sizeof(MATHUTILS::Matrix2x2d), cudaMemcpyHostToDevice));
-
-	// FEMENERGY::computeXTilta(instance, 1);
 	
 }
 
@@ -586,7 +588,5 @@ void GAS_Read_Buffer::initSIMIPC() {
         instance->GIPC_ptr = std::make_unique<GIPC>(instance);
     }
 	instance->GIPC_ptr->buildCP();
-
-	FEMENERGY::computeXTilta(instance, 1);
 
 }

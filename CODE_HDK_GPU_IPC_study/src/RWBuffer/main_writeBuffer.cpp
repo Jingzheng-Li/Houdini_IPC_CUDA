@@ -41,6 +41,8 @@ bool GAS_Write_Buffer::solveGasSubclass(SIM_Engine& engine,
 
     transferPTAttribTOHoudini(newgeo, gdp);
 
+    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+
     return true;
 }
 

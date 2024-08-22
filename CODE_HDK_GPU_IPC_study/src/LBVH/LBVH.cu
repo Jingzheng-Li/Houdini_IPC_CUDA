@@ -177,7 +177,7 @@ AABB::AABB() {
 	m_upper = make_double3(-1e32, -1e32, -1e32);
 }
 
-// calcuate barycenter through determinant
+// calcuate barycenter through determinant (point projection onto triangle through normal)
 // 0: v0 lies on v1
 // 1: v0 lies on v2
 // 2: v0 lies on v3
@@ -253,6 +253,8 @@ int _dType_PT(const double3& v0, const double3& v1, const double3& v2, const dou
 			}
 		}
 	}
+
+	return -1;
 }
 
 
@@ -989,6 +991,7 @@ void _selfQuery_vf(const int* _btype, const double3* _vertexes, const uint3* _fa
 			// check whether the node is a leaf
 			const auto obj_idx = _nodes[L_idx].m_element_idx;
 			if (obj_idx != 0xFFFFFFFF) {
+				// if vert is some point of a triangle, then skip this collision detection
 				if (idx != _faces[obj_idx].x && idx != _faces[obj_idx].y && idx != _faces[obj_idx].z) {
 					if (!(_btype[idx] >= 2 && _btype[_faces[obj_idx].x] >= 2 && _btype[_faces[obj_idx].y] >= 2 && _btype[_faces[obj_idx].z] >= 2))
 						_checkPTintersection(_vertexes, idx, _faces[obj_idx].x, _faces[obj_idx].y, _faces[obj_idx].z, dHat, _cpNum, MatIndex, _collisionPair, _ccd_collisionPair);
