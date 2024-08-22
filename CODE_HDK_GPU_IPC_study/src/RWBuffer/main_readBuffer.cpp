@@ -80,7 +80,7 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		initSIMPCG();
 		initSIMIPC();
 
-		FEMENERGY::computeXTilta(instance, 1); // a small step forward
+		FEMENERGY::computeXTilta(instance, 1); // get a initial guess
 
 		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
