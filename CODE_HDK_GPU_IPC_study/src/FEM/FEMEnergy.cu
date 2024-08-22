@@ -1426,7 +1426,7 @@ namespace FEMENERGY {
 
         double3 gravityDtSq = make_double3(0, 0, 0);
         if (_btype[idx] == 0) {
-            gravityDtSq = MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);
+            gravityDtSq = MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), 0.5 * ipc_dt * ipc_dt);
         }
         _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq)); 
     }
