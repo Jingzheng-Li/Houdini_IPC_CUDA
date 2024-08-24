@@ -1712,10 +1712,6 @@ namespace MATHUTILS {
 			}
 		}
 
-		// for (const auto& tri : triangles) {
-		// 	surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
-		// 	surfFaces.row(surfFaces.rows() - 1) = tri;
-		// }
 		for (int i = 0; i < triangleNum; i++) {
 			surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
 			Eigen::Vector3i tri = triangles.row(i);
@@ -1742,18 +1738,6 @@ namespace MATHUTILS {
 				flag[cTri[2]] = true;
 			}
 		}
-
-		// std::set<std::pair<uint64_t, uint64_t>> SFEdges_set;
-		// for (int i = 0; i < surfFaces.rows(); ++i) {
-		// 	const auto& cTri = surfFaces.row(i);
-		// 	for (int j = 0; j < 3; ++j) {
-		// 		uint64_t v0 = cTri[j];
-		// 		uint64_t v1 = cTri[(j + 1) % 3];
-		// 		if (SFEdges_set.find({v1, v0}) == SFEdges_set.end() && SFEdges_set.find({v0, v1}) == SFEdges_set.end()) {
-		// 			SFEdges_set.insert({v0, v1});
-		// 		}
-		// 	}
-		// }
 
 		std::set<std::pair<uint64_t, uint64_t>> SFEdges_set;
 		for (int i = 0; i < surfFaces.rows(); ++i) {

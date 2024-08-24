@@ -3885,14 +3885,13 @@ void _calBarrierGradient(const double3* _vertexes, const double3* _rest_vertexes
     }
 }
 
-// f = m * (x_tital - x_prev)
 __global__
 void _calKineticGradient(double3* vertexes, double3* xTilta, double3* gradient, double* masses, int numbers) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numbers) return;
     // delta_x = x_prev - x_tilta
     double3 deltaX = MATHUTILS::__minus(vertexes[idx], xTilta[idx]); 
-    // gradient = mass * delta_x
+    // gradient = mass * x_tital - x_prev)
     gradient[idx] = make_double3(deltaX.x * masses[idx], deltaX.y * masses[idx], deltaX.z * masses[idx]);
 }
 
@@ -5956,20 +5955,37 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
 void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
 
     // f = m * (x_tilta - x_prev) saved in cudaFb
-    calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, instance->cudaFb, instance->cudaVertMass, m_vertexNum);
+    calKineticGradient(
+        instance->cudaVertPos, 
+        instance->cudaXTilta, 
+        instance->cudaFb, 
+        instance->cudaVertMass, 
+        m_vertexNum);
 
     CUDA_SAFE_CALL(cudaMemset(mc_cpNum, 0, 5 * sizeof(uint32_t)));
 
-    calBarrierGradientAndHessian(instance->cudaFb, m_instance->Kappa);
+    // calculate barrier gradient and Hessian
+    calBarrierGradientAndHessian(
+        instance->cudaFb, 
+        m_instance->Kappa);
 
 #ifdef USE_FRICTION
     calFrictionGradient(instance->cudaFb, instance);
     calFrictionHessian(instance);
 #endif
 
-    calculate_fem_gradient_hessian(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, m_BH->mc_H12x12,
-                                   h_cpNum[4] + h_cpNum_last[4], instance->cudaTetVolume,
-                                   instance->cudaFb, m_tetrahedraNum, m_instance->lengthRate, m_instance->volumeRate, m_instance->IPC_dt);
+    calculate_fem_gradient_hessian(
+        instance->cudaDmInverses, 
+        instance->cudaVertPos, 
+        instance->cudaTetElement, 
+        m_BH->mc_H12x12,
+        h_cpNum[4] + h_cpNum_last[4], 
+        instance->cudaTetVolume,
+        instance->cudaFb, 
+        m_tetrahedraNum, 
+        m_instance->lengthRate, 
+        m_instance->volumeRate, 
+        m_instance->IPC_dt);
 
     CUDA_SAFE_CALL(cudaMemcpy(m_BH->mc_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, m_tetrahedraNum * sizeof(uint4),cudaMemcpyDeviceToDevice));
 
@@ -6302,10 +6318,6 @@ void GIPC::tempFree_closeConstraint() {
 }
 
 
-// int maxCOllisionPairNum = 0;
-// int totalCollisionPairs = 0;
-// int total_Cg_count = 0;
-
 int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
     int iterCap = 10000, k = 0;
@@ -6317,7 +6329,6 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
     for (; k < iterCap; ++k) {
 
         m_totalCollisionPairs += h_cpNum[0];
-        m_maxCOllisionPairNum = (m_maxCOllisionPairNum > h_cpNum[0]) ? m_maxCOllisionPairNum : h_cpNum[0];
         
         m_BH->updateDNum(m_triangleNum, m_tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, m_tri_edge_num);
 
@@ -6369,7 +6380,12 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
     }
     
-    printf("\n\n Kappa: %f  iteration k:  %d\n\n\n", instance->Kappa, k);
+    printf("\n");
+    printf("Kappa: %f  iteration k:  %d \n", instance->Kappa, k);
+    std::cout << "m_total_Cg_count: " << m_total_Cg_count << std::endl;
+    std::cout << "m_totalCollisionPairs: " << m_totalCollisionPairs << std::endl;
+    printf("\n");
+
     return k;
    
 }
@@ -6469,7 +6485,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
 
     m_isRotate = false;
     m_total_Cg_count = 0;
-    m_maxCOllisionPairNum = 0;
     m_totalCollisionPairs = 0;
 
 }

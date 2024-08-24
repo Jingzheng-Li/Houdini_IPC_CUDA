@@ -112,7 +112,11 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->clothThickness = 1e-3;
 	instance->clothYoungModulus = 1e6;
 	instance->stretchStiff = instance->clothYoungModulus / (2 * (1 + instance->PoissonRate));
-	instance->shearStiff = instance->stretchStiff * 0.05;
+	instance->shearStiff = instance->stretchStiff * 0.03;
+	// instance->stretchStiff = 0.0;
+	// instance->shearStiff = 0.0;
+
+
 	instance->clothDensity = 2e2;
 	instance->softMotionRate = 1e0;
 	instance->bendStiff = 3e-4;
@@ -120,7 +124,6 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->pcg_threshold = 1e-3;
 	instance->relative_dhat = 1e-3;
 	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
-	instance->shearStiff = 0.03 * instance->stretchStiff;
 
 	instance->animation = false;
 	instance->collision_detection_buff_scale = 1;
@@ -320,7 +323,7 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	CUDAMemcpyHToDSafe(instance->triEdges, instance->cudaTriEdges);
 	CUDAMemcpyHToDSafe(instance->triEdgeAdjVertex, instance->cudaTriEdgeAdjVertex);
 
-	// get tetrahedra surface
+	// get all triangle surface (including tet surface)
 	MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement, instance->triElement);
 
 	CUDAMallocSafe(instance->cudaDmInverses, instance->numTetElements);
