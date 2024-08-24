@@ -91,6 +91,44 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 }
 
 
+
+void GAS_Read_Buffer::loadSIMParams() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+
+	instance->IPC_dt = 0.01;
+	instance->precondType = 0;
+
+	instance->density = 1e3;
+	instance->YoungModulus = 1e5;
+	instance->PoissonRate = 0.49;
+	instance->lengthRateLame = instance->YoungModulus / (2 * (1 + instance->PoissonRate));
+	instance->volumeRateLame = instance->YoungModulus * instance->PoissonRate / ((1 + instance->PoissonRate) * (1 - 2 * instance->PoissonRate));
+	instance->lengthRate = 4 * instance->lengthRateLame / 3;
+	instance->volumeRate = instance->volumeRateLame + 5 * instance->lengthRateLame / 6;
+	instance->frictionRate = 0.4;
+	instance->clothThickness = 1e-3;
+	instance->clothYoungModulus = 1e6;
+	instance->stretchStiff = instance->clothYoungModulus / (2 * (1 + instance->PoissonRate));
+	instance->shearStiff = instance->stretchStiff * 0.05;
+	instance->clothDensity = 2e2;
+	instance->softMotionRate = 1e0;
+	instance->bendStiff = 3e-4;
+	instance->Newton_solver_threshold = 1e-1;
+	instance->pcg_threshold = 1e-3;
+	instance->relative_dhat = 1e-3;
+	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
+	instance->shearStiff = 0.03 * instance->stretchStiff;
+
+	instance->animation = false;
+	instance->collision_detection_buff_scale = 1;
+	double motion_rate = 1.0;
+	instance->animation_fullRate = 0.0;
+	instance->animation_subRate = 1.0 / motion_rate;
+	
+}
+
+
 void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
 
 	auto &instance = GeometryManager::instance;
@@ -381,64 +419,6 @@ void GAS_Read_Buffer::transferOtherTOCUDA() {
 	CHECK_ERROR(instance->surfEdge.rows() == instance->numSurfEdges, "numSurfEdges not match with Eigen");
 	CHECK_ERROR(instance->surfFace.rows() == instance->numSurfFaces, "numSurfFaces not match with Eigen");
 
-	std::cout << "numVerts~~" << numVerts << std::endl;
-	std::cout << "numTriElems~~" << numTriElems << std::endl;
-	std::cout << "numTetElems~~" << numTetElems << std::endl;
-	std::cout << "maxnumbers~~" << maxNumbers << std::endl;
-	std::cout << "numSurfVerts~~" << instance->surfVert.rows() << std::endl;
-	std::cout << "numSurfEdges~~" << instance->surfEdge.rows() << std::endl;
-	std::cout << "numSurfFaces~~" << instance->surfFace.rows() << std::endl;
-	std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
-	std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
-	std::cout << "numTriEdges~~" << instance->triEdges.rows() << std::endl;
-	std::cout << "masslast~~" << instance->vertMass.row(numVerts-1) << std::endl;
-	std::cout << "min coner~~" << instance->minCorner.x << " " 
-								<< instance->minCorner.y << " " 
-								<< instance->minCorner.z << " " << std::endl;
-	std::cout << "max coner~~" << instance->maxCorner.x << " " 
-								<< instance->maxCorner.y << " " 
-								<< instance->maxCorner.z << " " << std::endl;
-	std::cout << "numMasses: " << instance->vertMass.rows() << std::endl;
-	std::cout << "numVolume: " << instance->tetVolume.rows() << std::endl;
-	std::cout << "numAreas: " << instance->triArea.rows() << std::endl;
-
-}
-
-
-
-void GAS_Read_Buffer::loadSIMParams() {
-	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
-
-	instance->IPC_dt = 0.01;
-	instance->precondType = 1;
-
-	instance->density = 1e3;
-	instance->YoungModulus = 1e5;
-	instance->PoissonRate = 0.49;
-	instance->lengthRateLame = instance->YoungModulus / (2 * (1 + instance->PoissonRate));
-	instance->volumeRateLame = instance->YoungModulus * instance->PoissonRate / ((1 + instance->PoissonRate) * (1 - 2 * instance->PoissonRate));
-	instance->lengthRate = 4 * instance->lengthRateLame / 3;
-	instance->volumeRate = instance->volumeRateLame + 5 * instance->lengthRateLame / 6;
-	instance->frictionRate = 0.4;
-	instance->clothThickness = 1e-3;
-	instance->clothYoungModulus = 1e6;
-	instance->stretchStiff = instance->clothYoungModulus / (2 * (1 + instance->PoissonRate));
-	instance->shearStiff = instance->stretchStiff * 0.05;
-	instance->clothDensity = 2e2;
-	instance->softMotionRate = 1e0;
-	instance->bendStiff = 3e-4;
-	instance->Newton_solver_threshold = 1e-1;
-	instance->pcg_threshold = 1e-3;
-	instance->relative_dhat = 1e-3;
-	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
-	instance->shearStiff = 0.03 * instance->stretchStiff;
-
-	instance->animation = false;
-	instance->collision_detection_buff_scale = 1;
-	double motion_rate = 1.0;
-	instance->animation_subRate = 1.0 / motion_rate;
-	
 }
 
 
@@ -588,5 +568,44 @@ void GAS_Read_Buffer::initSIMIPC() {
         instance->GIPC_ptr = std::make_unique<GIPC>(instance);
     }
 	instance->GIPC_ptr->buildCP();
+
+}
+
+
+void GAS_Read_Buffer::debugSIM() {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
+
+	std::cout << "numVerts~~" << instance->numVertices << std::endl;
+	std::cout << "numTriElems~~" << instance->numTriElements << std::endl;
+	std::cout << "numTetElems~~" << instance->numTetElements << std::endl;
+	int maxNumbers = instance->numVertices > instance->numTriElements ? instance->numVertices : instance->numTriElements; 
+	std::cout << "maxNumbers~~~~" << maxNumbers << std::endl;
+	std::cout << "numSurfVerts~~" << instance->surfVert.rows() << std::endl;
+	std::cout << "numSurfEdges~~" << instance->surfEdge.rows() << std::endl;
+	std::cout << "numSurfFaces~~" << instance->surfFace.rows() << std::endl;
+	std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
+	std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
+	std::cout << "numTriEdges~~" << instance->triEdges.rows() << std::endl;
+	std::cout << "masslast~~" << instance->vertMass.row(instance->numVertices-1) << std::endl;
+	std::cout << "min coner~~" << instance->minCorner.x << " " 
+								<< instance->minCorner.y << " " 
+								<< instance->minCorner.z << " " << std::endl;
+	std::cout << "max coner~~" << instance->maxCorner.x << " " 
+								<< instance->maxCorner.y << " " 
+								<< instance->maxCorner.z << " " << std::endl;
+	std::cout << "numMasses: " << instance->vertMass.rows() << std::endl;
+	std::cout << "numVolume: " << instance->tetVolume.rows() << std::endl;
+	std::cout << "numAreas: " << instance->triArea.rows() << std::endl;
+
+	double totalvertpos = 0.0;
+	for(int i = 0; i < instance->numVertices; i++) {
+		totalvertpos += instance->vertPos.row(i).x();
+	}
+	totalvertpos /= instance->numVertices;
+	std::cout << "totalvertpos~~~~~~~~~~" << totalvertpos << std::endl;
+
+
+
 
 }

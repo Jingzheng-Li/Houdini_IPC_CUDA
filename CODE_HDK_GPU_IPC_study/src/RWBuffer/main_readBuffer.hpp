@@ -27,6 +27,8 @@ protected:
     void initSIMPCG();
     void initSIMIPC();
 
+    void debugSIM();
+
 private:
 
     static const SIM_DopDescription* getDopDescription();
