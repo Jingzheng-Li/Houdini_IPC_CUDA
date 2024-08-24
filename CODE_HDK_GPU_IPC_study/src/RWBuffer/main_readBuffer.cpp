@@ -84,6 +84,8 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
+		debugSIM();
+
 		FIRSTFRAME::hou_initialized = true;
 	}
 
@@ -97,7 +99,7 @@ void GAS_Read_Buffer::loadSIMParams() {
 	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
 
 	instance->IPC_dt = 0.01;
-	instance->precondType = 0;
+	instance->precondType = 1;
 
 	instance->density = 1e3;
 	instance->YoungModulus = 1e5;
