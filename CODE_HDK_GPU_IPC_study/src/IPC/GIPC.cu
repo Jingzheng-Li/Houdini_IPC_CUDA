@@ -3932,7 +3932,7 @@ void _computeSoftConstraintGradientAndHessian(const double3* vertexes, const dou
     int pidx = atomicAdd(_gpNum, 1);
     H3x3[pidx] = Hpg;
     D1Index[pidx] = vInd;
-    //_environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
+    // _environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
 }
 
 
@@ -5291,8 +5291,6 @@ void GIPC::GroundCollisionDetect() {
 
 }
 
-
-
 void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     
     int numbers = m_softNum;
@@ -5794,7 +5792,7 @@ void calKineticGradient(double3* _vertexes, double3* _xTilta, double3* _gradient
 void calKineticEnergy(double3* _vertexes, double3* _xTilta, double3* _gradient, double* _masses, int numbers) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    _calKineticGradient << <blockNum, threadNum >> > (_vertexes, _xTilta, _gradient, _masses, numbers);
+    _calKineticEnergy << <blockNum, threadNum >> > (_vertexes, _xTilta, _gradient, _masses, numbers);
 }
 
 void calculate_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
@@ -5903,9 +5901,7 @@ void compute_H_b(double d, double dHat, double& H) {
 
 void GIPC::suggestKappa(double& kappa) {
     double H_b;
-    //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(m_bvh_f->scene.upper, m_bvh_f->scene.lower));
     compute_H_b(1.0e-16 * m_instance->bboxDiagSize2, m_instance->dHat, H_b);
-
     if (m_instance->meanMass == 0.0) {
         kappa = m_instance->minKappaCoef / (4.0e-16 * m_instance->bboxDiagSize2 * H_b);
     }
@@ -5914,17 +5910,13 @@ void GIPC::suggestKappa(double& kappa) {
     }
 }
 
-void GIPC::upperBoundKappa(double& kappa)
-{
+void GIPC::upperBoundKappa(double& kappa) {
     double H_b;
-    //double bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(m_bvh_f->scene.upper, m_bvh_f->scene.lower));//(maxConer - minConer).squaredNorm();
     compute_H_b(1.0e-16 * m_instance->bboxDiagSize2, m_instance->dHat, H_b);
     double kappaMax = 100 * m_instance->minKappaCoef * m_instance->meanMass / (4.0e-16 * m_instance->bboxDiagSize2 * H_b);
-    //printf("max Kappa: %f\n", kappaMax);
     if (m_instance->meanMass == 0.0) {
         kappaMax = 100 * m_instance->minKappaCoef / (4.0e-16 * m_instance->bboxDiagSize2 * H_b);
     }
-
     if (kappa > kappaMax) {
         kappa = kappaMax;
     }
@@ -5936,21 +5928,18 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
     if (h_cpNum[0] > 0) {
         double3* _GE = instance->cudaFb;
         double3* _gc = instance->cudaTempDouble3Mem;
-        //CUDA_SAFE_CALL(cudaMalloc((void**)&_gc, vertexNum * sizeof(double3)));
-        //CUDA_SAFE_CALL(cudaMalloc((void**)&_GE, vertexNum * sizeof(double3)));
         CUDA_SAFE_CALL(cudaMemset(_gc, 0, m_vertexNum * sizeof(double3)));
         CUDA_SAFE_CALL(cudaMemset(_GE, 0, m_vertexNum * sizeof(double3)));
         calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, _GE, instance->cudaVertMass, m_vertexNum);
         calculate_fem_gradient(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, instance->cudaTetVolume, _GE, m_tetrahedraNum, m_instance->lengthRate, m_instance->volumeRate, m_instance->IPC_dt);
-        //calculate_triangle_fem_gradient(instance->triDmInverses, instance->cudaVertPos, instance->triangles, instance->area, _GE, triangleNum, stretchStiff, shearStiff, IPC_dt);
+        // calculate_triangle_fem_gradient(instance->triDmInverses, instance->cudaVertPos, instance->triangles, instance->area, _GE, triangleNum, stretchStiff, shearStiff, IPC_dt);
         computeSoftConstraintGradient(_GE);
         computeGroundGradient(_gc,1);
         calBarrierGradient(_gc,1);
         double gsum = reduction2Kappa(0, _gc, _GE, m_pcg_data->mc_squeue, m_vertexNum);
         double gsnorm = reduction2Kappa(1, _gc, _GE, m_pcg_data->mc_squeue, m_vertexNum);
-        //CUDA_SAFE_CALL(cudaFree(_gc));
-        //CUDA_SAFE_CALL(cudaFree(_GE));
         double minKappa = -gsum / gsnorm;
+
         if (minKappa > 0.0) {
             m_instance->Kappa = minKappa;
         }
@@ -5960,8 +5949,6 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
         }
         upperBoundKappa(m_instance->Kappa);
     }
-
-    //printf("Kappa ====== %f\n", Kappa);
 }
 
 
@@ -6480,7 +6467,7 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     h_close_cpNum = 0;
     h_close_gpNum = 0;
 
-    m_isRotate = true;
+    m_isRotate = false;
     m_total_Cg_count = 0;
     m_maxCOllisionPairNum = 0;
     m_totalCollisionPairs = 0;
@@ -6554,9 +6541,10 @@ void GIPC::IPC_Solver() {
         buildCP();
     }
 
-
+    // calculate a lowerbound and upperbound of a kappa, mainly to keep stability of the system
     upperBoundKappa(m_instance->Kappa);
     if (m_instance->Kappa < 1e-16) {
+        // init Kappa, basically only active for 1st frame, to give you a first suggest kappa value.
         suggestKappa(m_instance->Kappa);
     }
     initKappa(m_instance);
@@ -6574,7 +6562,6 @@ void GIPC::IPC_Solver() {
 #endif
 
     m_animation_fullRate = m_animation_subRate;
-
 
     while (true) {
         tempMalloc_closeConstraint();
