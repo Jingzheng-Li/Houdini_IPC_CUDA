@@ -1114,7 +1114,7 @@ namespace FEMENERGY {
     }
 
     __global__
-    void _calculate_fem_gradient_hessian(
+    void _calculate_tetrahedra_fem_gradient_hessian(
         MATHUTILS::Matrix3x3d* DmInverses, 
         const double3* vertexes, 
         const uint4* tetrahedras,

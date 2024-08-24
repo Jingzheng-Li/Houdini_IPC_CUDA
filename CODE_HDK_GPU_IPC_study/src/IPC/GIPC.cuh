@@ -106,7 +106,7 @@ public:
 
 	double3* mc_targetVert;	
 	uint32_t* mc_targetInd;	
-	uint32_t m_softNum;
+	uint32_t m_softConsNum;
 	uint32_t m_triangleNum;
 
 	double3* mc_moveDir;

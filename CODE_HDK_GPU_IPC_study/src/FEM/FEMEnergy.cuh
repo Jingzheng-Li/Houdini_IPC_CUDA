@@ -83,7 +83,7 @@ namespace FEMENERGY {
     MATHUTILS::Matrix9x12d __computePFPX3D_9x12_double(const MATHUTILS::Matrix3x3d& InverseDm);
 
     __global__
-    void _calculate_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
+    void _calculate_tetrahedra_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
         MATHUTILS::Matrix12x12d* Hessians, uint32_t offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt);
 
     __global__

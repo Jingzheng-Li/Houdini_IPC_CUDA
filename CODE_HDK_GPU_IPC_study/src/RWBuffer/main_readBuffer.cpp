@@ -116,12 +116,11 @@ void GAS_Read_Buffer::loadSIMParams() {
 	// instance->stretchStiff = 0.0;
 	// instance->shearStiff = 0.0;
 
-
 	instance->clothDensity = 2e2;
 	instance->softMotionRate = 1e0;
 	instance->bendStiff = 3e-4;
 	instance->Newton_solver_threshold = 1e-1;
-	instance->pcg_threshold = 1e-3;
+	instance->pcg_threshold = 1e-3; // TODO: why threshold such large??
 	instance->relative_dhat = 1e-3;
 	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 
@@ -156,7 +155,7 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	auto &boundarytype = instance->boundaryTypies;
 	boundarytype.resize(num_points);
 	boundarytype.fill(0);
-	instance->softNum = 0;
+	instance->softConsNum = 0;
 
 
 	GA_ROHandleV3D velHandle(gdp, GA_ATTRIB_POINT, "v");
@@ -311,8 +310,8 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex); 
 	instance->numTriEdges = instance->triEdges.rows();
 
-	CUDAMallocSafe(instance->cudaTargetVert, instance->softNum);
-	CUDAMallocSafe(instance->cudaTargetIndex, instance->softNum);
+	CUDAMallocSafe(instance->cudaTargetVert, instance->softConsNum);
+	CUDAMallocSafe(instance->cudaTargetIndex, instance->softConsNum);
 
 	CUDAMallocSafe(instance->cudaTriDmInverses, instance->numTriElements);
 

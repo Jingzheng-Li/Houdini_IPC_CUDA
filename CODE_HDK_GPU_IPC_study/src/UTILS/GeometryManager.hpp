@@ -186,7 +186,7 @@ public:
     double relative_dhat;
     double fDhat;
 
-    uint32_t softNum;
+    uint32_t softConsNum;
     double3* cudaTargetVert;
     uint32_t* cudaTargetIndex;
 

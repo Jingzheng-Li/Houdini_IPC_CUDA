@@ -3969,13 +3969,13 @@ void _computeGroundGradientAndHessian(const double3* vertexes, const double* g_o
     if (idx >= number) return;
 
     double3 normal = *g_normal;
+    // only range for those collision points, if not collision at all, mesh points won't appear into this calculation at all
     int gidx = _environment_collisionPair[idx];
     double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
     double dist2 = dist * dist;
 
     double t = dist2 - dHat;
     double g_b = t * log(dist2 / dHat) * -2.0 - (t * t) / dist2;
-
     double H_b = (log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
 
     //printf("H_b   dist   g_b    is  %lf  %lf  %lf\n", H_b, dist2, g_b);
@@ -5292,7 +5292,7 @@ void GIPC::GroundCollisionDetect() {
 
 void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     
-    int numbers = m_softNum;
+    int numbers = m_softConsNum;
     if (numbers < 1) {
         CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
         return;
@@ -5300,7 +5300,7 @@ void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
     // offset
-    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_targetVert, mc_targetInd, _gradient, mc_gpNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->softMotionRate,m_animation_fullRate, m_softNum);
+    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (mc_vertexes, mc_targetVert, mc_targetInd, _gradient, mc_gpNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->softMotionRate,m_animation_fullRate, m_softConsNum);
     CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, mc_gpNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
@@ -5385,7 +5385,7 @@ void GIPC::computeGroundGradient(double3* _gradient, double mKappa) {
 }
 
 void GIPC::computeSoftConstraintGradient(double3* _gradient) {
-    int numbers = m_softNum;
+    int numbers = m_softConsNum;
 
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum; //
@@ -5397,7 +5397,7 @@ void GIPC::computeSoftConstraintGradient(double3* _gradient) {
         _gradient, 
         m_instance->softMotionRate, 
         m_animation_fullRate, 
-        m_softNum);
+        m_softConsNum);
 }
 
 double GIPC::self_largestFeasibleStepSize(double slackness, double* mqueue, int numbers) {
@@ -5794,13 +5794,13 @@ void calKineticEnergy(double3* _vertexes, double3* _xTilta, double3* _gradient, 
     _calKineticEnergy << <blockNum, threadNum >> > (_vertexes, _xTilta, _gradient, _masses, numbers);
 }
 
-void calculate_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
+void calculate_tetrahedra_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
     MATHUTILS::Matrix12x12d* Hessians, const uint32_t& offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
     int numbers = tetrahedraNum;
     if (numbers < 1) return;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    FEMENERGY::_calculate_fem_gradient_hessian <<<blockNum, threadNum>>> (DmInverses, vertexes, tetrahedras,
+    FEMENERGY::_calculate_tetrahedra_fem_gradient_hessian <<<blockNum, threadNum>>> (DmInverses, vertexes, tetrahedras,
         Hessians, offset, volume, gradient, tetrahedraNum, lenRate, volRate, IPC_dt);
 }
 
@@ -5954,7 +5954,7 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
 
 void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
 
-    // f = m * (x_tilta - x_prev) saved in cudaFb
+    // rhs = M * (x_tilta - (xn + dt*vn)))
     calKineticGradient(
         instance->cudaVertPos, 
         instance->cudaXTilta, 
@@ -5974,7 +5974,9 @@ void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance)
     calFrictionHessian(instance);
 #endif
 
-    calculate_fem_gradient_hessian(
+    // rhs += -dt^2 * vol * force
+    // lhs += dt^2 * H12x12
+    calculate_tetrahedra_fem_gradient_hessian(
         instance->cudaDmInverses, 
         instance->cudaVertPos, 
         instance->cudaTetElement, 
@@ -5989,15 +5991,43 @@ void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance)
 
     CUDA_SAFE_CALL(cudaMemcpy(m_BH->mc_D4Index + h_cpNum[4] + h_cpNum_last[4], instance->cudaTetElement, m_tetrahedraNum * sizeof(uint4),cudaMemcpyDeviceToDevice));
 
-    calculate_bending_gradient_hessian(instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, m_BH->mc_H12x12, m_BH->mc_D4Index, h_cpNum[4] + h_cpNum_last[4] + m_tetrahedraNum, instance->cudaFb, m_tri_edge_num, m_instance->bendStiff, m_instance->IPC_dt);
-
-    calculate_triangle_fem_gradient_hessian(instance->cudaTriDmInverses, instance->cudaVertPos, instance->cudaTriElement, m_BH->mc_H9x9, h_cpNum[3] + h_cpNum_last[3], instance->cudaTriArea, instance->cudaFb, m_triangleNum, m_instance->stretchStiff, m_instance->shearStiff, m_instance->IPC_dt);
+    // rhs += -dt^2 * area * force
+    // lhs += dt^2 * H9x9
+    calculate_triangle_fem_gradient_hessian(
+        instance->cudaTriDmInverses, 
+        instance->cudaVertPos, 
+        instance->cudaTriElement, 
+        m_BH->mc_H9x9, 
+        h_cpNum[3] + h_cpNum_last[3], 
+        instance->cudaTriArea, 
+        instance->cudaFb, 
+        m_triangleNum, 
+        m_instance->stretchStiff, 
+        m_instance->shearStiff, 
+        m_instance->IPC_dt);
+    
+    calculate_bending_gradient_hessian(
+        instance->cudaVertPos, 
+        instance->cudaRestVertPos, 
+        instance->cudaTriEdges, 
+        instance->cudaTriEdgeAdjVertex, 
+        m_BH->mc_H12x12, 
+        m_BH->mc_D4Index, 
+        h_cpNum[4] + h_cpNum_last[4] + m_tetrahedraNum, 
+        instance->cudaFb, 
+        m_tri_edge_num, 
+        m_instance->bendStiff, 
+        m_instance->IPC_dt);
 
     CUDA_SAFE_CALL(cudaMemcpy(m_BH->mc_D3Index + h_cpNum[3] + h_cpNum_last[3], instance->cudaTriElement, m_triangleNum * sizeof(uint3), cudaMemcpyDeviceToDevice));
 
     // calculate Ground gradient save in H3x3
     computeGroundGradientAndHessian(instance->cudaFb);
 
+    // TODO: loss of gravity?? maybe I can add gravity here to avoid slow drop down error??
+    // computeGravityGradientAndHessian();
+
+    // calcukate Soft Constraint Gradient and Hessian
     computeSoftConstraintGradientAndHessian(instance->cudaFb);
 
 }
@@ -6029,7 +6059,7 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         numbers = m_triangleNum;
     }
     else if (type == 9) {
-        numbers = m_softNum;
+        numbers = m_softConsNum;
     }
     else if (type == 10) {
         numbers = m_tri_edge_num;
@@ -6458,7 +6488,7 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     mc_groundOffset = instance->cudaGroundOffset;
 
 
-    m_softNum = instance->softNum;
+    m_softConsNum = instance->softConsNum;
     m_triangleNum = instance->numTriElements;
     m_vertexNum = instance->numVertices;
     m_surf_vertexNum = instance->numSurfVerts;
