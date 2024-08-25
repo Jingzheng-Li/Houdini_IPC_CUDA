@@ -3889,17 +3889,10 @@ __global__
 void _calKineticGradient(double3* vertexes, double3* xTilta, double3* gradient, double* masses, int numbers) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numbers) return;
-    // delta_x = x_prev - x_tilta
+    
+    // deltax = (x_guess - (xn + dt*vn + g*dt^2))
     double3 deltaX = MATHUTILS::__minus(vertexes[idx], xTilta[idx]); 
-    // gradient = mass * x_tital - x_prev)
-    gradient[idx] = make_double3(deltaX.x * masses[idx], deltaX.y * masses[idx], deltaX.z * masses[idx]);
-}
-
-__global__
-void _calKineticEnergy(double3* vertexes, double3* xTilta, double3* gradient, double* masses, int numbers) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numbers) return;
-    double3 deltaX = MATHUTILS::__minus(vertexes[idx], xTilta[idx]);
+    // gradient = M * deltax
     gradient[idx] = make_double3(deltaX.x * masses[idx], deltaX.y * masses[idx], deltaX.z * masses[idx]);
 }
 
@@ -5785,14 +5778,9 @@ void GIPC::calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManag
 void calKineticGradient(double3* _vertexes, double3* _xTilta, double3* _gradient, double* _masses, int numbers) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    _calKineticGradient << <blockNum, threadNum >> > (_vertexes, _xTilta, _gradient, _masses, numbers);
+    _calKineticGradient <<<blockNum, threadNum>>> (_vertexes, _xTilta, _gradient, _masses, numbers);
 }
 
-void calKineticEnergy(double3* _vertexes, double3* _xTilta, double3* _gradient, double* _masses, int numbers) {
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;
-    _calKineticEnergy << <blockNum, threadNum >> > (_vertexes, _xTilta, _gradient, _masses, numbers);
-}
 
 void calculate_tetrahedra_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
     MATHUTILS::Matrix12x12d* Hessians, const uint32_t& offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
@@ -6023,9 +6011,6 @@ void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance)
 
     // calculate Ground gradient save in H3x3
     computeGroundGradientAndHessian(instance->cudaFb);
-
-    // TODO: loss of gravity?? maybe I can add gravity here to avoid slow drop down error??
-    // computeGravityGradientAndHessian();
 
     // calcukate Soft Constraint Gradient and Hessian
     computeSoftConstraintGradientAndHessian(instance->cudaFb);

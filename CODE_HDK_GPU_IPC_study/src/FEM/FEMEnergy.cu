@@ -1422,7 +1422,8 @@ namespace FEMENERGY {
         return bend_energy;
     }
 
-    // x_tilta = x_prev + v*dt + 1/2*g*(dt)^2
+    // x_n+1 = xn + vn*dt + gravity * dt^2
+    // gravity here split from force, and multiply mass  
     __global__
     void _computeXTilta(int* _btype, double3* _velocities, double3* _o_vertexes, double3* _xTilta, double ipc_dt, double rate, int numbers) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -1430,8 +1431,6 @@ namespace FEMENERGY {
 
         double3 gravityDtSq = make_double3(0, 0, 0);
         if (_btype[idx] == 0) {
-            // why add 0.5 will be error???
-            // gravityDtSq = MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), 0.5 * ipc_dt * ipc_dt);
             gravityDtSq = MATHUTILS::__s_vec_multiply(make_double3(0, -9.8, 0), ipc_dt * ipc_dt);
         }
         _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq)); 
