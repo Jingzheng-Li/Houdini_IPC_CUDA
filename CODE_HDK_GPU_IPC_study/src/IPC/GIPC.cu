@@ -29,10 +29,9 @@ __global__
 void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {
     int idof = blockIdx.x * blockDim.x;
     int idx = threadIdx.x + idof;
-
     extern __shared__ double tep[];
-
     if (idx >= number) return;
+
     //int cfid = tid + CONFLICT_FREE_OFFSET(tid);
     double3 tempMove = _double3Dim[idx];
 
@@ -187,7 +186,6 @@ void _reduct_max_double(double* _double1Dim, int number) {
     double temp = _double1Dim[idx];
 
     __threadfence();
-
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
@@ -5832,16 +5830,10 @@ void calculate_triangle_fem_gradient(MATHUTILS::Matrix2x2d* triDmInverses, const
 }
 
 double calcMinMovement(const double3* _moveDir, double* _queue, const int& number) {
-
     int numbers = number;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-
     unsigned int sharedMsize = sizeof(double) * (threadNum >> 5);
-
-    /*double* _tempMinMovement;
-    CUDA_SAFE_CALL(cudaMalloc((void**)&_tempMinMovement, numbers * sizeof(double)));*/
-    //CUDA_SAFE_CALL(cudaMemcpy(_tempMinMovement, _moveDir, number * sizeof(AABB), cudaMemcpyDeviceToDevice));
 
     _reduct_max_double3_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, _queue, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -5859,7 +5851,7 @@ double calcMinMovement(const double3* _moveDir, double* _queue, const int& numbe
     //cudaMemcpy(_leafBoxes, _tempLeafBox, sizeof(AABB), cudaMemcpyDeviceToDevice);
     double minValue;
     cudaMemcpy(&minValue, _queue, sizeof(double), cudaMemcpyDeviceToHost);
-    //CUDA_SAFE_CALL(cudaFree(_tempMinMovement));
+
     return minValue;
 }
 
@@ -6335,27 +6327,29 @@ void GIPC::tempFree_closeConstraint() {
 
 int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
-    int iterCap = 10000, k = 0;
+    int iterCap = 10000, iterk = 0;
     CUDA_SAFE_CALL(cudaMemset(mc_moveDir, 0, m_vertexNum * sizeof(double3)));
 
     m_total_Cg_count = 0;
     m_totalCollisionPairs = 0;
 
-    for (; k < iterCap; ++k) {
+    for (; iterk < iterCap; ++iterk) {
 
         m_totalCollisionPairs += h_cpNum[0];
         
         m_BH->updateDNum(m_triangleNum, m_tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, m_tri_edge_num);
 
+        // calculate gradient gradx(g) and Hessian gradx^2(g)
         computeGradientAndHessian(instance);
 
         double distToOpt_PN = calcMinMovement(mc_moveDir, m_pcg_data->mc_squeue, m_vertexNum);
-
+        // line search iteration stop 
         bool gradVanish = (distToOpt_PN < sqrt(instance->Newton_solver_threshold * instance->Newton_solver_threshold * instance->bboxDiagSize2 * instance->IPC_dt * instance->IPC_dt));
-        if (k && gradVanish) {
+        if (iterk > 0 && gradVanish) {
             break;
         }
 
+        // solve PCG with MAS Preconditioner and get mc_moveDir (i.e. dx)
         m_total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], instance->precondType);
 
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
@@ -6396,12 +6390,12 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
     }
     
     printf("\n");
-    printf("Kappa: %f  iteration k:  %d \n", instance->Kappa, k);
+    printf("Kappa: %f  iteration k:  %d \n", instance->Kappa, iterk);
     std::cout << "m_total_Cg_count: " << m_total_Cg_count << std::endl;
     std::cout << "m_totalCollisionPairs: " << m_totalCollisionPairs << std::endl;
     printf("\n");
 
-    return k;
+    return iterk;
    
 }
 
