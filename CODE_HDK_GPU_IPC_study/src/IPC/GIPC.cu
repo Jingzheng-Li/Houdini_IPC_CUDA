@@ -6160,8 +6160,7 @@ bool edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, const
     return false;
 }
 
-bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance)
-{
+bool GIPC::checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance) {
     return edgeTriIntersectionQuery(m_bvh_e->mc_btype, instance->cudaVertPos, m_bvh_e->mc_edges, m_bvh_f->mc_faces, m_bvh_e->mc_boundVolumes, m_bvh_e->mc_nodes, m_instance->dHat, m_bvh_f->m_face_number);
 }
 
@@ -6185,12 +6184,10 @@ bool GIPC::checkGroundIntersection() {
 
 }
 
-bool GIPC::isIntersected(std::unique_ptr<GeometryManager>& instance)
-{
+bool GIPC::isIntersected(std::unique_ptr<GeometryManager>& instance) {
     if (checkGroundIntersection()) {
         return true;
     }
-
     if (checkEdgeTriIntersectionIfAny(instance)) {
         return true;
     }
