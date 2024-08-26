@@ -9,6 +9,7 @@ TODO:
 6. 把Integrator拆分出来 放到integrator中 最后的subsolverIP就从integrator中走 GIPC只提供对应的碰撞Hessian
 7. 解决空中形态就错误了的问题 可能能量有问题？？把碰撞能量项都先去掉 大概率是_calculate_triangle_fem_gradient_hessian能量错误
 8. 提供单边碰撞检测的方法
+9. BoundaryType能够决定是否是attach pin或soft 仔细看看stepForward的代码部分 有一个moveBoundary
 */
 
 

@@ -66,8 +66,8 @@ public:
     double Construct();
     AABB* getSceneSize();
     double ConstructFullCCD(const double3* moveDir, const double& alpha);
-    void SelfCollitionDetect(double dHat);
-    void SelfCollitionFullDetect(double dHat, const double3* moveDir, const double& alpha);
+    void SelfCollisionDetect(double dHat);
+    void SelfCollisionFullDetect(double dHat, const double3* moveDir, const double& alpha);
 
 public:
     uint3* mc_faces;
@@ -81,8 +81,8 @@ public:
     void init(int* _btype, double3* _mVerts, double3* _rest_vertexes, uint2* _mEdges, int4* _mCollisonPairs, int4* _ccd_mCollisonPairs, uint32_t* _mcpNum, int* _mMatIndex, const int& edgeNum, const int& vertNum);
     double Construct();
     double ConstructFullCCD(const double3* moveDir, const double& alpha);
-    void SelfCollitionDetect(double dHat);
-    void SelfCollitionFullDetect(double dHat, const double3* moveDir, const double& alpha);
+    void SelfCollisionDetect(double dHat);
+    void SelfCollisionFullDetect(double dHat, const double3* moveDir, const double& alpha);
 
 public:
     uint2* mc_edges;

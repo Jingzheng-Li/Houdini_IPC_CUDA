@@ -1442,25 +1442,25 @@ double LBVH_E::ConstructFullCCD(const double3* moveDir, const double& alpha) {
 }
 
 
-void LBVH_F::SelfCollitionDetect(double dHat) {
+void LBVH_F::SelfCollisionDetect(double dHat) {
 
 	selfQuery_vf(mc_btype, mc_vertexes, mc_faces, mc_surfVerts, mc_boundVolumes, mc_nodes, mc_collisionPair, mc_ccd_collisionPair, mc_cpNum, mc_MatIndex, dHat, m_vert_number);
 
 }
 
-void LBVH_E::SelfCollitionDetect(double dHat) {
+void LBVH_E::SelfCollisionDetect(double dHat) {
 
 	selfQuery_ee(mc_btype, mc_vertexes, mc_rest_vertexes, mc_edges, mc_boundVolumes, mc_nodes, mc_collisionPair, mc_ccd_collisionPair, mc_cpNum, mc_MatIndex, dHat, m_edge_number);
 
 }
 
-void LBVH_F::SelfCollitionFullDetect(double dHat, const double3* moveDir, const double& alpha) {
+void LBVH_F::SelfCollisionFullDetect(double dHat, const double3* moveDir, const double& alpha) {
 
 	fullCCDselfQuery_vf(mc_btype, mc_vertexes, moveDir, alpha, mc_faces, mc_surfVerts, mc_boundVolumes, mc_nodes, mc_ccd_collisionPair, mc_cpNum, dHat, m_vert_number);
 
 }
 
-void LBVH_E::SelfCollitionFullDetect(double dHat, const double3* moveDir, const double& alpha) {
+void LBVH_E::SelfCollisionFullDetect(double dHat, const double3* moveDir, const double& alpha) {
 
 	fullCCDselfQuery_ee(mc_btype, mc_vertexes, moveDir, alpha, mc_edges, mc_boundVolumes, mc_nodes, mc_ccd_collisionPair, mc_cpNum, dHat, m_edge_number);
 

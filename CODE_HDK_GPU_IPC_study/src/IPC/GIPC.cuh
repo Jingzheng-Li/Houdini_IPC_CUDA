@@ -50,7 +50,7 @@ public:
 
 	double cfl_largestSpeed(double* mqueue);
 
-	bool lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha);
+	void lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha);
 	void postLineSearch(std::unique_ptr<GeometryManager>& instance, double alpha);
 
 	bool checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance);

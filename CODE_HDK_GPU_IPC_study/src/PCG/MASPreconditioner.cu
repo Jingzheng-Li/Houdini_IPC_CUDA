@@ -1201,7 +1201,7 @@ __global__ void _buildCollisionConnection(unsigned int*     _pConnect,
     if(idx >= number)
         return;
     int4 MMCVIDI              = _collisionPair[idx];
-    int* collitionPairStartId = &(MMCVIDI.x);
+    int* collisionPairStartId = &(MMCVIDI.x);
     if(MMCVIDI.x >= 0)
     {
         if(MMCVIDI.w < 0)
@@ -1213,12 +1213,12 @@ __global__ void _buildCollisionConnection(unsigned int*     _pConnect,
         if(_pCoarseSpaceTable)
         {
             for(int i = 0; i < 4; i++)
-                cpVid[i] = _pCoarseSpaceTable[collitionPairStartId[i] + (level - 1) * vertNum];
+                cpVid[i] = _pCoarseSpaceTable[collisionPairStartId[i] + (level - 1) * vertNum];
         }
         else
         {
             for(int i = 0; i < 4; i++)
-                cpVid[i] = collitionPairStartId[i];
+                cpVid[i] = collisionPairStartId[i];
         }
 
         unsigned int connMsk[4] = {0};
@@ -1263,12 +1263,12 @@ __global__ void _buildCollisionConnection(unsigned int*     _pConnect,
                 {
                     for(int i = 0; i < 4; i++)
                         cpVid[i] =
-                            _pCoarseSpaceTable[collitionPairStartId[i] + (level - 1) * vertNum];
+                            _pCoarseSpaceTable[collisionPairStartId[i] + (level - 1) * vertNum];
                 }
                 else
                 {
                     for(int i = 0; i < 4; i++)
-                        cpVid[i] = collitionPairStartId[i];
+                        cpVid[i] = collisionPairStartId[i];
                 }
 
                 unsigned int connMsk[4] = {0};
@@ -1303,12 +1303,12 @@ __global__ void _buildCollisionConnection(unsigned int*     _pConnect,
                 {
                     for(int i = 0; i < 2; i++)
                         cpVid[i] =
-                            _pCoarseSpaceTable[collitionPairStartId[i] + (level - 1) * vertNum];
+                            _pCoarseSpaceTable[collisionPairStartId[i] + (level - 1) * vertNum];
                 }
                 else
                 {
                     for(int i = 0; i < 2; i++)
-                        cpVid[i] = collitionPairStartId[i];
+                        cpVid[i] = collisionPairStartId[i];
                 }
 
                 unsigned int connMsk[2] = {0};
@@ -1349,12 +1349,12 @@ __global__ void _buildCollisionConnection(unsigned int*     _pConnect,
                 {
                     for(int i = 0; i < 4; i++)
                         cpVid[i] =
-                            _pCoarseSpaceTable[collitionPairStartId[i] + (level - 1) * vertNum];
+                            _pCoarseSpaceTable[collisionPairStartId[i] + (level - 1) * vertNum];
                 }
                 else
                 {
                     for(int i = 0; i < 4; i++)
-                        cpVid[i] = collitionPairStartId[i];
+                        cpVid[i] = collisionPairStartId[i];
                 }
 
                 unsigned int connMsk[4] = {0};
@@ -1389,12 +1389,12 @@ __global__ void _buildCollisionConnection(unsigned int*     _pConnect,
                 {
                     for(int i = 0; i < 3; i++)
                         cpVid[i] =
-                            _pCoarseSpaceTable[collitionPairStartId[i] + (level - 1) * vertNum];
+                            _pCoarseSpaceTable[collisionPairStartId[i] + (level - 1) * vertNum];
                 }
                 else
                 {
                     for(int i = 0; i < 3; i++)
-                        cpVid[i] = collitionPairStartId[i];
+                        cpVid[i] = collisionPairStartId[i];
                 }
 
                 unsigned int connMsk[3] = {0};
@@ -1430,12 +1430,12 @@ __global__ void _buildCollisionConnection(unsigned int*     _pConnect,
             {
                 for(int i = 0; i < 4; i++)
                     cpVid[i] =
-                        _pCoarseSpaceTable[collitionPairStartId[i] + (level - 1) * vertNum];
+                        _pCoarseSpaceTable[collisionPairStartId[i] + (level - 1) * vertNum];
             }
             else
             {
                 for(int i = 0; i < 4; i++)
-                    cpVid[i] = collitionPairStartId[i];
+                    cpVid[i] = collisionPairStartId[i];
             }
 
             unsigned int connMsk[4] = {0};

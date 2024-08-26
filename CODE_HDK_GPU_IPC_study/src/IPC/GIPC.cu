@@ -4286,6 +4286,7 @@ void _reduct_min_groundTimeStep_to_double(const double3* vertexes, const uint32_
     int idof = blockIdx.x * blockDim.x;
     int idx = threadIdx.x + idof;
 
+    // array shared inside threads
     extern __shared__ double tep[];
 
     if (idx >= number) return;
@@ -4293,16 +4294,11 @@ void _reduct_min_groundTimeStep_to_double(const double3* vertexes, const uint32_
     double temp = 1.0;
     double3 normal = *g_normal;
     double coef = MATHUTILS::__v_vec_dot(normal, moveDir[svI]);
-    if (coef > 0.0) {
-        double dist = MATHUTILS::__v_vec_dot(normal, vertexes[svI]) - *g_offset;//normal
-        temp = coef / (dist * slackness);
-        //printf("%f\n", temp);
+    if (coef > 0.0) { // means point moving close to ground
+        double dist = MATHUTILS::__v_vec_dot(normal, vertexes[svI]) - *g_offset; // projected dist along normal
+        temp = coef / (dist * slackness); // after tempsubstep point will arrive ground
     }
-    /*if (blockIdx.x == 4) {
-        printf("%f\n", temp);
-    }
-    __syncthreads();*/
-    //printf("%f\n", temp);
+
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
     int warpNum;
@@ -4335,7 +4331,7 @@ void _reduct_min_groundTimeStep_to_double(const double3* vertexes, const uint32_
         }
     }
     if (threadIdx.x == 0) {
-        minStepSizes[blockIdx.x] = temp;
+        minStepSizes[blockIdx.x] = temp; // find minist step size for each thread block
         //printf("%f   %d\n", temp, blockIdx.x);
     }
 
@@ -4393,7 +4389,7 @@ void _reduct_min_InjectiveTimeStep_to_double(const double3* vertexes, const uint
 }
 
 __global__
-void _reduct_min_selfTimeStep_to_double(const double3* vertexes, const int4* _ccd_collitionPairs, const double3* moveDir, double* minStepSizes, double slackness, int number) {
+void _reduct_min_selfTimeStep_to_double(const double3* vertexes, const int4* _ccd_collisionPairs, const double3* moveDir, double* minStepSizes, double slackness, int number) {
     int idof = blockIdx.x * blockDim.x;
     int idx = threadIdx.x + idof;
 
@@ -4403,7 +4399,7 @@ void _reduct_min_selfTimeStep_to_double(const double3* vertexes, const int4* _cc
     double temp = 1.0;
     double CCDDistRatio = 1.0 - slackness;
 
-    int4 MMCVIDI = _ccd_collitionPairs[idx];
+    int4 MMCVIDI = _ccd_collisionPairs[idx];
 
     if (MMCVIDI.x < 0) {
         MMCVIDI.x = -MMCVIDI.x - 1;
@@ -5510,7 +5506,6 @@ double GIPC::ground_largestFeasibleStepSize(double slackness, double* mqueue) {
     //}
     _reduct_min_groundTimeStep_to_double << <blockNum, threadNum, sharedMsize >> > (mc_vertexes, mc_surfVerts, mc_groundOffset, mc_groundNormal, mc_moveDir, mqueue, slackness, numbers);
 
-
     numbers = blockNum;
     blockNum = (numbers + threadNum - 1) / threadNum;
 
@@ -5566,10 +5561,10 @@ void GIPC::buildCP() {
     CUDA_SAFE_CALL(cudaMemset(mc_gpNum, 0, sizeof(uint32_t)));
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     //m_bvh_f->Construct();
-    m_bvh_f->SelfCollitionDetect(m_instance->dHat);
+    m_bvh_f->SelfCollisionDetect(m_instance->dHat);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     //m_bvh_e->Construct();
-    m_bvh_e->SelfCollitionDetect(m_instance->dHat);
+    m_bvh_e->SelfCollisionDetect(m_instance->dHat);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     GroundCollisionDetect();
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -5584,8 +5579,8 @@ void GIPC::buildFullCP(const double& alpha) {
 
     CUDA_SAFE_CALL(cudaMemset(mc_cpNum, 0, sizeof(uint32_t)));
 
-    m_bvh_f->SelfCollitionFullDetect(m_instance->dHat, mc_moveDir, alpha);
-    m_bvh_e->SelfCollitionFullDetect(m_instance->dHat, mc_moveDir, alpha);
+    m_bvh_f->SelfCollisionFullDetect(m_instance->dHat, mc_moveDir, alpha);
+    m_bvh_e->SelfCollisionFullDetect(m_instance->dHat, mc_moveDir, alpha);
 
     CUDA_SAFE_CALL(cudaMemcpy(&h_ccd_cpNum, mc_cpNum, sizeof(uint32_t), cudaMemcpyDeviceToHost));
 }
@@ -6202,9 +6197,8 @@ bool GIPC::isIntersected(std::unique_ptr<GeometryManager>& instance)
     return false;
 }
 
-bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha) {
+void GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha) {
 
-    bool stopped = false;
     //buildCP();
     double lastEnergyVal = computeEnergy(instance);
     double c1m = 0.0;
@@ -6218,13 +6212,14 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
     stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, mc_moveDir, instance->cudaBoundaryType, alpha, false, m_vertexNum);
 
     buildBVH();
-    //buildCP();
-    //if (h_cpNum[0] > 0) system("pause");
+
+    // if (h_cpNum[0] > 0) system("pause");
     int numOfIntersect = 0;
     int insectNum = 0;
 
     bool checkInterset = true;
-
+    // if under all ACCD/Ground/CFL defined alpha, still intersection happens
+    // then we return back to alpha/2 util find collision free alpha 
     while (checkInterset && isIntersected(instance)) {
         printf("type 0 intersection happened:  %d\n", insectNum);
         insectNum++;
@@ -6246,21 +6241,19 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
     //double temp_c1m = c1m;
     std::cout.precision(18);
     while ((testingE > lastEnergyVal + c1m * alpha) && alpha > 1e-3 * LFStepSize) {
-        //printf("testE:    %f      lastEnergyVal:        %f         clm*alpha:    %f\n", testingE, lastEnergyVal, c1m * alpha);
-        //std::cout <<numOfLineSearch<<  "   testE:    " << testingE << "      lastEnergyVal:        " << lastEnergyVal << std::endl;
+        printf("Enery not drop down, testE:%f, lastEnergyVal:%f, clm*alpha:%f\n", testingE, lastEnergyVal, c1m * alpha);
         alpha /= 2.0;
         ++numOfLineSearch;
-
         stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, mc_moveDir, instance->cudaBoundaryType, alpha, false, m_vertexNum);
-
         buildBVH();
         buildCP();
         testingE = computeEnergy(instance);
     }
-
-    if (numOfLineSearch > 8)
-        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! numOfLineSearch: %d\n", numOfLineSearch);
+    if (numOfLineSearch > 8) {
+        printf("!!!!!!!!!!!!! energy raise for %d times of numOfLineSearch\n", numOfLineSearch);
+    }
         
+    // if alpha fails down in past process, then check again will there be intersection again
     if (alpha < LFStepSize) {
         bool needRecomputeCS = false;
         while (checkInterset && isIntersected(instance)) {
@@ -6277,10 +6270,8 @@ bool GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
             buildCP();
         }
     }
-    //printf("    lineSearch time step:  %f\n", alpha);
+    printf("lineSearch time step:  %f\n", alpha);
 
-
-    return stopped;
 }
 
 
@@ -6366,15 +6357,16 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
         ccd_size = 0.6;
 #endif
 
+        // build BVH tree of type ccd, get collision pairs num h_ccd_cpNum, 
+        // if h_ccd_cpNum > 0, means there will be collision in temp_alpha substep
         buildBVH_FULLCCD(temp_alpha);
         buildFullCP(temp_alpha);
         if (h_ccd_cpNum > 0) {
+            // obtain max velocity of moveDir
             double maxSpeed = cfl_largestSpeed(m_pcg_data->mc_squeue);
             alpha_CFL = sqrt(instance->dHat) / maxSpeed * 0.5;
             alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
             if (temp_alpha > 2 * alpha_CFL) {
-                /*buildBVH_FULLCCD(temp_alpha);
-                buildFullCP(temp_alpha);*/
                 alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, h_ccd_cpNum) * ccd_size);
                 alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
             }
@@ -6382,7 +6374,7 @@ int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
         //printf("alpha:  %f\n", alpha);
 
-        bool isStop = lineSearch(instance, alpha, alpha_CFL);
+        lineSearch(instance, alpha, alpha_CFL);
         postLineSearch(instance, alpha);
 
         CUDA_SAFE_CALL(cudaDeviceSynchronize());
