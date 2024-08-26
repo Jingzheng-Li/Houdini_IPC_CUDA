@@ -523,7 +523,7 @@ void GAS_Read_Buffer::initSIMPCG() {
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
 	// init BH_ptr
-	if (instance->BH_ptr) {
+	if (!instance->BH_ptr) {
 		instance->BH_ptr = std::make_unique<BHessian>();
 	}
 	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numTetElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
@@ -608,8 +608,5 @@ void GAS_Read_Buffer::debugSIM() {
 	}
 	totalvertpos /= instance->numVertices;
 	std::cout << "totalvertpos~~~~~~~~~~" << totalvertpos << std::endl;
-
-
-
 
 }
