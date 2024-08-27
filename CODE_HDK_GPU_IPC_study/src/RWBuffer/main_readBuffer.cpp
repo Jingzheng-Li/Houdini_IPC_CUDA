@@ -122,7 +122,7 @@ void GAS_Read_Buffer::loadSIMParams() {
 	instance->pcg_threshold = 1e-3;
 	instance->relative_dhat = 1e-3;
 	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
-	instance->bendStiff = 1e-3; // TODO: bound is extremely small in the previous expression, find a true expression
+	instance->bendStiff = 1e-3; // TODO: bound is extremely small in the previous expression, find a correct expression
 
 	instance->animation = false;
 	instance->collision_detection_buff_scale = 1;
@@ -155,7 +155,7 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	auto &boundarytype = instance->boundaryTypies;
 	boundarytype.resize(num_points);
 	boundarytype.fill(0);
-	instance->softConsNum = 0;
+	instance->softConsNum = 0; // soft constraint
 
 
 	GA_ROHandleV3D velHandle(gdp, GA_ATTRIB_POINT, "v");
