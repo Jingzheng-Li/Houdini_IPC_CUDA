@@ -572,11 +572,12 @@ void GAS_Read_Buffer::initSIMIPC() {
     if (!instance->GIPC_ptr) {
         instance->GIPC_ptr = std::make_unique<GIPC>(instance);
     }
-	instance->GIPC_ptr->buildCP();
+	// instance->GIPC_ptr->buildCP();
 
 	if (!instance->Integrator_ptr) {
 		instance->Integrator_ptr = std::make_unique<ImplicitIntegrator>(instance);
 	}
+	instance->Integrator_ptr->buildCP();
 
 }
 

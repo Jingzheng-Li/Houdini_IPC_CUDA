@@ -1,5 +1,6 @@
 
 #include "main_Intergrator.hpp"
+#include "ImplicitIntergrator.cuh"
 
 const SIM_DopDescription* GAS_CUDA_Intergrator::getDopDescription() {
     static PRM_Template templateList[] = {
@@ -32,10 +33,16 @@ bool GAS_CUDA_Intergrator::solveGasSubclass(SIM_Engine& engine,
                                         SIM_Time time,
                                         SIM_Time timestep) {
 
-
-    std::cout << "time ~~~~~~~" << time << std::endl;
-
-    std::cout << "run intergrator here~~~~~~~~" << std::endl;
+    IPC_Solver();
 
     return true;
+}
+
+void GAS_CUDA_Intergrator::IPC_Solver() {
+    auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "GAS_CUDA_Intergrator IPC_Solver geoinstance not initialized");
+    CHECK_ERROR(instance->Integrator_ptr, "GAS_CUDA_Intergrator IPC_Solver Integrator_ptr not initialized");
+
+    instance->Integrator_ptr->IPC_Solver();
+
 }

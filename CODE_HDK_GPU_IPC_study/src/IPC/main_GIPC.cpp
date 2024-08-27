@@ -71,19 +71,18 @@ bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,
     std::cout << "collisionVels~~~~~~~~" << collisionVels.row(0).x() << " " << collisionVels.row(0).y() << " " << collisionVels.row(0).z() << std::endl;
 
     
-
-    IPC_Solver();
+    // IPC_Solver();
 
     return true;
 }
 
 void GAS_CUDA_GIPC::IPC_Solver() {
-    auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "IPC_Solver geoinstance not initialized");
-    CHECK_ERROR(instance->GIPC_ptr, "IPC_Solver GIPC_ptr not initialized");
+    // auto &instance = GeometryManager::instance;
+	// CHECK_ERROR(instance, "IPC_Solver geoinstance not initialized");
+    // CHECK_ERROR(instance->GIPC_ptr, "IPC_Solver GIPC_ptr not initialized");
 
 
-    instance->GIPC_ptr->IPC_Solver();
+    // instance->GIPC_ptr->IPC_Solver();
     
 }
 

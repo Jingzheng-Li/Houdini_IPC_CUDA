@@ -20,6 +20,8 @@ protected:
     void transferPTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp);
     void transferDTAttribTOHoudini(SIM_GeometryCopy *geo, GU_Detail *gdp);
 
+protected:
+    void IPC_Solver();
 
 private:
 
