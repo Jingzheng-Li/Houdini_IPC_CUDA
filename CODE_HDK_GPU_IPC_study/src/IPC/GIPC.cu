@@ -6236,7 +6236,7 @@ void GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
     int numOfLineSearch = 0;
     double LFStepSize = alpha;
     //double temp_c1m = c1m;
-    std::cout.precision(18);
+
     while ((testingE > lastEnergyVal + c1m * alpha) && alpha > 1e-3 * LFStepSize) {
         printf("Enery not drop down, testE:%f, lastEnergyVal:%f, clm*alpha:%f\n", testingE, lastEnergyVal, c1m * alpha);
         alpha /= 2.0;
@@ -6314,6 +6314,8 @@ void GIPC::tempFree_closeConstraint() {
 
 
 int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
+
+    std::cout.precision(18);
 
     int iterCap = 10000, iterk = 0;
     CUDA_SAFE_CALL(cudaMemset(mc_moveDir, 0, m_vertexNum * sizeof(double3)));
@@ -6489,6 +6491,10 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
 
 
 GIPC::~GIPC() {
+    CUDA_FREE_GIPC();
+}
+
+void GIPC::CUDA_FREE_GIPC() {
     mc_vertexes = nullptr;
     mc_rest_vertexes = nullptr;
     mc_faces = nullptr;
@@ -6508,9 +6514,7 @@ GIPC::~GIPC() {
     mc_close_gpNum = nullptr;
     mc_groundNormal = nullptr;
     mc_groundOffset = nullptr;
-
 }
-
 
 
 void GIPC::IPC_Solver() {

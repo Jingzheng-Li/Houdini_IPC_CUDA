@@ -10,6 +10,7 @@
 #include "PCG/PCGSolver.cuh"
 #include "FEMEnergy.cuh"
 #include "IPC/GIPC.cuh"
+#include "INTEGRATOR/ImplicitIntergrator.cuh"
 
 namespace FIRSTFRAME {
 	static bool hou_initialized = false;
@@ -572,6 +573,10 @@ void GAS_Read_Buffer::initSIMIPC() {
         instance->GIPC_ptr = std::make_unique<GIPC>(instance);
     }
 	instance->GIPC_ptr->buildCP();
+
+	if (!instance->Integrator_ptr) {
+		instance->Integrator_ptr = std::make_unique<ImplicitIntegrator>(instance);
+	}
 
 }
 

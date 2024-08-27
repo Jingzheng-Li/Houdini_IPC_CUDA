@@ -15,6 +15,8 @@ public:
 	GIPC(std::unique_ptr<GeometryManager>& instance);
 	~GIPC();
 
+	void CUDA_FREE_GIPC();
+
 	void tempMalloc_closeConstraint();
 	void tempFree_closeConstraint();
 

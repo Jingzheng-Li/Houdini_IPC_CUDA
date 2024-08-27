@@ -4,6 +4,7 @@
 #include "LBVH/LBVH.cuh"
 #include "PCG/PCGSolver.cuh"
 #include "IPC/GIPC.cuh"
+#include "INTEGRATOR/ImplicitIntergrator.cuh"
 
 std::unique_ptr<GeometryManager> GeometryManager::instance = nullptr;
 
@@ -87,6 +88,13 @@ void GeometryManager::freeCUDAptr() {
     if (instance->PCGData_ptr) {
         instance->PCGData_ptr->CUDA_FREE_PCGDATA();
         instance->PCGData_ptr.reset();
+    }
+    if (instance->GIPC_ptr) {
+        instance->GIPC_ptr->CUDA_FREE_GIPC();
+        instance->GIPC_ptr.reset();
+    }
+    if (instance->Integrator_ptr) {
+        instance->Integrator_ptr.reset();
     }
 
 }

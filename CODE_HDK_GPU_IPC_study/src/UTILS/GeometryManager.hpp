@@ -18,6 +18,7 @@ class BHessian;
 class MASPreconditioner;
 class PCGData;
 class GIPC;
+class ImplicitIntegrator;
 
 class GeometryManager {
 public:
@@ -31,13 +32,13 @@ private:
 
 public:
 
-    // std::unique_ptr<AABB> AABB_SceneSize_ptr;
     std::unique_ptr<LBVH_F> LBVH_F_ptr;
     std::unique_ptr<LBVH_E> LBVH_E_ptr;
     std::unique_ptr<BHessian> BH_ptr;
     std::unique_ptr<MASPreconditioner> MAS_ptr;
     std::unique_ptr<PCGData> PCGData_ptr;
     std::unique_ptr<GIPC> GIPC_ptr;
+    std::unique_ptr<ImplicitIntegrator> Integrator_ptr;
 
 public:
     static std::unique_ptr<GeometryManager> instance;
