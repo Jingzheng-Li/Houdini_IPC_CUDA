@@ -261,9 +261,14 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x2d Fvu = MATHUTILS::__M3x2_M2x2_Multiply(F, vu);
         double utv = MATHUTILS::__v2_vec_multiply(u, v);
 
+        MATHUTILS::Matrix3x2d PEPF_stretch = MATHUTILS::__Mat3x2_add(
+            MATHUTILS::__S_Mat3x2_multiply(Fuu, 2 * ucoeff), 
+            MATHUTILS::__S_Mat3x2_multiply(Fvv, 2 * vcoeff));
         MATHUTILS::Matrix3x2d PEPF_shear = MATHUTILS::__S_Mat3x2_multiply(MATHUTILS::__Mat3x2_add(Fuv, Fvu), 2 * (I6 - utv));
-        MATHUTILS::Matrix3x2d PEPF_stretch = MATHUTILS::__Mat3x2_add(MATHUTILS::__S_Mat3x2_multiply(Fuu, 2 * ucoeff), MATHUTILS::__S_Mat3x2_multiply(Fvv, 2 * vcoeff));
-        MATHUTILS::Matrix3x2d PEPF = MATHUTILS::__Mat3x2_add(MATHUTILS::__S_Mat3x2_multiply(PEPF_shear, shearStiff), MATHUTILS::__S_Mat3x2_multiply(PEPF_stretch, stretchStiff));
+        
+        MATHUTILS::Matrix3x2d PEPF = MATHUTILS::__Mat3x2_add(
+            MATHUTILS::__S_Mat3x2_multiply(PEPF_stretch, stretchStiff), 
+            MATHUTILS::__S_Mat3x2_multiply(PEPF_shear, shearStiff));
         
         return PEPF;
 
@@ -1215,9 +1220,10 @@ namespace FEMENERGY {
             atomicAdd(&(gradient[triangles[idx].z].z), f.v[8]);
         }
 
-        MATHUTILS::Matrix6x6d Hq = MATHUTILS::__s_M6x6_Multiply(__project_BaraffWitkinStretch_H(F), stretchStiff);
-
-        MATHUTILS::__Mat_add(Hq, MATHUTILS::__s_M6x6_Multiply(__project_BaraffWitkinShear_H(F), shearhStiff), Hq);
+        MATHUTILS::Matrix6x6d Hq_stretch = MATHUTILS::__s_M6x6_Multiply(__project_BaraffWitkinStretch_H(F), stretchStiff);
+        MATHUTILS::Matrix6x6d Hq_shear = MATHUTILS::__s_M6x6_Multiply(__project_BaraffWitkinShear_H(F), shearhStiff);
+        MATHUTILS::Matrix6x6d Hq;
+        MATHUTILS::__Mat_add(Hq_stretch, Hq_shear, Hq);
 
         MATHUTILS::Matrix9x6d M9x6_temp = MATHUTILS::__M9x6_M6x6_Multiply(PFPXTranspose, Hq);
         MATHUTILS::Matrix9x9d H = MATHUTILS::__M9x6_M6x9_Multiply(M9x6_temp, PFPX);

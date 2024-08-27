@@ -118,11 +118,11 @@ void GAS_Read_Buffer::loadSIMParams() {
 
 	instance->clothDensity = 2e2;
 	instance->softMotionRate = 1e0;
-	instance->bendStiff = 3e-4;
 	instance->Newton_solver_threshold = 1e-1;
-	instance->pcg_threshold = 1e-3; // TODO: why threshold such large??
+	instance->pcg_threshold = 1e-3;
 	instance->relative_dhat = 1e-3;
-	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
+	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
+	instance->bendStiff = 1e-3; // TODO: bound is extremely small in the previous expression, find a true expression
 
 	instance->animation = false;
 	instance->collision_detection_buff_scale = 1;
