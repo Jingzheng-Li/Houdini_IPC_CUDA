@@ -34,7 +34,7 @@ namespace FEMENERGY {
     MATHUTILS::Matrix3x3d __computePEPF_StableNHK3D_double(const MATHUTILS::Matrix3x3d& F, const MATHUTILS::Matrix3x3d& Sigma, const MATHUTILS::Matrix3x3d& U, const MATHUTILS::Matrix3x3d& V, double lengthRate, double volumRate);
     
     __device__
-    MATHUTILS::Matrix3x2d __computePEPF_BaraffWitkinStretch_double(const MATHUTILS::Matrix3x2d& F, double stretchStiff, double shearStiff);
+    MATHUTILS::Matrix3x2d __computePEPF_BaraffWitkinStretchShear_double(const MATHUTILS::Matrix3x2d& F, double stretchStiff, double shearStiff);
     
     __device__ 
     MATHUTILS::Matrix3x3d __computePEPF_Aniostropic3D_double(const MATHUTILS::Matrix3x3d& F, double3 fiber_direction, const double& scale, const double& contract_length);

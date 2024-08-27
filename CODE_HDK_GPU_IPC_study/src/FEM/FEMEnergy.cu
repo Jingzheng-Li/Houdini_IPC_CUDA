@@ -232,7 +232,7 @@ namespace FEMENERGY {
     }
 
     __device__
-    MATHUTILS::Matrix3x2d __computePEPF_BaraffWitkinStretch_double(const MATHUTILS::Matrix3x2d& F, double stretchStiff, double shearStiff) {
+    MATHUTILS::Matrix3x2d __computePEPF_BaraffWitkinStretchShear_double(const MATHUTILS::Matrix3x2d& F, double stretchStiff, double shearStiff) {
 
         double2 u, v;
         u.x = 1; u.y = 0;
@@ -264,6 +264,7 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x2d PEPF_shear = MATHUTILS::__S_Mat3x2_multiply(MATHUTILS::__Mat3x2_add(Fuv, Fvu), 2 * (I6 - utv));
         MATHUTILS::Matrix3x2d PEPF_stretch = MATHUTILS::__Mat3x2_add(MATHUTILS::__S_Mat3x2_multiply(Fuu, 2 * ucoeff), MATHUTILS::__S_Mat3x2_multiply(Fvv, 2 * vcoeff));
         MATHUTILS::Matrix3x2d PEPF = MATHUTILS::__Mat3x2_add(MATHUTILS::__S_Mat3x2_multiply(PEPF_shear, shearStiff), MATHUTILS::__S_Mat3x2_multiply(PEPF_stretch, stretchStiff));
+        
         return PEPF;
 
     }
@@ -1196,7 +1197,7 @@ namespace FEMENERGY {
         MATHUTILS::Matrix3x2d Ds;
         __calculateDs2D_double(vertexes, triangles[idx], Ds);
         MATHUTILS::Matrix3x2d F = MATHUTILS::__M3x2_M2x2_Multiply(Ds, trimInverses[idx]);
-        MATHUTILS::Matrix3x2d PEPF = __computePEPF_BaraffWitkinStretch_double(F, stretchStiff, shearhStiff);
+        MATHUTILS::Matrix3x2d PEPF = __computePEPF_BaraffWitkinStretchShear_double(F, stretchStiff, shearhStiff);
         MATHUTILS::Vector6 pepf = MATHUTILS::__Mat3x2_to_vec6_double(PEPF);
 
         MATHUTILS::Matrix9x6d PFPXTranspose = MATHUTILS::__Transpose6x9(PFPX);
@@ -1237,7 +1238,7 @@ namespace FEMENERGY {
         __calculateDs2D_double(vertexes, triangles[idx], Ds);
         MATHUTILS::Matrix3x2d F = MATHUTILS::__M3x2_M2x2_Multiply(Ds, trimInverses[idx]);
 
-        MATHUTILS::Matrix3x2d PEPF = __computePEPF_BaraffWitkinStretch_double(F, stretchStiff, shearhStiff);
+        MATHUTILS::Matrix3x2d PEPF = __computePEPF_BaraffWitkinStretchShear_double(F, stretchStiff, shearhStiff);
 
         MATHUTILS::Vector6 pepf = MATHUTILS::__Mat3x2_to_vec6_double(PEPF);
 
