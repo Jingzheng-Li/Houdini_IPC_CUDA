@@ -1450,6 +1450,56 @@ namespace FEMENERGY {
         _computeXTilta <<<blockNum, threadNum>>> (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
     }
 
+    void calculate_triangle_fem_gradient_hessian(MATHUTILS::Matrix2x2d* triDmInverses, const double3* vertexes, const uint3* triangles,
+        MATHUTILS::Matrix9x9d* Hessians, const uint32_t& offset, const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearStiff, double IPC_dt) {
+        int numbers = triangleNum;
+        if (numbers < 1) return;
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum;
+        FEMENERGY::_calculate_triangle_fem_gradient_hessian << <blockNum, threadNum >> > (triDmInverses, vertexes, triangles,
+            Hessians, offset, area, gradient, triangleNum, stretchStiff, shearStiff, IPC_dt);
+    }
+
+    void calculate_bending_gradient_hessian(const double3* vertexes, const double3* rest_vertexes, const uint2* edges, const uint2* edges_adj_vertex,
+        MATHUTILS::Matrix12x12d* Hessians, uint4* Indices, const uint32_t& offset, double3* gradient, int edgeNum, double bendStiff, double IPC_dt) {
+        int numbers = edgeNum;
+        if (numbers < 1) return;
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum;
+        FEMENERGY::_calculate_bending_gradient_hessian << <blockNum, threadNum >> > (vertexes, rest_vertexes, edges, edges_adj_vertex,
+            Hessians, Indices, offset, gradient, edgeNum, bendStiff, IPC_dt);
+    }
+
+
+    void calculate_tetrahedra_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
+        MATHUTILS::Matrix12x12d* Hessians, const uint32_t& offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt) {
+        int numbers = tetrahedraNum;
+        if (numbers < 1) return;
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum;
+        _calculate_tetrahedra_fem_gradient_hessian <<<blockNum, threadNum>>> (DmInverses, vertexes, tetrahedras,
+            Hessians, offset, volume, gradient, tetrahedraNum, lenRate, volRate, IPC_dt);
+    }
+
+    void calculate_fem_gradient(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
+        const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double dt) {
+        int numbers = tetrahedraNum;
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum;
+        _calculate_fem_gradient << <blockNum, threadNum >> > (DmInverses, vertexes, tetrahedras,
+            volume, gradient, tetrahedraNum, lenRate, volRate, dt);
+    }
+
+    void calculate_triangle_fem_gradient(MATHUTILS::Matrix2x2d* triDmInverses, const double3* vertexes, const uint3* triangles,
+        const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearStiff, double IPC_dt) {
+        int numbers = triangleNum;
+        if (numbers < 1) return;
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum;
+        _calculate_triangle_fem_gradient << <blockNum, threadNum >> > (triDmInverses, vertexes, triangles,
+            area, gradient, triangleNum, stretchStiff, shearStiff, IPC_dt);
+    }
+
 
 }; // namespace FEMENERGY
 

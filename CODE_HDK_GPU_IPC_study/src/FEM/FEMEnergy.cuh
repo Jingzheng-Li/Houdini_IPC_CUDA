@@ -103,5 +103,20 @@ namespace FEMENERGY {
 
     void computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate);
 
+    void calculate_triangle_fem_gradient_hessian(MATHUTILS::Matrix2x2d* triDmInverses, const double3* vertexes, const uint3* triangles,
+    MATHUTILS::Matrix9x9d* Hessians, const uint32_t& offset, const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearStiff, double IPC_dt);
+
+    void calculate_bending_gradient_hessian(const double3* vertexes, const double3* rest_vertexes, const uint2* edges, const uint2* edges_adj_vertex,
+    MATHUTILS::Matrix12x12d* Hessians, uint4* Indices, const uint32_t& offset, double3* gradient, int edgeNum, double bendStiff, double IPC_dt);
+
+    void calculate_tetrahedra_fem_gradient_hessian(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
+    MATHUTILS::Matrix12x12d* Hessians, const uint32_t& offset, const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double IPC_dt);
+
+    void calculate_fem_gradient(MATHUTILS::Matrix3x3d* DmInverses, const double3* vertexes, const uint4* tetrahedras,
+    const double* volume, double3* gradient, int tetrahedraNum, double lenRate, double volRate, double dt);
+
+    void calculate_triangle_fem_gradient(MATHUTILS::Matrix2x2d* triDmInverses, const double3* vertexes, const uint3* triangles,
+    const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearStiff, double IPC_dt);
+
 } // namespace FEMENERGY
 

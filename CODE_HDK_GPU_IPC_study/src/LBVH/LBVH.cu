@@ -7,6 +7,7 @@
 
 #include "UTILS/MathUtils.cuh"
 
+
 // merge two AABB boundaries
 __device__ __host__ 
 inline AABB merge(const AABB& lhs, const AABB& rhs) noexcept {
@@ -1516,5 +1517,3 @@ void LBVH::CUDA_FREE_LBVH() {
 	CUDAFreeSafe(mc_tempLeafBox);
 	CUDAFreeSafe(mc_flags);
 }
-
-

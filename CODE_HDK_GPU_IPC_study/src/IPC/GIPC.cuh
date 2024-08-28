@@ -23,11 +23,20 @@ public:
 	void buildCP();
 	void buildFullCP(const double& alpha);
 	void buildBVH();
-
 	void buildBVH_FULLCCD(const double& alpha);
-
 	void GroundCollisionDetect();
+	bool checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance);
+	bool isIntersected(std::unique_ptr<GeometryManager>& instance);
+	bool checkGroundIntersection();
+
+	void computeCloseGroundVal();
+	void computeSelfCloseVal();
+	bool checkCloseGroundVal();
+	bool checkSelfCloseVal();
+	double2 minMaxGroundDist();
+	double2 minMaxSelfDist();
 	
+
     void calBarrierGradientAndHessian(double3* _gradient, double mKappa);
 	void calBarrierHessian();
 	void calBarrierGradient(double3* _gradient, double mKap);
@@ -40,33 +49,19 @@ public:
 	void computeGroundGradient(double3* _gradient, double mKap);
 	void computeSoftConstraintGradientAndHessian(double3* _gradient);
 	void computeSoftConstraintGradient(double3* _gradient);
-	double computeEnergy(std::unique_ptr<GeometryManager>& instance);
 
+	double computeEnergy(std::unique_ptr<GeometryManager>& instance);
 	double Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryManager>& instance);
 
 	double ground_largestFeasibleStepSize(double slackness, double* mqueue);
-
 	double self_largestFeasibleStepSize(double slackness, double* mqueue, int numbers);
-
 	double InjectiveStepSize(double slackness, double errorRate, double* mqueue, uint4* tets);
-
 	double cfl_largestSpeed(double* mqueue);
 
 	void lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha);
 	void postLineSearch(std::unique_ptr<GeometryManager>& instance, double alpha);
 
-	bool checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance);
-	bool isIntersected(std::unique_ptr<GeometryManager>& instance);
-	bool checkGroundIntersection();
 
-	void computeCloseGroundVal();
-	void computeSelfCloseVal();
-
-	bool checkCloseGroundVal();
-	bool checkSelfCloseVal();
-
-	double2 minMaxGroundDist();
-	double2 minMaxSelfDist();
 
 	void updateVelocities(std::unique_ptr<GeometryManager>& instance);
 	void updateBoundary(std::unique_ptr<GeometryManager>& instance, double alpha);
