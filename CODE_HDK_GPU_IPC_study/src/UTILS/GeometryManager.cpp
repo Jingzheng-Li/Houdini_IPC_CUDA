@@ -77,6 +77,9 @@ void GeometryManager::freeCUDAptr() {
         instance->LBVH_F_ptr->CUDA_FREE_LBVH();
         instance->LBVH_F_ptr.reset();
     }
+    if (instance->LBVH_EF_ptr) {
+        instance->LBVH_EF_ptr.reset();
+    }
     if (instance->BH_ptr) {
         instance->BH_ptr->CUDA_FREE_BHESSIAN();
         instance->BH_ptr.reset();

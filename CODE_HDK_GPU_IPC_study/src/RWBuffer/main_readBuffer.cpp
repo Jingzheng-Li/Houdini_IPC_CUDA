@@ -462,6 +462,9 @@ void GAS_Read_Buffer::initSIMBVH() {
 	if (!instance->LBVH_E_ptr) {
 		instance->LBVH_E_ptr = std::make_unique<LBVH_E>();
 	}
+	if (!instance->LBVH_EF_ptr) {
+		instance->LBVH_EF_ptr = std::make_unique<LBVH_EF>();
+	}
 
 	instance->LBVH_E_ptr->init(
 		instance->cudaBoundaryType,

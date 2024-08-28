@@ -25,9 +25,9 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 //         updateBoundaryMoveDir(m_instance, alpha);
 //         buildBVH_FULLCCD(alpha);
 //         buildFullCP(alpha);
-//         if (h_ccd_cpNum > 0) {
+//         if (m_ccd_cpNum > 0) {
 //             double slackness_m = 0.8;
-//             alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, h_ccd_cpNum));
+//             alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, m_ccd_cpNum));
 //         }
 //         updateBoundary(m_instance, alpha);
 //         CUDA_SAFE_CALL(cudaMemcpy(
@@ -60,13 +60,13 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 
 
 // #ifdef USE_FRICTION
-//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
-//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_distCoord, h_cpNum[0] * sizeof(double2)));
-//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
-//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
-//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_MatIndex_last, h_cpNum[0] * sizeof(int)));
-//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
-//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
+//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar, m_cpNum[0] * sizeof(double)));
+//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_distCoord, m_cpNum[0] * sizeof(double2)));
+//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_tanBasis, m_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
+//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH, m_cpNum[0] * sizeof(int4)));
+//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_MatIndex_last, m_cpNum[0] * sizeof(int)));
+//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar_gd, m_gpNum * sizeof(double)));
+//     CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH_gd, m_gpNum * sizeof(uint32_t)));
 //     buildFrictionSets();
 // #endif
 
@@ -89,7 +89,7 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 //         bool finishMotion = m_animation_fullRate > 0.99 ? true : false;
 
 //         if (finishMotion) {
-//             if ((h_cpNum[0] + h_gpNum) > 0) {
+//             if ((m_cpNum[0] + m_gpNum) > 0) {
 
 //                 if (minDist < m_instance->dTol) {
 //                     tempFree_closeConstraint();
@@ -123,13 +123,13 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 //         CUDA_SAFE_CALL(cudaFree(mc_lambda_lastH_scalar_gd));
 //         CUDA_SAFE_CALL(cudaFree(mc_collisonPairs_lastH_gd));
 
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar, h_cpNum[0] * sizeof(double)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_distCoord, h_cpNum[0] * sizeof(double2)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_tanBasis, h_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH, h_cpNum[0] * sizeof(int4)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_MatIndex_last, h_cpNum[0] * sizeof(int)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar_gd, h_gpNum * sizeof(double)));
-//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH_gd, h_gpNum * sizeof(uint32_t)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar, m_cpNum[0] * sizeof(double)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_distCoord, m_cpNum[0] * sizeof(double2)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_tanBasis, m_cpNum[0] * sizeof(MATHUTILS::Matrix3x2d)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH, m_cpNum[0] * sizeof(int4)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_MatIndex_last, m_cpNum[0] * sizeof(int)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_lambda_lastH_scalar_gd, m_gpNum * sizeof(double)));
+//         CUDA_SAFE_CALL(cudaMalloc((void**)&mc_collisonPairs_lastH_gd, m_gpNum * sizeof(uint32_t)));
 //         buildFrictionSets();
 // #endif
 //     }
@@ -166,9 +166,9 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 
 //     for (; iterk < iterCap; ++iterk) {
 
-//         m_totalCollisionPairs += h_cpNum[0];
+//         m_totalCollisionPairs += m_cpNum[0];
         
-//         m_BH->updateDNum(m_triangleNum, m_tetrahedraNum, h_cpNum + 1, h_cpNum_last + 1, m_tri_edge_num);
+//         m_BH->updateDNum(m_triangleNum, m_tetrahedraNum, m_cpNum + 1, m_cpNum_last + 1, m_tri_edge_num);
 
 //         // calculate gradient gradx(g) and Hessian gradx^2(g)
 //         computeGradientAndHessian(instance);
@@ -181,13 +181,13 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 //         }
 
 //         // solve PCG with MAS Preconditioner and get mc_moveDir (i.e. dx)
-//         m_total_Cg_count += calculateMovingDirection(instance, h_cpNum[0], instance->precondType);
+//         m_total_Cg_count += calculateMovingDirection(instance, m_cpNum[0], instance->precondType);
 
 //         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 
 //         alpha = MATHUTILS::__m_min(alpha, ground_largestFeasibleStepSize(slackness_a, m_pcg_data->mc_squeue));
 //         // alpha = MATHUTILS::__m_min(alpha, InjectiveStepSize(0.2, 1e-6, m_pcg_data->mc_squeue, instance->cudaTetElement));
-//         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, h_cpNum[0]));
+//         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, m_cpNum[0]));
         
 //         double temp_alpha = alpha;
 //         double alpha_CFL = alpha;
@@ -197,17 +197,17 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 //         ccd_size = 0.6;
 // #endif
 
-//         // build BVH tree of type ccd, get collision pairs num h_ccd_cpNum, 
-//         // if h_ccd_cpNum > 0, means there will be collision in temp_alpha substep
+//         // build BVH tree of type ccd, get collision pairs num m_ccd_cpNum, 
+//         // if m_ccd_cpNum > 0, means there will be collision in temp_alpha substep
 //         buildBVH_FULLCCD(temp_alpha);
 //         buildFullCP(temp_alpha);
-//         if (h_ccd_cpNum > 0) {
+//         if (m_ccd_cpNum > 0) {
 //             // obtain max velocity of moveDir
 //             double maxSpeed = cfl_largestSpeed(m_pcg_data->mc_squeue);
 //             alpha_CFL = sqrt(instance->dHat) / maxSpeed * 0.5;
 //             alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
 //             if (temp_alpha > 2 * alpha_CFL) {
-//                 alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, h_ccd_cpNum) * ccd_size);
+//                 alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, m_ccd_cpNum) * ccd_size);
 //                 alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
 //             }
 //         }
@@ -248,7 +248,7 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 
 //     buildBVH();
 
-//     // if (h_cpNum[0] > 0) system("pause");
+//     // if (m_cpNum[0] > 0) system("pause");
 //     int numOfIntersect = 0;
 //     int insectNum = 0;
 
@@ -266,7 +266,7 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 //     }
 
 //     buildCP();
-//     //if (h_cpNum[0] > 0) system("pause");
+//     //if (m_cpNum[0] > 0) system("pause");
 
 //     //buildCollisionSets(mesh, sh, gd, true);
 //     double testingE = computeEnergy(instance);

@@ -1493,6 +1493,160 @@ void LBVH::GroundCollisionDetect(const double3* _vertexes, const uint32_t* _surf
 
 
 
+__device__
+bool segTriIntersect(const double3& ve0, const double3& ve1,
+    const double3& vt0, const double3& vt1, const double3& vt2) {
+
+    //printf("check for tri and lines\n");
+
+    MATHUTILS::Matrix3x3d coefMtr;
+    double3 col0 = MATHUTILS::__minus(vt1, vt0);
+    double3 col1 = MATHUTILS::__minus(vt2, vt0);
+    double3 col2 = MATHUTILS::__minus(ve0, ve1);
+
+    MATHUTILS::__set_Mat_val_column(coefMtr, col0, col1, col2);
+
+    double3 n = MATHUTILS::__v_vec_cross(col0, col1);
+    if (MATHUTILS::__v_vec_dot(n, MATHUTILS::__minus(ve0, vt0)) * MATHUTILS::__v_vec_dot(n, MATHUTILS::__minus(ve1, vt0)) > 0) {
+        return false;
+    }
+
+    double det = MATHUTILS::__Determiant(coefMtr);
+
+    if (abs(det) < 1e-20) {
+        return false;
+    }
+
+    MATHUTILS::Matrix3x3d D1, D2, D3;
+    double3 b = MATHUTILS::__minus(ve0, vt0);
+
+    MATHUTILS::__set_Mat_val_column(D1, b, col1, col2);
+    MATHUTILS::__set_Mat_val_column(D2, col0, b, col2);
+    MATHUTILS::__set_Mat_val_column(D3, col0, col1, b);
+
+    double uvt[3];
+    uvt[0] = MATHUTILS::__Determiant(D1) / det;
+    uvt[1] = MATHUTILS::__Determiant(D2) / det;
+    uvt[2] = MATHUTILS::__Determiant(D3) / det;
+
+    if (uvt[0] >= 0.0 && uvt[1] >= 0.0 && uvt[0] + uvt[1] <= 1.0 && uvt[2] >= 0.0 && uvt[2] <= 1.0) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+__device__ __host__
+inline bool _overlap(const AABB& lhs, const AABB& rhs, const double& gapL) noexcept {
+    if ((rhs.m_lower.x - lhs.m_upper.x) >= gapL || (lhs.m_lower.x - rhs.m_upper.x) >= gapL) return false;
+    if ((rhs.m_lower.y - lhs.m_upper.y) >= gapL || (lhs.m_lower.y - rhs.m_upper.y) >= gapL) return false;
+    if ((rhs.m_lower.z - lhs.m_upper.z) >= gapL || (lhs.m_lower.z - rhs.m_upper.z) >= gapL) return false;
+    return true;
+}
+
+__global__
+void _edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, const uint2* _edges, const uint3* _faces, const AABB* _edge_bvs, const Node* _edge_nodes, int* _isIntesect, double dHat, int number) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= number) return;
+
+    uint32_t  stack[64];
+    uint32_t* stack_ptr = stack;
+    *stack_ptr++ = 0;
+
+    uint3 face = _faces[idx];
+    //idx = idx + number - 1;
+
+    AABB _bv;
+
+    double3 _v = _vertexes[face.x];
+    _bv.combines(_v.x, _v.y, _v.z);
+    _v = _vertexes[face.y];
+    _bv.combines(_v.x, _v.y, _v.z);
+    _v = _vertexes[face.z];
+    _bv.combines(_v.x, _v.y, _v.z);
+
+    //uint32_t self_eid = _edge_nodes[idx].element_idx;
+    //double instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(_edge_bvs[0].upper, _edge_bvs[0].lower));
+    //printf("%f\n", instance->bboxDiagSize2);
+    double gapl = 0;//sqrt(dHat);
+    //double dHat = gapl * gapl;// *instance->bboxDiagSize2;
+
+    do {
+        const uint32_t node_id = *--stack_ptr;
+        const uint32_t L_idx = _edge_nodes[node_id].m_left_idx;
+        const uint32_t R_idx = _edge_nodes[node_id].m_right_idx;
+
+        if (_overlap(_bv, _edge_bvs[L_idx], gapl))
+        {
+            const auto obj_idx = _edge_nodes[L_idx].m_element_idx;
+            if (obj_idx != 0xFFFFFFFF)
+            {
+                if (!(face.x == _edges[obj_idx].x || face.x == _edges[obj_idx].y || face.y == _edges[obj_idx].x || face.y == _edges[obj_idx].y || face.z == _edges[obj_idx].x || face.z == _edges[obj_idx].y)) {
+                    if (!(_btype[face.x] >= 2 && _btype[face.y] >= 2 && _btype[face.z] >= 2 && _btype[_edges[obj_idx].x] >= 2 && _btype[_edges[obj_idx].y] >= 2))
+                        if (segTriIntersect(_vertexes[_edges[obj_idx].x], _vertexes[_edges[obj_idx].y], _vertexes[face.x], _vertexes[face.y], _vertexes[face.z])) {
+                            //atomicAdd(_isIntesect, -1);
+                            *_isIntesect=-1;
+                            printf("tri: %d %d %d,  edge: %d  %d\n", face.x, face.y, face.z, _edges[obj_idx].x, _edges[obj_idx].y);
+                            return;
+                        }
+                }
+
+            }
+            else // the node is not a leaf.
+            {
+                *stack_ptr++ = L_idx;
+            }
+        }
+        if (_overlap(_bv, _edge_bvs[R_idx], gapl))
+        {
+            const auto obj_idx = _edge_nodes[R_idx].m_element_idx;
+            if (obj_idx != 0xFFFFFFFF)
+            {
+                if (!(face.x == _edges[obj_idx].x || face.x == _edges[obj_idx].y || face.y == _edges[obj_idx].x || face.y == _edges[obj_idx].y || face.z == _edges[obj_idx].x || face.z == _edges[obj_idx].y)) {
+                    if (!(_btype[face.x] >= 2 && _btype[face.y] >= 2 && _btype[face.z] >= 2 && _btype[_edges[obj_idx].x] >= 2 && _btype[_edges[obj_idx].y] >= 2))
+                        if (segTriIntersect(_vertexes[_edges[obj_idx].x], _vertexes[_edges[obj_idx].y], _vertexes[face.x], _vertexes[face.y], _vertexes[face.z])) {
+                            //atomicAdd(_isIntesect, -1);
+                            *_isIntesect=-1;
+                            printf("tri: %d %d %d,  edge: %d  %d\n", face.x, face.y, face.z, _edges[obj_idx].x, _edges[obj_idx].y);
+                            return;
+                        }
+                }
+
+            }
+            else // the node is not a leaf.
+            {
+                *stack_ptr++ = R_idx;
+            }
+        }
+    } while (stack < stack_ptr);
+}
+
+
+bool LBVH_EF::edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, const uint2* _edges, const uint3* _faces, const AABB* _edge_bvs, const Node* _edge_nodes, double dHat, int number) {
+	int numbers = number;
+    const unsigned int threadNum = default_threads;
+    int blockNum = (numbers + threadNum - 1) / threadNum;
+    int* _isIntersect;
+    CUDA_SAFE_CALL(cudaMalloc((void**)&_isIntersect, sizeof(int)));
+    CUDA_SAFE_CALL(cudaMemset(_isIntersect, 0, sizeof(int)));
+
+    _edgeTriIntersectionQuery << <blockNum, threadNum >> > (_btype, _vertexes, _edges, _faces, _edge_bvs, _edge_nodes, _isIntersect, dHat, numbers);
+
+    int h_isITST;
+    cudaMemcpy(&h_isITST, _isIntersect, sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_SAFE_CALL(cudaFree(_isIntersect));
+    if (h_isITST < 0) {
+        return true;
+    }
+    return false;
+}
+
+bool LBVH_EF::checkEdgeTriIntersectionIfAny(const double3* _vertexes, double dHat) {
+	return edgeTriIntersectionQuery(LBVH_E::mc_btype, _vertexes, LBVH_E::mc_edges, LBVH_F::mc_faces, LBVH_E::mc_boundVolumes, LBVH_E::mc_nodes, dHat, LBVH_F::m_face_number);
+}
+
+
 ///////////////////
 // CUDA MALLOC
 ///////////////////

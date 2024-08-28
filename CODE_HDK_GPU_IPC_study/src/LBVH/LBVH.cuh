@@ -91,3 +91,11 @@ public:
 
 };
 
+class LBVH_EF : public LBVH_E, public LBVH_F {
+public:
+    bool edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, const uint2* _edges, const uint3* _faces, const AABB* _edge_bvs, const Node* _edge_nodes, double dHat, int number);
+
+    bool checkEdgeTriIntersectionIfAny(const double3* _vertexes, double dHat);
+
+};
+

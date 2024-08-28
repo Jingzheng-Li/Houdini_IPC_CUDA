@@ -25,7 +25,7 @@ public:
 	void buildBVH();
 	void buildBVH_FULLCCD(const double& alpha);
 	void GroundCollisionDetect();
-	bool checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance);
+	// bool checkEdgeTriIntersectionIfAny(std::unique_ptr<GeometryManager>& instance);
 	bool isIntersected(std::unique_ptr<GeometryManager>& instance);
 	bool checkGroundIntersection();
 
@@ -89,53 +89,54 @@ public:
 	std::unique_ptr<GeometryManager>& m_instance;
     std::unique_ptr<LBVH_F>& m_bvh_f;
     std::unique_ptr<LBVH_E>& m_bvh_e;
+	std::unique_ptr<LBVH_EF>& m_bvh_ef;
     std::unique_ptr<PCGData>& m_pcg_data;
     std::unique_ptr<BHessian>& m_BH;
 
 
 
-	double3* mc_vertexes;
-	double3* mc_rest_vertexes;
-	uint3* mc_faces;
-	uint2* mc_edges;
-	uint32_t* mc_surfVerts;
+	// double3* mc_vertexes;
+	// double3* mc_rest_vertexes;
+	// uint3* mc_faces;
+	// uint2* mc_edges;
+	// uint32_t* mc_surfVerts;
 
 
-	double3* mc_targetVert;	
-	uint32_t* mc_targetInd;	
+	// double3* mc_targetVert;	
+	// uint32_t* mc_targetInd;	
 	uint32_t m_softConsNum;
 	uint32_t m_triangleNum;
 
-	double3* mc_moveDir;
+	// double3* mc_moveDir;
 
-	int4* mc_collisonPairs;
-	int4* mc_ccd_collisonPairs;
-	uint32_t* mc_cpNum;
-	uint32_t* mc_close_cpNum;
-	int* mc_MatIndex;
+	// int4* mc_collisonPairs;
+	// int4* mc_ccd_collisonPairs;
+	// uint32_t* mc_cpNum;
+	// uint32_t* mc_close_cpNum;
+	// int* mc_MatIndex;
 
-	uint32_t* mc_environment_collisionPair;
+	// uint32_t* mc_environment_collisionPair;
 
 	uint32_t* mc_closeConstraintID;
 	double* mc_closeConstraintVal;
 	int4* mc_closeMConstraintID;
 	double* mc_closeMConstraintVal;
 
-	uint32_t* mc_gpNum;
-	uint32_t* mc_close_gpNum;
+	// uint32_t* mc_gpNum;
+	// uint32_t* mc_close_gpNum;
 
-	uint32_t h_cpNum[5];
-	uint32_t h_ccd_cpNum;
-	uint32_t h_gpNum;
-	uint32_t h_close_cpNum;
-	uint32_t h_close_gpNum;
-	uint32_t h_gpNum_last;
-	uint32_t h_cpNum_last[5];
+	uint32_t m_cpNum[5];
+	uint32_t m_ccd_cpNum;
+	uint32_t m_gpNum;
+	uint32_t m_close_cpNum;
+	uint32_t m_close_gpNum;
+	uint32_t m_gpNum_last;
+	uint32_t m_cpNum_last[5];
 
 
 
-	double3* mc_groundNormal;
-	double* mc_groundOffset;
+	// double3* mc_groundNormal;
+	// double* mc_groundOffset;
 
 	// for friction
 	double* mc_lambda_lastH_scalar;

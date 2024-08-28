@@ -14,6 +14,7 @@ struct Node;
 class AABB;
 class LBVH_E;
 class LBVH_F;
+class LBVH_EF;
 class BHessian;
 class MASPreconditioner;
 class PCGData;
@@ -34,6 +35,7 @@ public:
 
     std::unique_ptr<LBVH_F> LBVH_F_ptr;
     std::unique_ptr<LBVH_E> LBVH_E_ptr;
+    std::unique_ptr<LBVH_EF> LBVH_EF_ptr;
     std::unique_ptr<BHessian> BH_ptr;
     std::unique_ptr<MASPreconditioner> MAS_ptr;
     std::unique_ptr<PCGData> PCGData_ptr;
@@ -127,7 +129,6 @@ public:
     // cpnum[3] = cps of pe
     // cpnum[4] = cps of pt
     uint32_t* cudaCPNum; // collision pair [5]
-
     uint32_t* cudaGPNum; // ground pair
     uint32_t* cudaCloseGPNum; // close ground pair
     uint32_t* cudaCloseCPNum; // close collision pair
@@ -191,6 +192,13 @@ public:
     double3* cudaTargetVert;
     uint32_t* cudaTargetIndex;
 
+    uint32_t cpNum[5];
+	uint32_t ccdCpNum;
+	uint32_t gpNum;
+	uint32_t closeCpNum;
+	uint32_t closeGpNum;
+	uint32_t gpNumLast;
+	uint32_t cpNumLast[5];
 
 };
 
