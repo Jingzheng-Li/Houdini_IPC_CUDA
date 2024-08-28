@@ -38,7 +38,7 @@ public:
 	
 
     void calBarrierGradientAndHessian(double3* _gradient, double mKappa);
-	void calBarrierHessian();
+	// void calBarrierHessian();
 	void calBarrierGradient(double3* _gradient, double mKap);
 	void calFrictionHessian(std::unique_ptr<GeometryManager>& instance);
 	void calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManager>& instance);

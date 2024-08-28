@@ -342,6 +342,11 @@ int _dType_EE(const double3& v0, const double3& v1, const double3& v2, const dou
 
 // check point triangle intersection condtion, get distance
 // save relative infos include cpNum ccdpair cdpair mInx
+// collisionPairs = (id0, idx1, id2, id3) encoded with
+// [+,+,+,+] edge-edge; [-,+,+,+] point-triangle; [-,+,+,#] point-edge;
+// [-,+,#,#] point point
+// close to parallel special case encoded with
+// [+,-,+,+] edge-edge; [-,-,+,-] point-edge; [-,-,-,-] point-point
 __device__ 
 inline bool _checkPTintersection(const double3* _vertexes, const uint32_t& id0, const uint32_t& id1, const uint32_t& id2, const uint32_t& id3, const double& dHat, uint32_t* _cpNum, int* _mInx, int4* _collisionPair, int4* _ccd_collisionPair) noexcept {
 
