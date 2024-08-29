@@ -109,6 +109,9 @@ public:
     Eigen::MatrixX2i triEdgeAdjVertex;
     uint2* cudaTriEdgeAdjVertex;
 
+    Eigen::MatrixX3d collisionSurfVert;
+    Eigen::MatrixX3i collisionSurfFace;
+    Eigen::MatrixX2i collisionSurfEdge;
 
     double3* cudaOriginVertPos;
     double3* cudaRestVertPos;
