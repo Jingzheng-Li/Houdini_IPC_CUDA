@@ -32,46 +32,41 @@ bool GAS_CUDA_Intergrator::solveGasSubclass(SIM_Engine& engine,
                                         SIM_Time time,
                                         SIM_Time timestep) {
 
-
+    transferDynamicCollisionToCUDA(object);
 
     return true;
 }
 
 
-// void GAS_CUDA_Intergrator::transferDynamicCollisionToCUDA(SIM_Object* object) {
+void GAS_CUDA_Intergrator::transferDynamicCollisionToCUDA(SIM_Object* object) {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+    CHECK_ERROR(instance->collisionSurfVert.rows()!=0, "collision objects not initialized");
 
-// 	auto &instance = GeometryManager::instance;
-// 	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+    SIM_ConstObjectArray colaffectors;
+	object->getConstAffectors(colaffectors, "SIM_RelationshipCollide");
+    CHECK_ERROR(colaffectors.entries() == 2, "houdini scene static object is not correct, we only allow one static object exists");
+	
+	// colaffector(0) will be our collsion geometry
+	const SIM_Geometry* collidegeo = SIM_DATA_GETCONST(*colaffectors(0), SIM_GEOMETRY_DATANAME, SIM_Geometry);
+	CHECK_ERROR(collidegeo != nullptr, "collidegeo is nullptr right now");
+	GU_DetailHandleAutoReadLock readlock(collidegeo->getGeometry());
+	const GU_Detail *collidegdp = readlock.getGdp();
+	CHECK_ERROR(!collidegdp->isEmpty(), "not get any collision objects gdp");
 
-//     SIM_ConstObjectArray colaffectors;
-// 	object->getConstAffectors(colaffectors, "SIM_RelationshipCollide");
-//     instance->collisionSurfFace.setZero();
-//     int num_colobjects = 0;
-    
-//     // assume that we have multiple "static objects" in Dop network
-//     for (exint colaffector = 0; colaffector < colaffectors.entries(); ++colaffector) {
-// 		if (colaffectors(colaffector) == object) continue;
-// 		const SIM_Geometry* colgeo = SIM_DATA_GETCONST(*colaffectors(colaffector), SIM_GEOMETRY_DATANAME, SIM_Geometry);
-// 		if (colgeo == nullptr) continue;
+    CHECK_ERROR(collidegdp->getNumPoints()==instance->collisionSurfVert.rows(), "new collide geo topology has changed somehow");
+	instance->collisionSurfVert.setZero();
 
-//         GU_DetailHandleAutoReadLock readlock(colgeo->getGeometry());
-//         const GU_Detail *colgdp = readlock.getGdp();
-//         CHECK_ERROR(!colgdp->isEmpty(), "not get any collision objects gdp");
+	GA_Offset ptoff;
+	int ptidx = 0;
+	GA_FOR_ALL_PTOFF(collidegdp, ptoff) {
+        UT_Vector3D pos3 = collidegdp->getPos3D(ptoff);
+        instance->collisionSurfVert.row(ptidx) << pos3.x(), pos3.y(), pos3.z();
+		ptidx++;
+	}
+	CHECK_ERROR(ptidx==collidegdp->getNumPoints(), "Failed to get all collision points");
 
-//         GA_Offset ptoff;
-//         int ptidx = 0;
-//         GA_FOR_ALL_PTOFF(colgdp, ptoff) {
-//             UT_Vector3D pos3 = colgdp->getPos3D(ptoff);
-//             instance->collisionSurfFace.row(ptidx) << pos3.x(), pos3.y(), pos3.z();
-//             ptidx++;
-//         }
-//         CHECK_ERROR(ptidx==colgdp->getNumPoints(), "Failed to get all collision points");
-//         num_colobjects += ptidx;
-//     }
-//     CHECK_ERROR(num_colobjects==instance->collisionSurfFace.rows(), "new collision objects have somehow changed it topology");
+    // std::cout << "colliefsf " << instance->collisionSurfVert.row(instance->collisionSurfVert.rows()-1) << std::endl;
 
-//     MatrixX3
-//     std::cout << "collisionVerts~~~~~~~~" <<  << " " << collisionVerts.row(0).x() << " " << collisionVerts.row(0).y() << " " << collisionVerts.row(0).z() << std::endl;
-
-// }
+}
 

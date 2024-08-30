@@ -11,16 +11,16 @@ const static int default_threads = 256;
 
 #define CHECK_ERROR(cond, msg) \
     if (!(cond)) { \
-        std::cerr << msg << std::endl; \
+        std::cerr << "\033[1;31m" << msg << "\033[0m" << std::endl; \
         return; \
     }
 
 #define CUDA_SAFE_CALL(err) cuda_safe_call_(err, __FILE__, __LINE__)
 inline void cuda_safe_call_(cudaError_t err, const char* file_name, const int num_line) {
     if (cudaSuccess != err) {
-        std::cerr << file_name << "[" << num_line << "]: "
+        std::cerr << "\033[1;31m" << file_name << "[" << num_line << "]: "
                   << "CUDA Runtime API error[" << static_cast<int>(err) << "]: "
-                  << cudaGetErrorString(err) << std::endl;
+                  << cudaGetErrorString(err) << "\033[0m" << std::endl;
 
         exit(EXIT_FAILURE);
     }
@@ -30,9 +30,9 @@ inline void cuda_safe_call_(cudaError_t err, const char* file_name, const int nu
 inline void cuda_kernel_check_(const char* file_name, const int num_line) {
     cudaError_t err = cudaDeviceSynchronize();
     if (cudaSuccess != err) {
-        std::cerr << file_name << "[" << num_line << "]: "
+        std::cerr << "\033[1;31m" << file_name << "[" << num_line << "]: "
                   << "CUDA Kernel execution error[" << static_cast<int>(err) << "]: "
-                  << cudaGetErrorString(err) << std::endl;
+                  << cudaGetErrorString(err) << "\033[0m" << std::endl;
         exit(EXIT_FAILURE);
     }
 }

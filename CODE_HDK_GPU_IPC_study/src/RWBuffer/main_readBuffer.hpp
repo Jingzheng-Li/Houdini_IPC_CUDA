@@ -16,12 +16,14 @@ protected:
                         SIM_Time time,
                         SIM_Time timestep) override;
 
+    void loadSIMParams();
+
     void transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
     void transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
     void transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
+    void transferCOLAttribTOCUDA(SIM_Object* object);
     void transferOtherTOCUDA();
 
-    void loadSIMParams();
     void initSIMFEM();
     void initSIMBVH();
     void initSIMPCG();

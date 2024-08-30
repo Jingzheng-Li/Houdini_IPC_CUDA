@@ -112,6 +112,7 @@ public:
     Eigen::MatrixX3d collisionSurfVert;
     Eigen::MatrixX3i collisionSurfFace;
     Eigen::MatrixX2i collisionSurfEdge;
+    Eigen::VectorXi collisionBoundaryType;
 
     double3* cudaOriginVertPos;
     double3* cudaRestVertPos;
@@ -167,6 +168,13 @@ public:
     double Newton_solver_threshold;
     double pcg_threshold;
 
+    double ground_left_offset;
+    double ground_right_offset;
+    double ground_near_offset;
+    double ground_far_offset;
+    double ground_bottom_offset;
+    double3 gravityforce;
+
     bool animation;
     double animation_subRate;
     double animation_fullRate;
@@ -179,6 +187,10 @@ public:
     double3* cudaTempDouble3Mem;
     MATHUTILS::Matrix3x3d* cudaTempMat3x3;
 
+    // boundary 0: particle into FEM/CCD
+    // boundary 1: 
+    // boundary 2: particle into CCD, act as dynamic geometry
+    // boundary 3: particle into CCD, act as static geometry
     Eigen::VectorXi boundaryTypies;
     int* cudaBoundaryType;
     int* cudaTempBoundaryType;

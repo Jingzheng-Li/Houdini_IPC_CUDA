@@ -73,6 +73,7 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 		transferPTAttribTOCUDA(geo, gdp);
 		transferPRIMAttribTOCUDA(geo, gdp);
+		transferCOLAttribTOCUDA(object);
 		transferDTAttribTOCUDA(geo, gdp);
 		transferOtherTOCUDA();
 
@@ -130,41 +131,37 @@ void GAS_Read_Buffer::loadSIMParams() {
 	double motion_rate = 1.0;
 	instance->animation_fullRate = 0.0;
 	instance->animation_subRate = 1.0 / motion_rate;
+
+	instance->ground_left_offset = -2.0;
+	instance->ground_right_offset = 2.0;
+	instance->ground_near_offset = -2.0;
+	instance->ground_far_offset = 2.0;
+	instance->ground_bottom_offset = 0.0;
+
+	instance->gravityforce = make_double3(0.0, -9.8, 0.0);
 	
 }
 
 
 void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
-
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferPTAttribTOCUDA geoinstance not initialized");
-	int num_points = gdp->getNumPoints();
+	// int num_points = gdp->getNumPoints();
 
 	// position velocity mass
 	auto &vertpos = instance->vertPos;
 	auto &vertvel = instance->vertVel;
 	auto &vertmass = instance->vertMass;
-	vertpos.resize(num_points, Eigen::NoChange);
-	vertvel.resize(num_points, Eigen::NoChange);
-	vertmass.resize(num_points);
-	instance->numVertices = num_points;
-
-	auto &cons = instance->constraints;
-	cons.resize(num_points);
-
-	// boundary type
-	auto &boundarytype = instance->boundaryTypies;
-	boundarytype.resize(num_points);
-	boundarytype.fill(0);
-	instance->softConsNum = 0; // soft constraint
-
+	vertpos.resize(gdp->getNumPoints(), Eigen::NoChange);
+	vertvel.resize(gdp->getNumPoints(), Eigen::NoChange);
+	vertmass.resize(gdp->getNumPoints());
+	instance->numVertices = gdp->getNumPoints();
+	instance->boundaryTypies.conservativeResize(gdp->getNumPoints());
+	instance->boundaryTypies.setZero();
 
 	GA_ROHandleV3D velHandle(gdp, GA_ATTRIB_POINT, "v");
 	GA_ROHandleD massHandle(gdp, GA_ATTRIB_POINT, "mass");
 	CHECK_ERROR(velHandle.isValid() && massHandle.isValid(), "Failed to get velocity and mass attributes");
-
-	double xmin = DBL_MAX, ymin = DBL_MAX, zmin = DBL_MAX;
-	double xmax = -DBL_MAX, ymax = -DBL_MAX, zmax = -DBL_MAX;
 
 	GA_Offset ptoff;
 	int ptidx = 0;
@@ -174,63 +171,20 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 		vertpos.row(ptidx) << pos3.x(), pos3.y(), pos3.z();
 		vertvel.row(ptidx) << vel3.x(), vel3.y(), vel3.z();
 		vertmass(ptidx) = massHandle.get(ptoff);
-
-		// TODO: boundary type should add 0/1/2/3... figure out what is going on here
-		MATHUTILS::Matrix3x3d constraint;
-		MATHUTILS::__set_Mat_val(constraint, 1, 0, 0, 0, 1, 0, 0, 0, 1);
-		cons[ptidx] = constraint;
-
-		if (xmin > pos3.x()) xmin = pos3.x();
-		if (ymin > pos3.y()) ymin = pos3.y();
-		if (zmin > pos3.z()) zmin = pos3.z();
-		if (xmax < pos3.x()) xmax = pos3.x();
-		if (ymax < pos3.y()) ymax = pos3.y();
-		if (zmax < pos3.z()) zmax = pos3.z();
+		instance->boundaryTypies(ptidx) = 0;
 
 		ptidx++;
-
 	}
-	CHECK_ERROR(ptidx==num_points, "Failed to get all points");
-
-
-	CUDAMallocSafe(instance->cudaVertPos, num_points);
-	CUDAMallocSafe(instance->cudaVertVel, num_points);
-	CUDAMallocSafe(instance->cudaVertMass, num_points);
-	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaVertPos);
-	CUDAMemcpyHToDSafe(instance->vertVel, instance->cudaVertVel);
-	CUDAMemcpyHToDSafe(instance->vertMass, instance->cudaVertMass);
-
-	CUDAMallocSafe(instance->cudaBoundaryType, num_points);
-	CUDAMemcpyHToDSafe(instance->boundaryTypies, instance->cudaBoundaryType);
-
-	CUDAMallocSafe(instance->cudaOriginVertPos, num_points);
-	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaOriginVertPos);
-	CUDAMallocSafe(instance->cudaRestVertPos, num_points);
-	CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaRestVertPos);
-
-	CUDAMallocSafe(instance->cudaConstraints, num_points);
-	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->constraints.data(), num_points * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
-
-	instance->minCorner = make_double3(xmin, ymin, zmin);
-	instance->maxCorner = make_double3(xmax, ymax, zmax);
-
-	instance->vecVertPos = MATHUTILS::__convertEigenToVector<double3>(instance->vertPos);
-	instance->vecVertVel = MATHUTILS::__convertEigenToVector<double3>(instance->vertVel);
-	CHECK_ERROR(instance->vecVertPos.size()==instance->vertPos.rows(), "not init vecVertPos correctly");
-	CHECK_ERROR(instance->vecVertVel.size()==instance->vertVel.rows(), "not init vecVertVel correctly");
+	CHECK_ERROR(ptidx==gdp->getNumPoints(), "Failed to get all soft geometry points");
 
 }
 
 
 void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
-
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferPRIMAttribTOCUDA geoinstance not initialized");
-
 	auto &tetEle = instance->tetElement;
 	auto &triEle = instance->triElement;
-	// Eigen::Matrix4i totalPrim;
-	// totalPrim.resize(gdp->getNumPrimitives(), Eigen::NoChange);
 	
 	int numTris = 0;
 	int numTets = 0;
@@ -259,170 +213,257 @@ void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU
 			numTris++;
 
 		} else {
-			std::cerr << "not support this type of prim right now" << std::endl;
+			std::cerr << "\033[1;31m" << "only support tri and tet right now" << "\033[0m" << std::endl;
 			return;
 		}
 		primidx++;
 	}
-
 	CHECK_ERROR(primidx==gdp->getNumPrimitives(), "Failed to get all primitives");
 	CHECK_ERROR(numTets + numTris==gdp->getNumPrimitives(), "Failed to get all tets and tris");
 
-	instance->numTetElements = numTets;
-	instance->numTriElements = numTris;
-
-	CUDAMallocSafe(instance->cudaTetElement, numTets);
-	CUDAMemcpyHToDSafe(tetEle, instance->cudaTetElement);
-	CUDAMallocSafe(instance->cudaTriElement, numTris);
-	CUDAMemcpyHToDSafe(triEle, instance->cudaTriElement);
+}
 
 
-	instance->tetVolume.resize(numTets);
-	instance->triArea.resize(numTris);
-	instance->vectetElement = MATHUTILS::__convertEigenToUintVector<uint4>(tetEle);
-	instance->vectriElement = MATHUTILS::__convertEigenToUintVector<uint3>(triEle);
-	CHECK_ERROR(instance->vectetElement.size()==instance->numTetElements, "not init tetElement correctly");
-	CHECK_ERROR(instance->vectriElement.size()==instance->numTriElements, "not init triElement correctly");
-	for (int i = 0; i < numTets; i++) {
-		instance->tetVolume[i] = MATHUTILS::__calculateVolume(instance->vecVertPos.data(), instance->vectetElement[i]);
+void GAS_Read_Buffer::transferCOLAttribTOCUDA(SIM_Object* object) {
+	auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+
+	SIM_ConstObjectArray colaffectors;
+	object->getConstAffectors(colaffectors, "SIM_RelationshipCollide");
+    CHECK_ERROR(colaffectors.entries() == 2, "houdini scene static object is not correct, we only allow one static object exists");
+	
+	// colaffector(0) will be our collsion geometry
+	const SIM_Geometry* collidegeo = SIM_DATA_GETCONST(*colaffectors(0), SIM_GEOMETRY_DATANAME, SIM_Geometry);
+	CHECK_ERROR(collidegeo != nullptr, "collidegeo is nullptr right now");
+	GU_DetailHandleAutoReadLock readlock(collidegeo->getGeometry());
+	const GU_Detail *collidegdp = readlock.getGdp();
+	CHECK_ERROR(!collidegdp->isEmpty(), "not get any collision objects gdp");
+
+	instance->collisionSurfVert.resize(collidegdp->getNumPoints(), Eigen::NoChange);
+	instance->collisionSurfVert.setZero();
+	instance->collisionBoundaryType.resize(collidegdp->getNumPoints());
+	instance->collisionBoundaryType.setZero();
+	GA_ROHandleV3D initPosHandle(collidegdp, GA_ATTRIB_POINT, "initP");
+	GA_ROHandleI btypeHandle(collidegdp, GA_ATTRIB_POINT, "boundaryType");
+	CHECK_ERROR(initPosHandle.isValid(), "Failed to get collision objects initP");
+	CHECK_ERROR(btypeHandle.isValid(), "Failed to get collision objects boundaryType");
+
+	GA_Offset ptoff;
+	int ptidx = 0;
+	GA_FOR_ALL_PTOFF(collidegdp, ptoff) {
+		UT_Vector3D initP3 = initPosHandle.get(ptoff);
+		instance->collisionSurfVert.row(ptidx) << initP3.x(), initP3.y(), initP3.z();
+		instance->collisionBoundaryType.row(ptidx) << btypeHandle.get(ptoff);
+		ptidx++;
 	}
-	for (int i = 0; i < numTris; i++) {
-		instance->triArea[i] = MATHUTILS::__calculateArea(instance->vecVertPos.data(), instance->vectriElement[i]) * instance->clothThickness;
-	}
-
-	CUDAMallocSafe(instance->cudaTetVolume, numTets);
-	CUDAMemcpyHToDSafe(instance->tetVolume, instance->cudaTetVolume);
-	CUDAMallocSafe(instance->cudaTriArea, numTris);
-	CUDAMemcpyHToDSafe(instance->triArea, instance->cudaTriArea);
+	CHECK_ERROR(ptidx==collidegdp->getNumPoints(), "Failed to get all collision points");
 
 }
+
 
 
 void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
-
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferDTAttribTOCUDA geoinstance not initialized");
 
-	Eigen::VectorXi &surfverts = instance->surfVert;
-	Eigen::MatrixX3i &surffaces = instance->surfFace;
-	Eigen::MatrixX2i &surfedges = instance->surfEdge;
+	// // TODO在这个地方需要拼接一下vert face等东西
+	// CUDAMallocSafe(instance->cudaVertPos, num_points);
+	// CUDAMallocSafe(instance->cudaVertVel, num_points);
+	// CUDAMallocSafe(instance->cudaVertMass, num_points);
+	// CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaVertPos);
+	// CUDAMemcpyHToDSafe(instance->vertVel, instance->cudaVertVel);
+	// CUDAMemcpyHToDSafe(instance->vertMass, instance->cudaVertMass);
 
-	// get edges
-	MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex); 
-	instance->numTriEdges = instance->triEdges.rows();
+	// CUDAMallocSafe(instance->cudaOriginVertPos, num_points);
+	// CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaOriginVertPos);
+	// CUDAMallocSafe(instance->cudaRestVertPos, num_points);
+	// CUDAMemcpyHToDSafe(instance->vertPos, instance->cudaRestVertPos);
 
-	CUDAMallocSafe(instance->cudaTargetVert, instance->softConsNum);
-	CUDAMallocSafe(instance->cudaTargetIndex, instance->softConsNum);
+	// instance->vecVertPos = MATHUTILS::__convertEigenToVector<double3>(instance->vertPos);
+	// instance->vecVertVel = MATHUTILS::__convertEigenToVector<double3>(instance->vertVel);
+	// CHECK_ERROR(instance->vecVertPos.size()==instance->vertPos.rows(), "not init vecVertPos correctly");
+	// CHECK_ERROR(instance->vecVertVel.size()==instance->vertVel.rows(), "not init vecVertVel correctly");
 
-	CUDAMallocSafe(instance->cudaTriDmInverses, instance->numTriElements);
 
-	CUDAMallocSafe(instance->cudaTriArea, instance->numTriElements);
-	CUDAMallocSafe(instance->cudaTriEdges, instance->numTriEdges);
-	CUDAMallocSafe(instance->cudaTriEdgeAdjVertex, instance->numTriEdges);
-	CUDAMemcpyHToDSafe(instance->triArea, instance->cudaTriArea);
-	CUDAMemcpyHToDSafe(instance->triEdges, instance->cudaTriEdges);
-	CUDAMemcpyHToDSafe(instance->triEdgeAdjVertex, instance->cudaTriEdgeAdjVertex);
+	// // TODO要做一下拼接
+	// instance->numTetElements = numTets;
+	// instance->numTriElements = numTris;
 
-	// get all triangle surface (including tet surface)
-	MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement, instance->triElement);
+	// CUDAMallocSafe(instance->cudaTetElement, numTets);
+	// CUDAMemcpyHToDSafe(tetEle, instance->cudaTetElement);
+	// CUDAMallocSafe(instance->cudaTriElement, numTris);
+	// CUDAMemcpyHToDSafe(triEle, instance->cudaTriElement);
 
-	CUDAMallocSafe(instance->cudaDmInverses, instance->numTetElements);
+	// instance->tetVolume.resize(numTets);
+	// instance->triArea.resize(numTris);
+	// instance->vectetElement = MATHUTILS::__convertEigenToUintVector<uint4>(tetEle);
+	// instance->vectriElement = MATHUTILS::__convertEigenToUintVector<uint3>(triEle);
+	// CHECK_ERROR(instance->vectetElement.size()==instance->numTetElements, "not init tetElement correctly");
+	// CHECK_ERROR(instance->vectriElement.size()==instance->numTriElements, "not init triElement correctly");
+	// for (int i = 0; i < numTets; i++) {
+	// 	instance->tetVolume[i] = MATHUTILS::__calculateVolume(instance->vecVertPos.data(), instance->vectetElement[i]);
+	// }
+	// for (int i = 0; i < numTris; i++) {
+	// 	instance->triArea[i] = MATHUTILS::__calculateArea(instance->vecVertPos.data(), instance->vectriElement[i]) * instance->clothThickness;
+	// }
+	// CUDAMallocSafe(instance->cudaTetVolume, numTets);
+	// CUDAMemcpyHToDSafe(instance->tetVolume, instance->cudaTetVolume);
+	// CUDAMallocSafe(instance->cudaTriArea, numTris);
+	// CUDAMemcpyHToDSafe(instance->triArea, instance->cudaTriArea);
 
-	CUDAMallocSafe(instance->cudaSurfVert, surfverts.rows());
-	CUDAMallocSafe(instance->cudaSurfFace, surffaces.rows());
-	CUDAMallocSafe(instance->cudaSurfEdge, surfedges.rows());
-	CUDAMemcpyHToDSafe(instance->surfVert, instance->cudaSurfVert);
-	CUDAMemcpyHToDSafe(instance->surfFace, instance->cudaSurfFace);
-	CUDAMemcpyHToDSafe(instance->surfEdge, instance->cudaSurfEdge);
-	instance->numSurfVerts = surfverts.rows();
-	instance->numSurfFaces = surffaces.rows();
-	instance->numSurfEdges = surfedges.rows();
+
+
+	// // update surfvert/surfface/edge/boundary/constraint
+
+	// Eigen::VectorXi &surfverts = instance->surfVert;
+	// Eigen::MatrixX3i &surffaces = instance->surfFace;
+	// Eigen::MatrixX2i &surfedges = instance->surfEdge;
+
+	// // get edges
+	// MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex); 
+	// instance->numTriEdges = instance->triEdges.rows();
+
+	// CUDAMallocSafe(instance->cudaTargetVert, instance->softConsNum);
+	// CUDAMallocSafe(instance->cudaTargetIndex, instance->softConsNum);
+
+	// CUDAMallocSafe(instance->cudaTriDmInverses, instance->numTriElements);
+
+	// CUDAMallocSafe(instance->cudaTriArea, instance->numTriElements);
+	// CUDAMallocSafe(instance->cudaTriEdges, instance->numTriEdges);
+	// CUDAMallocSafe(instance->cudaTriEdgeAdjVertex, instance->numTriEdges);
+	// CUDAMemcpyHToDSafe(instance->triArea, instance->cudaTriArea);
+	// CUDAMemcpyHToDSafe(instance->triEdges, instance->cudaTriEdges);
+	// CUDAMemcpyHToDSafe(instance->triEdgeAdjVertex, instance->cudaTriEdgeAdjVertex);
+
+	// // get all triangle surface (including tet surface)
+	// MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement, instance->triElement);
+
+	// CUDAMallocSafe(instance->cudaDmInverses, instance->numTetElements);
+
+	// CUDAMallocSafe(instance->cudaSurfVert, surfverts.rows());
+	// CUDAMallocSafe(instance->cudaSurfFace, surffaces.rows());
+	// CUDAMallocSafe(instance->cudaSurfEdge, surfedges.rows());
+	// CUDAMemcpyHToDSafe(instance->surfVert, instance->cudaSurfVert);
+	// CUDAMemcpyHToDSafe(instance->surfFace, instance->cudaSurfFace);
+	// CUDAMemcpyHToDSafe(instance->surfEdge, instance->cudaSurfEdge);
+	// instance->numSurfVerts = surfverts.rows();
+	// instance->numSurfFaces = surffaces.rows();
+	// instance->numSurfEdges = surfedges.rows();
 
 }
+
+
 
 
 void GAS_Read_Buffer::transferOtherTOCUDA() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "transferOtherTOCUDA geoinstance not initialized");
 
-	int &numVerts = instance->numVertices;
-	int &numTriElems = instance->numTriElements;
-	int &numTetElems = instance->numTetElements;
-	int maxNumbers = numVerts > numTetElems ? numVerts : numTetElems; 
-	CUDAMallocSafe(instance->cudaMortonCodeHash, maxNumbers);
-	CUDAMallocSafe(instance->cudaSortIndex, maxNumbers);
-	CUDAMallocSafe(instance->cudaSortMapVertIndex, numVerts);
+
+
+
+	// auto &cons = instance->constraints;
+	// cons.resize(num_points);
+
+	// // TODO: boundary type should add 0/1/2/3... figure out what is going on here
+	// MATHUTILS::Matrix3x3d constraint;
+	// MATHUTILS::__set_Mat_val(constraint, 1, 0, 0, 0, 1, 0, 0, 0, 1);
+	// cons[ptidx] = constraint;
+
+	// // boundary type
+	// auto &boundarytype = instance->boundaryTypies;
+	// boundarytype.resize(num_points);
+	// boundarytype.fill(0);
+	// instance->softConsNum = 0; // soft constraint
+
+	// CUDAMallocSafe(instance->cudaBoundaryType, num_points);
+	// CUDAMemcpyHToDSafe(instance->boundaryTypies, instance->cudaBoundaryType);
+
+
+	// CUDAMallocSafe(instance->cudaConstraints, num_points);
+	// CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraints, instance->constraints.data(), num_points * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyHostToDevice));
+
+
+
+
+	// int &numVerts = instance->numVertices;
+	// int &numTriElems = instance->numTriElements;
+	// int &numTetElems = instance->numTetElements;
+	// int maxNumbers = numVerts > numTetElems ? numVerts : numTetElems; 
+	// CUDAMallocSafe(instance->cudaMortonCodeHash, maxNumbers);
+	// CUDAMallocSafe(instance->cudaSortIndex, maxNumbers);
+	// CUDAMallocSafe(instance->cudaSortMapVertIndex, numVerts);
 	
-	CUDAMallocSafe(instance->cudaTempBoundaryType, numVerts);
-	CUDAMallocSafe(instance->cudaTempDouble, maxNumbers);
-	CUDAMallocSafe(instance->cudaTempMat3x3, maxNumbers);
+	// CUDAMallocSafe(instance->cudaTempBoundaryType, numVerts);
+	// CUDAMallocSafe(instance->cudaTempDouble, maxNumbers);
+	// CUDAMallocSafe(instance->cudaTempMat3x3, maxNumbers);
 
-	instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * instance->collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
-	instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * instance->collision_detection_buff_scale;
+	// instance->MAX_CCD_COLLITION_PAIRS_NUM = 1 * instance->collision_detection_buff_scale * (((double)(instance->surfFace.rows() * 15 + instance->surfEdge.rows() * 10)) * std::max((instance->IPC_dt / 0.01), 2.0));
+	// instance->MAX_COLLITION_PAIRS_NUM = (instance->surfVert.rows() * 3 + instance->surfEdge.rows() * 2) * 3 * instance->collision_detection_buff_scale;
 
-	CHECK_ERROR(instance->MAX_CCD_COLLITION_PAIRS_NUM > 0, "MAX_CCD_COLLITION_PAIRS_NUM is 0, this is incorrect");
-	CHECK_ERROR(instance->MAX_COLLITION_PAIRS_NUM > 0, "MAX_COLLITION_PAIRS_NUM is 0, this is incorrect");
+	// CHECK_ERROR(instance->MAX_CCD_COLLITION_PAIRS_NUM > 0, "MAX_CCD_COLLITION_PAIRS_NUM is 0, this is incorrect");
+	// CHECK_ERROR(instance->MAX_COLLITION_PAIRS_NUM > 0, "MAX_COLLITION_PAIRS_NUM is 0, this is incorrect");
 
-	CUDAMallocSafe(instance->cudaCollisionPairs, instance->MAX_COLLITION_PAIRS_NUM);
-	CUDAMallocSafe(instance->cudaCCDCollisionPairs, instance->MAX_CCD_COLLITION_PAIRS_NUM);
-	CUDAMallocSafe(instance->cudaMatIndex, instance->MAX_COLLITION_PAIRS_NUM);
-	CUDAMallocSafe(instance->cudaCPNum, 5);
-	CUDAMallocSafe(instance->cudaGPNum, 1);
-	CUDAMallocSafe(instance->cudaEnvCollisionPairs, numVerts);
+	// CUDAMallocSafe(instance->cudaCollisionPairs, instance->MAX_COLLITION_PAIRS_NUM);
+	// CUDAMallocSafe(instance->cudaCCDCollisionPairs, instance->MAX_CCD_COLLITION_PAIRS_NUM);
+	// CUDAMallocSafe(instance->cudaMatIndex, instance->MAX_COLLITION_PAIRS_NUM);
+	// CUDAMallocSafe(instance->cudaCPNum, 5);
+	// CUDAMallocSafe(instance->cudaGPNum, 1);
+	// CUDAMallocSafe(instance->cudaEnvCollisionPairs, numVerts);
 
-	// update ground collisions
-	CUDAMallocSafe(instance->cudaGroundNormal, 5);
-	CUDAMallocSafe(instance->cudaGroundOffset, 5);
-	// bottom left right near far
-	double h_offset[5] = {0, -2, 2, -2, 2};
-	double3 H_normal[5];
-	H_normal[0] = make_double3(0, 1, 0);
-    H_normal[1] = make_double3(1, 0, 0);
-    H_normal[2] = make_double3(-1, 0, 0);
-    H_normal[3] = make_double3(0, 0, 1);
-    H_normal[4] = make_double3(0, 0, -1);
-	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundOffset, &h_offset, 5 * sizeof(double), cudaMemcpyHostToDevice));
-    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundNormal, &H_normal, 5 * sizeof(double3), cudaMemcpyHostToDevice));
+	// // update ground collisions
+	// CUDAMallocSafe(instance->cudaGroundNormal, 5);
+	// CUDAMallocSafe(instance->cudaGroundOffset, 5);
+	// // bottom left right near far
+	// double h_offset[5] = {0, -2, 2, -2, 2};
+	// double3 H_normal[5];
+	// H_normal[0] = make_double3(0, 1, 0);
+    // H_normal[1] = make_double3(1, 0, 0);
+    // H_normal[2] = make_double3(-1, 0, 0);
+    // H_normal[3] = make_double3(0, 0, 1);
+    // H_normal[4] = make_double3(0, 0, -1);
+	// CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundOffset, &h_offset, 5 * sizeof(double), cudaMemcpyHostToDevice));
+    // CUDA_SAFE_CALL(cudaMemcpy(instance->cudaGroundNormal, &H_normal, 5 * sizeof(double3), cudaMemcpyHostToDevice));
 
-	/////////////////////////////
-	// init meanMass & meanVolume
-	/////////////////////////////
-	double sumMass = 0;
-	double sumVolume = 0;
-	for (int i = 0; i < instance->numVertices; i++) {
-		double mass = instance->vertMass[i];
-		sumMass += mass;
-	}
-	for (int i = 0; i < instance->numTetElements; i++) {
-		double vlm = instance->tetVolume[i];
-		sumVolume += vlm;
-	}
-	for (int i = 0; i < instance->numTriElements; i++) {
-		double vlm = instance->triArea[i];
-		sumVolume += vlm;
-	}
-	instance->meanMass = sumMass / instance->numVertices;
-	instance->meanVolume = sumVolume / instance->numVertices;
-	printf("meanMass: %f\n", instance->meanMass);
-	printf("meanVolum: %f\n", instance->meanVolume);
+	// /////////////////////////////
+	// // init meanMass & meanVolume
+	// /////////////////////////////
+	// double sumMass = 0;
+	// double sumVolume = 0;
+	// for (int i = 0; i < instance->numVertices; i++) {
+	// 	double mass = instance->vertMass[i];
+	// 	sumMass += mass;
+	// }
+	// for (int i = 0; i < instance->numTetElements; i++) {
+	// 	double vlm = instance->tetVolume[i];
+	// 	sumVolume += vlm;
+	// }
+	// for (int i = 0; i < instance->numTriElements; i++) {
+	// 	double vlm = instance->triArea[i];
+	// 	sumVolume += vlm;
+	// }
+	// instance->meanMass = sumMass / instance->numVertices;
+	// instance->meanVolume = sumVolume / instance->numVertices;
+	// printf("meanMass: %f\n", instance->meanMass);
+	// printf("meanVolum: %f\n", instance->meanVolume);
 
 
-	CUDAMallocSafe(instance->cudaXTilta, instance->numVertices);
-	CUDAMallocSafe(instance->cudaFb, instance->numVertices);
-	CUDAMallocSafe(instance->cudaTempDouble3Mem, instance->numVertices);
+	// CUDAMallocSafe(instance->cudaXTilta, instance->numVertices);
+	// CUDAMallocSafe(instance->cudaFb, instance->numVertices);
+	// CUDAMallocSafe(instance->cudaTempDouble3Mem, instance->numVertices);
 
-	CUDAMallocSafe(instance->cudaCloseCPNum, 1);
-	CUDAMallocSafe(instance->cudaCloseGPNum, 1);
-	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseCPNum, 0, sizeof(uint32_t)));
-	CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseGPNum, 0, sizeof(uint32_t)));
+	// CUDAMallocSafe(instance->cudaCloseCPNum, 1);
+	// CUDAMallocSafe(instance->cudaCloseGPNum, 1);
+	// CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseCPNum, 0, sizeof(uint32_t)));
+	// CUDA_SAFE_CALL(cudaMemset(instance->cudaCloseGPNum, 0, sizeof(uint32_t)));
 
-	CHECK_ERROR(instance->vertPos.rows() == instance->numVertices, "numVerts not match with Eigen");
-	CHECK_ERROR(instance->tetElement.rows() == instance->numTetElements, "numTetEles not match with Eigen");
-	CHECK_ERROR(instance->triElement.rows() == instance->numTriElements, "numTriEles not match with Eigen");
-	CHECK_ERROR(instance->triEdges.rows() == instance->numTriEdges, "numTriEdges not match with Eigen")
-	CHECK_ERROR(instance->surfVert.rows() == instance->numSurfVerts, "numSurfVerts not match with Eigen");
-	CHECK_ERROR(instance->surfEdge.rows() == instance->numSurfEdges, "numSurfEdges not match with Eigen");
-	CHECK_ERROR(instance->surfFace.rows() == instance->numSurfFaces, "numSurfFaces not match with Eigen");
+	// CHECK_ERROR(instance->vertPos.rows() == instance->numVertices, "numVerts not match with Eigen");
+	// CHECK_ERROR(instance->tetElement.rows() == instance->numTetElements, "numTetEles not match with Eigen");
+	// CHECK_ERROR(instance->triElement.rows() == instance->numTriElements, "numTriEles not match with Eigen");
+	// CHECK_ERROR(instance->triEdges.rows() == instance->numTriEdges, "numTriEdges not match with Eigen")
+	// CHECK_ERROR(instance->surfVert.rows() == instance->numSurfVerts, "numSurfVerts not match with Eigen");
+	// CHECK_ERROR(instance->surfEdge.rows() == instance->numSurfEdges, "numSurfEdges not match with Eigen");
+	// CHECK_ERROR(instance->surfFace.rows() == instance->numSurfFaces, "numSurfFaces not match with Eigen");
 
 }
 
