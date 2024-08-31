@@ -69,20 +69,19 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		}
 		CHECK_ERROR_SOLVER(instance, "geometry instance not initialize");
 
-		loadSIMParams();
+		loadSIMParamsFromHoudini();
+		loadSIMGeometryFromHoudini(geo, gdp);
+		loadCollisionGeometryFromHoudini(object);
 
-		transferPTAttribTOCUDA(geo, gdp);
-		transferPRIMAttribTOCUDA(geo, gdp);
-		transferCOLAttribTOCUDA(object);
-		transferDTAttribTOCUDA(geo, gdp);
-		transferOtherTOCUDA();
+		transferDetailAttribTOCUDA(geo, gdp);
+		transferOtherAttribTOCUDA();
 
-		initSIMFEM();
-		initSIMBVH();
-		initSIMPCG();
-		initSIMIPC();
+		// initSIMFEM();
+		// initSIMBVH();
+		// initSIMPCG();
+		// initSIMIPC();
 
-		FEMENERGY::computeXTilta(instance, 1); // get a initial guess
+		// FEMENERGY::computeXTilta(instance, 1); // get a initial guess
 
 		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
@@ -96,9 +95,9 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 
 
-void GAS_Read_Buffer::loadSIMParams() {
+void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+	CHECK_ERROR(instance, "loadSIMParamsFromHoudini geoinstance not initialized");
 
 	instance->IPC_dt = 0.01;
 	instance->precondType = 1;
@@ -143,10 +142,9 @@ void GAS_Read_Buffer::loadSIMParams() {
 }
 
 
-void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
+void GAS_Read_Buffer::loadSIMGeometryFromHoudini(const SIM_Geometry *geo, const GU_Detail *gdp) {
 	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "transferPTAttribTOCUDA geoinstance not initialized");
-	// int num_points = gdp->getNumPoints();
+	CHECK_ERROR(instance, "loadSIMGeometryFromHoudini geoinstance not initialized");
 
 	// position velocity mass
 	auto &vertpos = instance->vertPos;
@@ -163,70 +161,69 @@ void GAS_Read_Buffer::transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	GA_ROHandleD massHandle(gdp, GA_ATTRIB_POINT, "mass");
 	CHECK_ERROR(velHandle.isValid() && massHandle.isValid(), "Failed to get velocity and mass attributes");
 
-	GA_Offset ptoff;
-	int ptidx = 0;
-	GA_FOR_ALL_PTOFF(gdp, ptoff) {
-		UT_Vector3D pos3 = gdp->getPos3D(ptoff);
-		UT_Vector3D vel3 = velHandle.get(ptoff);
-		vertpos.row(ptidx) << pos3.x(), pos3.y(), pos3.z();
-		vertvel.row(ptidx) << vel3.x(), vel3.y(), vel3.z();
-		vertmass(ptidx) = massHandle.get(ptoff);
-		instance->boundaryTypies(ptidx) = 0;
+	{ // obtain sim geometry points
+		GA_Offset ptoff;
+		int ptidx = 0;
+		GA_FOR_ALL_PTOFF(gdp, ptoff) {
+			UT_Vector3D pos3 = gdp->getPos3D(ptoff);
+			UT_Vector3D vel3 = velHandle.get(ptoff);
+			vertpos.row(ptidx) << pos3.x(), pos3.y(), pos3.z();
+			vertvel.row(ptidx) << vel3.x(), vel3.y(), vel3.z();
+			vertmass(ptidx) = massHandle.get(ptoff);
+			instance->boundaryTypies(ptidx) = 0;
 
-		ptidx++;
-	}
-	CHECK_ERROR(ptidx==gdp->getNumPoints(), "Failed to get all soft geometry points");
-
-}
-
-
-void GAS_Read_Buffer::transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
-	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "transferPRIMAttribTOCUDA geoinstance not initialized");
-	auto &tetEle = instance->tetElement;
-	auto &triEle = instance->triElement;
-	
-	int numTris = 0;
-	int numTets = 0;
-	GA_Offset primoff;
-	int primidx = 0;
-	GA_FOR_ALL_PRIMOFF(gdp, primoff) {
-		const GA_Primitive* prim = gdp->getPrimitive(primoff);
-		if (prim->getVertexCount() == 4) {
-			// update tet elements
-			tetEle.conservativeResize(numTets + 1, Eigen::NoChange);
-			for (int i = 0; i < prim->getVertexCount(); ++i) {
-				GA_Offset vtxoff = prim->getVertexOffset(i);
-				GA_Offset ptoff = gdp->vertexPoint(vtxoff);
-				tetEle(numTets, i) = static_cast<int>(gdp->pointIndex(ptoff));
-			}
-			numTets++;
-
-		} else if (prim->getVertexCount() == 3) {
-			// update tri elements
-			triEle.conservativeResize(numTris + 1, Eigen::NoChange);
-			for (int i = 0; i < prim->getVertexCount(); ++i) {
-				GA_Offset vtxoff = prim->getVertexOffset(i);
-				GA_Offset ptoff = gdp->vertexPoint(vtxoff);
-				triEle(numTris, i) = static_cast<int>(gdp->pointIndex(ptoff));
-			}
-			numTris++;
-
-		} else {
-			std::cerr << "\033[1;31m" << "only support tri and tet right now" << "\033[0m" << std::endl;
-			return;
+			ptidx++;
 		}
-		primidx++;
+		CHECK_ERROR(ptidx==gdp->getNumPoints(), "Failed to get all soft geometry points");
 	}
-	CHECK_ERROR(primidx==gdp->getNumPrimitives(), "Failed to get all primitives");
-	CHECK_ERROR(numTets + numTris==gdp->getNumPrimitives(), "Failed to get all tets and tris");
+
+	{ // obtain sim geometry primitives
+		auto &tetEle = instance->tetElement;
+		auto &triEle = instance->triElement;
+		int numTris = 0;
+		int numTets = 0;
+		GA_Offset primoff;
+		int primidx = 0;
+		GA_FOR_ALL_PRIMOFF(gdp, primoff) {
+			const GA_Primitive* prim = gdp->getPrimitive(primoff);
+			if (prim->getVertexCount() == 4) {
+				// update tet elements
+				tetEle.conservativeResize(numTets + 1, Eigen::NoChange);
+				for (int i = 0; i < prim->getVertexCount(); ++i) {
+					GA_Offset vtxoff = prim->getVertexOffset(i);
+					GA_Offset ptoff = gdp->vertexPoint(vtxoff);
+					tetEle(numTets, i) = static_cast<int>(gdp->pointIndex(ptoff));
+				}
+				numTets++;
+
+			} else if (prim->getVertexCount() == 3) {
+				// update tri elements
+				triEle.conservativeResize(numTris + 1, Eigen::NoChange);
+				for (int i = 0; i < prim->getVertexCount(); ++i) {
+					GA_Offset vtxoff = prim->getVertexOffset(i);
+					GA_Offset ptoff = gdp->vertexPoint(vtxoff);
+					triEle(numTris, i) = static_cast<int>(gdp->pointIndex(ptoff));
+				}
+				numTris++;
+
+			} else {
+				std::cerr << "\033[1;31m" << "sim geometry only support tri and tet right now" << "\033[0m" << std::endl;
+				return;
+			}
+			primidx++;
+		}
+		CHECK_ERROR(primidx==gdp->getNumPrimitives(), "Failed to get all primitives");
+		CHECK_ERROR(numTets + numTris==gdp->getNumPrimitives(), "Failed to get all tets and tris");
+
+	}
+
 
 }
 
 
-void GAS_Read_Buffer::transferCOLAttribTOCUDA(SIM_Object* object) {
+void GAS_Read_Buffer::loadCollisionGeometryFromHoudini(SIM_Object* object) {
 	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "loadSIMParams geoinstance not initialized");
+	CHECK_ERROR(instance, "loadCollisionGeometryFromHoudini geoinstance not initialized");
 
 	SIM_ConstObjectArray colaffectors;
 	object->getConstAffectors(colaffectors, "SIM_RelationshipCollide");
@@ -239,8 +236,8 @@ void GAS_Read_Buffer::transferCOLAttribTOCUDA(SIM_Object* object) {
 	const GU_Detail *collidegdp = readlock.getGdp();
 	CHECK_ERROR(!collidegdp->isEmpty(), "not get any collision objects gdp");
 
-	instance->collisionSurfVert.resize(collidegdp->getNumPoints(), Eigen::NoChange);
-	instance->collisionSurfVert.setZero();
+	instance->collisionVertPos.resize(collidegdp->getNumPoints(), Eigen::NoChange);
+	instance->collisionVertPos.setZero();
 	instance->collisionBoundaryType.resize(collidegdp->getNumPoints());
 	instance->collisionBoundaryType.setZero();
 	GA_ROHandleV3D initPosHandle(collidegdp, GA_ATTRIB_POINT, "initP");
@@ -248,23 +245,95 @@ void GAS_Read_Buffer::transferCOLAttribTOCUDA(SIM_Object* object) {
 	CHECK_ERROR(initPosHandle.isValid(), "Failed to get collision objects initP");
 	CHECK_ERROR(btypeHandle.isValid(), "Failed to get collision objects boundaryType");
 
-	GA_Offset ptoff;
-	int ptidx = 0;
-	GA_FOR_ALL_PTOFF(collidegdp, ptoff) {
-		UT_Vector3D initP3 = initPosHandle.get(ptoff);
-		instance->collisionSurfVert.row(ptidx) << initP3.x(), initP3.y(), initP3.z();
-		instance->collisionBoundaryType.row(ptidx) << btypeHandle.get(ptoff);
-		ptidx++;
+	{ // obtain collision geometry points
+		GA_Offset ptoff;
+		int ptidx = 0;
+		GA_FOR_ALL_PTOFF(collidegdp, ptoff) {
+			UT_Vector3D initP3 = initPosHandle.get(ptoff);
+			instance->collisionVertPos.row(ptidx) << initP3.x(), initP3.y(), initP3.z();
+			instance->collisionBoundaryType.row(ptidx) << btypeHandle.get(ptoff);
+			ptidx++;
+		}
+		CHECK_ERROR(ptidx==collidegdp->getNumPoints(), "Failed to get all collision points");
 	}
-	CHECK_ERROR(ptidx==collidegdp->getNumPoints(), "Failed to get all collision points");
+
+
+	{ // obtain collision geometry primitives
+		int primidx = 0;
+		GA_Offset primoff;
+		instance->collisionSurfFace.resize(collidegdp->getNumPrimitives(), Eigen::NoChange);
+		GA_FOR_ALL_PRIMOFF(collidegdp, primoff) {
+			const GA_Primitive* prim = collidegdp->getPrimitive(primoff);
+			if (prim->getVertexCount() == 3) {
+				for (int i = 0; i < prim->getVertexCount(); ++i) {
+					GA_Offset vtxoff = prim->getVertexOffset(i);
+					GA_Offset ptoff = collidegdp->vertexPoint(vtxoff);
+					instance->collisionSurfFace(primidx, i) = static_cast<int>(collidegdp->pointIndex(ptoff));
+				}
+				primidx++;
+			} else {
+				std::cerr << "\033[1;31m" << "collision geometry only support tri right now" << "\033[0m" << std::endl;
+				return;
+			}
+		}
+		CHECK_ERROR(primidx==collidegdp->getNumPrimitives(), "Failed to get all primitives");
+	}
 
 }
 
 
 
-void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
+void GAS_Read_Buffer::transferDetailAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp) {
 	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "transferDTAttribTOCUDA geoinstance not initialized");
+	CHECK_ERROR(instance, "transferDetailAttribTOCUDA geoinstance not initialized");
+	
+	// add collisionVertPos to total vertPos
+	instance->numSIMVertPos = instance->vertPos.rows();
+	instance->numVertices = instance->vertPos.rows() + instance->collisionVertPos.rows();
+	instance->vertPos.conservativeResize(instance->numVertices, Eigen::NoChange);
+	instance->vertPos.bottomRows(instance->collisionVertPos.rows()) = instance->collisionVertPos;
+	CHECK_ERROR(instance->vertPos.rows()==instance->numVertices, "vertPos number not match with numVertices");
+
+	instance->numTriElements = instance->triElement.rows();
+	instance->numTetElements = instance->tetElement.rows();
+	// get simulation triangle edges (for cloth bending only)
+	MATHUTILS::__getTriEdges(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex);
+	instance->numTriEdges = instance->triEdges.rows();
+	
+
+	// get 1.all triangles 2.tetrahedrao outer surface 3.collision surface as surfaces
+	MATHUTILS::__getTriSurface(instance->triElement, instance->surfFace);
+	MATHUTILS::__getTetSurface(instance->tetElement, instance->vertPos, instance->surfFace);
+	MATHUTILS::__getColSurface(instance->numSIMVertPos, instance->collisionSurfFace, instance->surfFace);
+	instance->numSurfFaces = instance->surfFace.rows();
+
+	// add collisionSurfFace to total surfFace
+	MATHUTILS::__getSurfaceVertsAndEdges(instance->surfFace, instance->vertPos, instance->surfVert, instance->surfEdge);
+	
+	instance->boundaryTypies.conservativeResize(instance->vertPos.rows());
+	instance->boundaryTypies.bottomRows(instance->collisionVertPos.rows()) = instance->collisionBoundaryType;
+
+	for (int i = 0; i < instance->numVertices; i++) {
+		std::cout << "vertPos: " << i << " " << instance->vertPos.row(i) << std::endl;
+	}
+
+	// for (int i = 0; i < instance->numSurfFaces; i++) {
+	// 	std::cout << "surfFace: " << i << " " << instance->surfFace.row(i) << std::endl;
+	// }
+
+	// for (int i =0; i < instance->surfVert.rows(); i++) {
+	// 	std::cout << "surfVert: "  << i << " " << instance->surfVert.row(i) << std::endl;
+	// }
+
+	// for (int i = 0; i < instance->surfEdge.rows(); i++) {
+	// 	std::cout << "surfEdge: "  << i << " " << instance->surfEdge.row(i) << std::endl;
+	// }
+
+	// for (int i = 0; i < instance->boundaryTypies.rows(); i++) {
+	// 	std::cout << "boundaryTypies: " << i << " " << instance->boundaryTypies(i) << std::endl;
+	// }
+
+
 
 	// // TODO在这个地方需要拼接一下vert face等东西
 	// CUDAMallocSafe(instance->cudaVertPos, num_points);
@@ -320,8 +389,7 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	// Eigen::MatrixX2i &surfedges = instance->surfEdge;
 
 	// // get edges
-	// MATHUTILS::__getTriSurface(instance->triElement, instance->triEdges, instance->triEdgeAdjVertex); 
-	// instance->numTriEdges = instance->triEdges.rows();
+
 
 	// CUDAMallocSafe(instance->cudaTargetVert, instance->softConsNum);
 	// CUDAMallocSafe(instance->cudaTargetIndex, instance->softConsNum);
@@ -336,7 +404,7 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 	// CUDAMemcpyHToDSafe(instance->triEdgeAdjVertex, instance->cudaTriEdgeAdjVertex);
 
 	// // get all triangle surface (including tet surface)
-	// MATHUTILS::__getTetSurface(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement, instance->triElement);
+	// // MATHUTILS::__getTetSurfaceFull(surfverts, surffaces, surfedges, instance->vertPos, instance->tetElement, instance->triElement);
 
 	// CUDAMallocSafe(instance->cudaDmInverses, instance->numTetElements);
 
@@ -355,9 +423,9 @@ void GAS_Read_Buffer::transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_D
 
 
 
-void GAS_Read_Buffer::transferOtherTOCUDA() {
+void GAS_Read_Buffer::transferOtherAttribTOCUDA() {
 	auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "transferOtherTOCUDA geoinstance not initialized");
+	CHECK_ERROR(instance, "transferOtherAttribTOCUDA geoinstance not initialized");
 
 
 
@@ -641,12 +709,6 @@ void GAS_Read_Buffer::debugSIM() {
 	std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
 	std::cout << "numTriEdges~~" << instance->triEdges.rows() << std::endl;
 	std::cout << "masslast~~" << instance->vertMass.row(instance->numVertices-1) << std::endl;
-	std::cout << "min coner~~" << instance->minCorner.x << " " 
-								<< instance->minCorner.y << " " 
-								<< instance->minCorner.z << " " << std::endl;
-	std::cout << "max coner~~" << instance->maxCorner.x << " " 
-								<< instance->maxCorner.y << " " 
-								<< instance->maxCorner.z << " " << std::endl;
 	std::cout << "numMasses: " << instance->vertMass.rows() << std::endl;
 	std::cout << "numVolume: " << instance->tetVolume.rows() << std::endl;
 	std::cout << "numAreas: " << instance->triArea.rows() << std::endl;

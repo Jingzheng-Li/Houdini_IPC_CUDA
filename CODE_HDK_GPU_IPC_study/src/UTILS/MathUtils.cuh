@@ -326,9 +326,17 @@ namespace MATHUTILS {
 	__device__ __host__ 
 	double __calculateArea(const double3* vertexes, const uint3& index);
 
-	void __getTriSurface(Eigen::MatrixX3i& triElems, Eigen::MatrixX2i& tri_edges, Eigen::MatrixX2i& tri_edges_adj_points);
+	void __getTriEdges(Eigen::MatrixX3i& triElems, Eigen::MatrixX2i& tri_edges, Eigen::MatrixX2i& tri_edges_adj_points);
+	
+	void __getTriSurface(Eigen::MatrixX3i& triangles, Eigen::MatrixX3i& surfFaces);
 
-	void __getTetSurface(Eigen::VectorXi& surfVerts, Eigen::MatrixX3i& surfFaces, Eigen::MatrixX2i& surfEdges, Eigen::MatrixX3d& vertexes, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles);
+	void __getTetSurface(Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3d& vertexes, Eigen::MatrixX3i& surfFaces);
+
+	void __getColSurface(int numsimverts, Eigen::MatrixX3i& colsurface, Eigen::MatrixX3i& surfFaces);
+
+	void __getSurfaceVertsAndEdges(Eigen::MatrixX3i& surfFaces, Eigen::MatrixX3d& vertexes,Eigen::VectorXi& surfVerts, Eigen::MatrixX2i& surfEdges);
+
+	// void __getTetSurfaceFull(Eigen::VectorXi& surfVerts, Eigen::MatrixX3i& surfFaces, Eigen::MatrixX2i& surfEdges, Eigen::MatrixX3d& vertexes, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles);
 
 	int __getVertNeighbours(int vertexNum, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles, std::vector<unsigned int>& neighborList, std::vector<unsigned int>& neighborStart, std::vector<unsigned int>& neighborNum);
 

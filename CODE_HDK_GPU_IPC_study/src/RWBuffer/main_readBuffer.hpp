@@ -16,13 +16,12 @@ protected:
                         SIM_Time time,
                         SIM_Time timestep) override;
 
-    void loadSIMParams();
+    void loadSIMParamsFromHoudini();
 
-    void transferPTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
-    void transferPRIMAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
-    void transferDTAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
-    void transferCOLAttribTOCUDA(SIM_Object* object);
-    void transferOtherTOCUDA();
+    void loadSIMGeometryFromHoudini(const SIM_Geometry *geo, const GU_Detail *gdp);
+    void loadCollisionGeometryFromHoudini(SIM_Object* object);
+    void transferDetailAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
+    void transferOtherAttribTOCUDA();
 
     void initSIMFEM();
     void initSIMBVH();

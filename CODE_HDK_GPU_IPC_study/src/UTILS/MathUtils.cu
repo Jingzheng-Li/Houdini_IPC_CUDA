@@ -1559,7 +1559,7 @@ namespace MATHUTILS {
 	}
 
 
-	void __getTriSurface(Eigen::MatrixX3i& triElems, Eigen::MatrixX2i& tri_edges, Eigen::MatrixX2i& tri_edges_adj_points) {
+	void __getTriEdges(Eigen::MatrixX3i& triElems, Eigen::MatrixX2i& tri_edges, Eigen::MatrixX2i& tri_edges_adj_points) {
 		std::set<std::pair<int, int>> edge_set;
 		std::map<std::pair<int, int>, std::vector<int>> edge_map;
 		std::vector<Eigen::Vector2i> my_edges;
@@ -1623,10 +1623,15 @@ namespace MATHUTILS {
 	}
 
 
-	void __getTetSurface(Eigen::VectorXi& surfVerts, Eigen::MatrixX3i& surfFaces, Eigen::MatrixX2i& surfEdges, Eigen::MatrixX3d& vertexes, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles) {
+	void __getTriSurface(Eigen::MatrixX3i& triangles, Eigen::MatrixX3i& surfFaces) {
+		int originalRows = surfFaces.rows();
+		surfFaces.conservativeResize(originalRows + triangles.rows(), Eigen::NoChange);
+		surfFaces.bottomRows(triangles.rows()) = triangles;
+	}
+
+	void __getTetSurface(Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3d& vertexes, Eigen::MatrixX3i& surfFaces) {
 		uint64_t length = vertexes.rows();
 		uint64_t tetrahedraNum = tetrahedras.rows();
-		uint64_t triangleNum = triangles.rows();
 
 		auto triangle_hash = [&](const Triangle& tri) {
 			return length * (length * tri[0] + tri[1]) + tri[2];
@@ -1712,12 +1717,17 @@ namespace MATHUTILS {
 			}
 		}
 
-		for (int i = 0; i < triangleNum; i++) {
-			surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
-			Eigen::Vector3i tri = triangles.row(i);
-			surfFaces.row(surfFaces.rows() - 1) = tri;
-		}
+	}
 
+	void __getColSurface(int numsimverts, Eigen::MatrixX3i& colsurface, Eigen::MatrixX3i& surfFaces) {
+		colsurface.array() += numsimverts;
+		int originalRows = surfFaces.rows();
+		surfFaces.conservativeResize(originalRows + colsurface.rows(), Eigen::NoChange);
+		surfFaces.bottomRows(colsurface.rows()) = colsurface;
+	}
+
+	void __getSurfaceVertsAndEdges(Eigen::MatrixX3i& surfFaces, Eigen::MatrixX3d& vertexes,Eigen::VectorXi& surfVerts, Eigen::MatrixX2i& surfEdges) {
+		uint64_t length = vertexes.rows();
 		std::vector<bool> flag(length, false);
 		for (int i = 0; i < surfFaces.rows(); ++i) {
 			const auto& cTri = surfFaces.row(i);
@@ -1762,8 +1772,155 @@ namespace MATHUTILS {
 			surfEdges.conservativeResize(surfEdges.rows() + 1, Eigen::NoChange);
 			surfEdges.row(surfEdges.rows() - 1) = Eigen::Vector2i(edge.first, edge.second);
 		}
-
 	}
+
+	// void __getTetSurfaceFull(Eigen::VectorXi& surfVerts, Eigen::MatrixX3i& surfFaces, Eigen::MatrixX2i& surfEdges, Eigen::MatrixX3d& vertexes, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles) {
+	// 	uint64_t length = vertexes.rows();
+	// 	uint64_t tetrahedraNum = tetrahedras.rows();
+	// 	uint64_t triangleNum = triangles.rows();
+
+	// 	auto triangle_hash = [&](const Triangle& tri) {
+	// 		return length * (length * tri[0] + tri[1]) + tri[2];
+	// 	};
+
+	// 	std::unordered_map<Triangle, uint64_t, decltype(triangle_hash)> tri2Tet(4 * tetrahedraNum, triangle_hash);
+	// 	for (int i = 0; i < tetrahedraNum; i++) {
+	// 		const auto& triI4 = tetrahedras.row(i);
+	// 		uint64_t triI[4] = { triI4.x(),  triI4.y() ,triI4.z() ,triI4.w() };
+	// 		for (int j = 0;j < 4;j++) {
+	// 			const Triangle& triVInd = Triangle(triI[j % 4], triI[(1 + j) % 4], triI[(2 + j) % 4]);
+	// 			if (tri2Tet.find(Triangle(triVInd[0], triVInd[1], triVInd[2])) != tri2Tet.end()) {
+	// 				tri2Tet[Triangle(triVInd[0], triVInd[1], triVInd[2])] = tetrahedraNum + 1;
+	// 			}
+	// 			else if (tri2Tet.find(Triangle(triVInd[0], triVInd[2], triVInd[1])) != tri2Tet.end()) {
+	// 				tri2Tet[Triangle(triVInd[0], triVInd[2], triVInd[1])] = tetrahedraNum + 1;
+	// 			}
+	// 			else if (tri2Tet.find(Triangle(triVInd[1], triVInd[0], triVInd[2])) != tri2Tet.end()) {
+	// 				tri2Tet[Triangle(triVInd[1], triVInd[0], triVInd[2])] = tetrahedraNum + 1;
+	// 			}
+	// 			else if (tri2Tet.find(Triangle(triVInd[1], triVInd[2], triVInd[0])) != tri2Tet.end()) {
+	// 				tri2Tet[Triangle(triVInd[1], triVInd[2], triVInd[0])] = tetrahedraNum + 1;
+	// 			}
+	// 			else if (tri2Tet.find(Triangle(triVInd[2], triVInd[0], triVInd[1])) != tri2Tet.end()) {
+	// 				tri2Tet[Triangle(triVInd[2], triVInd[0], triVInd[1])] = tetrahedraNum + 1;
+	// 			}
+	// 			else if (tri2Tet.find(Triangle(triVInd[2], triVInd[1], triVInd[0])) != tri2Tet.end()) {
+	// 				tri2Tet[Triangle(triVInd[2], triVInd[1], triVInd[0])] = tetrahedraNum + 1;
+	// 			}
+	// 			else {
+	// 				tri2Tet[Triangle(triVInd[0], triVInd[1], triVInd[2])] = i;
+	// 			}
+	// 		}
+	// 	}
+
+	// 	for (const auto& triI : tri2Tet) {
+	// 		const uint64_t& tetId = triI.second;
+	// 		const Triangle& triVInd = triI.first;
+	// 		if (tetId < tetrahedraNum) {
+	// 			double3 tempvec0 = make_double3(vertexes.row(triVInd[0]).x(), vertexes.row(triVInd[0]).y(), vertexes.row(triVInd[0]).z());
+	// 			double3 tempvec1 = make_double3(vertexes.row(triVInd[1]).x(), vertexes.row(triVInd[1]).y(), vertexes.row(triVInd[1]).z());
+	// 			double3 tempvec2 = make_double3(vertexes.row(triVInd[2]).x(), vertexes.row(triVInd[2]).y(), vertexes.row(triVInd[2]).z());
+
+	// 			double3 vec1 = MATHUTILS::__minus(tempvec0, tempvec1);
+	// 			double3 vec2 = MATHUTILS::__minus(tempvec0, tempvec2);
+	// 			int id3 = 0;
+
+	// 			if (tetrahedras.row(tetId).x() != triVInd[0]
+	// 				&& tetrahedras.row(tetId).x() != triVInd[1]
+	// 				&& tetrahedras.row(tetId).x() != triVInd[2]) {
+	// 				id3 = tetrahedras.row(tetId).x();
+	// 			}
+	// 			else if (tetrahedras.row(tetId).y() != triVInd[0]
+	// 				&& tetrahedras.row(tetId).y() != triVInd[1]
+	// 				&& tetrahedras.row(tetId).y() != triVInd[2]) {
+	// 				id3 = tetrahedras.row(tetId).y();
+	// 			}
+	// 			else if (tetrahedras.row(tetId).z() != triVInd[0]
+	// 				&& tetrahedras.row(tetId).z() != triVInd[1]
+	// 				&& tetrahedras.row(tetId).z() != triVInd[2]) {
+	// 				id3 = tetrahedras.row(tetId).z();
+	// 			}
+	// 			else if (tetrahedras.row(tetId).w() != triVInd[0]
+	// 				&& tetrahedras.row(tetId).w() != triVInd[1]
+	// 				&& tetrahedras.row(tetId).w() != triVInd[2]) {
+	// 				id3 = tetrahedras.row(tetId).w();
+	// 			}
+
+	// 			double3 tempvec3 = make_double3(vertexes.row(id3).x(), vertexes.row(id3).y(), vertexes.row(id3).z());
+
+	// 			double3 vec3 = MATHUTILS::__minus(tempvec3, tempvec0);
+	// 			double3 n = MATHUTILS::__v_vec_cross(vec1, vec2);
+	// 			if (MATHUTILS::__v_vec_dot(n, vec3) > 0) {
+	// 				// surfId2TetId.push_back(tetId);
+	// 				surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
+	// 				surfFaces.row(surfFaces.rows() - 1) = Eigen::Vector3i(triVInd[0], triVInd[2], triVInd[1]);
+	// 			}
+	// 			else {
+	// 				// surfId2TetId.push_back(tetId);
+	// 				surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
+    //             	surfFaces.row(surfFaces.rows() - 1) = Eigen::Vector3i(triVInd[0], triVInd[1], triVInd[2]);
+	// 			}
+	// 		}
+	// 	}
+
+	// 	for (int i = 0; i < triangleNum; i++) {
+	// 		surfFaces.conservativeResize(surfFaces.rows() + 1, Eigen::NoChange);
+	// 		Eigen::Vector3i tri = triangles.row(i);
+	// 		surfFaces.row(surfFaces.rows() - 1) = tri;
+	// 	}
+
+
+
+
+
+
+
+	// 	std::vector<bool> flag(length, false);
+	// 	for (int i = 0; i < surfFaces.rows(); ++i) {
+	// 		const auto& cTri = surfFaces.row(i);
+
+	// 		if (!flag[cTri[0]]) {
+	// 			surfVerts.conservativeResize(surfVerts.size() + 1);
+	// 			surfVerts(surfVerts.size() - 1) = cTri[0];
+	// 			flag[cTri[0]] = true;
+	// 		}
+	// 		if (!flag[cTri[1]]) {
+	// 			surfVerts.conservativeResize(surfVerts.size() + 1);
+	// 			surfVerts(surfVerts.size() - 1) = cTri[1];
+	// 			flag[cTri[1]] = true;
+	// 		}
+	// 		if (!flag[cTri[2]]) {
+	// 			surfVerts.conservativeResize(surfVerts.size() + 1);
+	// 			surfVerts(surfVerts.size() - 1) = cTri[2];
+	// 			flag[cTri[2]] = true;
+	// 		}
+	// 	}
+
+	// 	std::set<std::pair<uint64_t, uint64_t>> SFEdges_set;
+	// 	for (int i = 0; i < surfFaces.rows(); ++i) {
+	// 		const auto& cTri = surfFaces.row(i);
+	// 		for (int j = 0; j < 3; j++) {
+	// 			for (int k = 0; k < 3; k++) {
+	// 				if (SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.y(), cTri.x())) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.x(), cTri.y())) == SFEdges_set.end()) {
+	// 					SFEdges_set.insert(std::pair<uint32_t, uint32_t>(cTri.x(), cTri.y()));
+	// 				}
+	// 				if (SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.z(), cTri.y())) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.y(), cTri.z())) == SFEdges_set.end()) {
+	// 					SFEdges_set.insert(std::pair<uint32_t, uint32_t>(cTri.y(), cTri.z()));
+	// 				}
+	// 				if (SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.x(), cTri.z())) == SFEdges_set.end() && SFEdges_set.find(std::pair<uint32_t, uint32_t>(cTri.z(), cTri.x())) == SFEdges_set.end()) {
+	// 					SFEdges_set.insert(std::pair<uint32_t, uint32_t>(cTri.z(), cTri.x()));
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+
+	// 	std::vector<std::pair<uint64_t, uint64_t>> tempEdge(SFEdges_set.begin(), SFEdges_set.end());
+	// 	for (const auto& edge : tempEdge) {
+	// 		surfEdges.conservativeResize(surfEdges.rows() + 1, Eigen::NoChange);
+	// 		surfEdges.row(surfEdges.rows() - 1) = Eigen::Vector2i(edge.first, edge.second);
+	// 	}
+
+	// }
 
 
 	int __getVertNeighbours(int vertexNum, Eigen::MatrixX4i& tetrahedras, Eigen::MatrixX3i& triangles, std::vector<unsigned int>& neighborList, std::vector<unsigned int>& neighborStart, std::vector<unsigned int>& neighborNum) {

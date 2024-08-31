@@ -45,14 +45,12 @@ public:
 public:
     static std::unique_ptr<GeometryManager> instance;
 
-    double3 minCorner;
-    double3 maxCorner;
-
     int numVertices;
     int numTetElements;
     int numSurfVerts;
     int numSurfFaces;
     int numSurfEdges;
+    int numSIMVertPos;
 
     int numTriElements;
     int numTriEdges;
@@ -92,27 +90,26 @@ public:
 
     Eigen::VectorXi surfVert; // num SurfPoints
     uint32_t* cudaSurfVert;
-
     Eigen::MatrixX3i surfFace; // num surfTriangles * 3
     uint3* cudaSurfFace;
-
     Eigen::MatrixX2i surfEdge; // num surfEdges * 2
     uint2* cudaSurfEdge;
 
     Eigen::MatrixX3i triElement; // numTris * 3
     std::vector<uint3> vectriElement;
     uint3* cudaTriElement;
-
-    Eigen::MatrixX2i triEdges; //
+    Eigen::MatrixX2i triEdges; // only work for cloth bending
     uint2* cudaTriEdges;
 
-    Eigen::MatrixX2i triEdgeAdjVertex;
+    Eigen::MatrixX2i triEdgeAdjVertex; // only work for cloth bending
     uint2* cudaTriEdgeAdjVertex;
 
-    Eigen::MatrixX3d collisionSurfVert;
+    Eigen::MatrixX3d collisionVertPos;
+    // Eigen::VectorXi collisionSurfVert;
     Eigen::MatrixX3i collisionSurfFace;
-    Eigen::MatrixX2i collisionSurfEdge;
+    // Eigen::MatrixX2i collisionSurfEdge;
     Eigen::VectorXi collisionBoundaryType;
+
 
     double3* cudaOriginVertPos;
     double3* cudaRestVertPos;
