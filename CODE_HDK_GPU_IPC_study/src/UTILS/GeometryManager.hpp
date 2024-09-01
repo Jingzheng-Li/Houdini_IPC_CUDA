@@ -56,34 +56,30 @@ public:
     int numTriEdges;
 
     Eigen::MatrixX3d vertPos; // numPoints * 3
-    std::vector<double3> vecVertPos;
     double3* cudaVertPos;
 
     Eigen::MatrixX3d vertVel; // numPoints * 3
-    std::vector<double3> vecVertVel;
     double3* cudaVertVel;
 
     Eigen::VectorXd vertMass; // numPoints * 1
     double* cudaVertMass;
 
-    std::vector<MATHUTILS::Matrix3x3d> constraints;
-    MATHUTILS::Matrix3x3d* cudaConstraints;
+    Eigen::MatrixX4i tetElement; // numTets * 4
+    uint4* cudaTetElement;
+
+    Eigen::VectorXd tetVolume; // numTets
+    double* cudaTetVolume;
+
+    Eigen::VectorXd triArea; // numTris
+    double* cudaTriArea;
 
     std::vector<MATHUTILS::Matrix3x3d> DMInverse;
-    MATHUTILS::Matrix3x3d* cudaDmInverses;
+    MATHUTILS::Matrix3x3d* cudaTetDmInverses;
 
     std::vector<MATHUTILS::Matrix2x2d> TriDMInverse;
     MATHUTILS::Matrix2x2d* cudaTriDmInverses;
 
 
-    Eigen::MatrixX4i tetElement; // numTets * 4
-    std::vector<uint4> vectetElement;
-    uint4* cudaTetElement;
-
-    Eigen::VectorXd tetVolume; // numTets
-    double* cudaTetVolume;
-    Eigen::VectorXd triArea; // numTris
-    double* cudaTriArea;
 
     double meanMass;
     double meanVolume;
@@ -96,19 +92,26 @@ public:
     uint2* cudaSurfEdge;
 
     Eigen::MatrixX3i triElement; // numTris * 3
-    std::vector<uint3> vectriElement;
+    // std::vector<uint3> vectriElement;
     uint3* cudaTriElement;
     Eigen::MatrixX2i triEdges; // only work for cloth bending
     uint2* cudaTriEdges;
-
     Eigen::MatrixX2i triEdgeAdjVertex; // only work for cloth bending
     uint2* cudaTriEdgeAdjVertex;
 
     Eigen::MatrixX3d collisionVertPos;
-    // Eigen::VectorXi collisionSurfVert;
     Eigen::MatrixX3i collisionSurfFace;
-    // Eigen::MatrixX2i collisionSurfEdge;
     Eigen::VectorXi collisionBoundaryType;
+
+
+    uint32_t numSoftConstraints;
+    double3* cudaTargetVertPos;
+    uint32_t* cudaTargetIndex;
+    // std::vector<MATHUTILS::Matrix3x3d> constraintsMat;
+    Eigen::Matrix<MATHUTILS::Matrix3x3d, Eigen::Dynamic, 1> constraintsMat;
+    MATHUTILS::Matrix3x3d* cudaConstraintsMat;
+    Eigen::VectorXi targetIndex;
+    Eigen::MatrixX3d targetVertPos;
 
 
     double3* cudaOriginVertPos;
@@ -200,9 +203,6 @@ public:
     double relative_dhat;
     double fDhat;
 
-    uint32_t softConsNum;
-    double3* cudaTargetVert;
-    uint32_t* cudaTargetIndex;
 
     uint32_t cpNum[5];
 	uint32_t ccdCpNum;

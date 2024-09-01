@@ -1266,13 +1266,13 @@ int vertexNum, double alpha = 1) {
         PCG_add_Reduction_force << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_b, numbers);
         break;
     case 1:
-        PCG_add_Reduction_delta0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_P, pcg_data->mc_b, instance->cudaConstraints, numbers);
+        PCG_add_Reduction_delta0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_P, pcg_data->mc_b, instance->cudaConstraintsMat, numbers);
         break;
     case 2:
-        PCG_add_Reduction_deltaN0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_P, pcg_data->mc_b, pcg_data->mc_r, pcg_data->mc_c, instance->cudaConstraints, numbers);
+        PCG_add_Reduction_deltaN0 << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_P, pcg_data->mc_b, pcg_data->mc_r, pcg_data->mc_c, instance->cudaConstraintsMat, numbers);
         break;
     case 3:
-        PCG_add_Reduction_tempSum << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_c, pcg_data->mc_q, instance->cudaConstraints, numbers);
+        PCG_add_Reduction_tempSum << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_c, pcg_data->mc_q, instance->cudaConstraintsMat, numbers);
         break;
     case 4:
         PCG_add_Reduction_deltaN << <blockNum, threadNum, sharedMsize >> > (pcg_data->mc_squeue, pcg_data->mc_dx, pcg_data->mc_c, pcg_data->mc_r, pcg_data->mc_q, pcg_data->mc_P, pcg_data->mc_s, alpha, numbers);
@@ -1444,7 +1444,7 @@ void PCG_FinalStep_UpdateC(const std::unique_ptr<GeometryManager>& instance, dou
     int numbers = vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    __PCG_FinalStep_UpdateC << <blockNum, threadNum >> > (instance->cudaConstraints, s, c, rate, numbers);
+    __PCG_FinalStep_UpdateC << <blockNum, threadNum >> > (instance->cudaConstraintsMat, s, c, rate, numbers);
 }
 
 void PCG_initDX(double3* dx, const double3* z, double rate, int vertexNum) {
@@ -1458,7 +1458,7 @@ void PCG_constraintFilter(const std::unique_ptr<GeometryManager>& instance, cons
     int numbers = vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
-    __PCG_constraintFilter << <blockNum, threadNum >> > (instance->cudaConstraints, input, output, numbers);
+    __PCG_constraintFilter << <blockNum, threadNum >> > (instance->cudaConstraintsMat, input, output, numbers);
 }
 
 

@@ -4267,7 +4267,7 @@ void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
     // offset
-    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaTargetVert, m_instance->cudaTargetIndex, _gradient, m_instance->cudaGPNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->softMotionRate,m_animation_fullRate, m_softConsNum);
+    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaTargetVertPos, m_instance->cudaTargetIndex, _gradient, m_instance->cudaGPNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->softMotionRate,m_animation_fullRate, m_softConsNum);
     CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
@@ -4359,7 +4359,7 @@ void GIPC::computeSoftConstraintGradient(double3* _gradient) {
     // offset
     _computeSoftConstraintGradient << <blockNum, threadNum >> > (
         m_instance->cudaVertPos, 
-        m_instance->cudaTargetVert, 
+        m_instance->cudaTargetVertPos, 
         m_instance->cudaTargetIndex, 
         _gradient, 
         m_instance->softMotionRate, 
@@ -4827,7 +4827,7 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
         CUDA_SAFE_CALL(cudaMemset(_gc, 0, m_vertexNum * sizeof(double3)));
         CUDA_SAFE_CALL(cudaMemset(_GE, 0, m_vertexNum * sizeof(double3)));
         calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, _GE, instance->cudaVertMass, m_vertexNum);
-        FEMENERGY::calculate_fem_gradient(instance->cudaDmInverses, instance->cudaVertPos, instance->cudaTetElement, instance->cudaTetVolume, _GE, m_tetrahedraNum, m_instance->lengthRate, m_instance->volumeRate, m_instance->IPC_dt);
+        FEMENERGY::calculate_fem_gradient(instance->cudaTetDmInverses, instance->cudaVertPos, instance->cudaTetElement, instance->cudaTetVolume, _GE, m_tetrahedraNum, m_instance->lengthRate, m_instance->volumeRate, m_instance->IPC_dt);
         // FEMENERGY::calculate_triangle_fem_gradient(instance->triDmInverses, instance->cudaVertPos, instance->triangles, instance->area, _GE, triangleNum, stretchStiff, shearStiff, IPC_dt);
         computeSoftConstraintGradient(_GE);
         computeGroundGradient(_gc,1);
@@ -4874,7 +4874,7 @@ void GIPC::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance)
     // rhs += -dt^2 * vol * force
     // lhs += dt^2 * H12x12
     FEMENERGY::calculate_tetrahedra_fem_gradient_hessian(
-        instance->cudaDmInverses, 
+        instance->cudaTetDmInverses, 
         instance->cudaVertPos, 
         instance->cudaTetElement, 
         m_BH->mc_H12x12,
@@ -4971,7 +4971,7 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         _getKineticEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (instance->cudaVertPos, instance->cudaXTilta, queue, instance->cudaVertMass, numbers);
         break;
     case 1:
-        _getFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTetElement, instance->cudaDmInverses, instance->cudaTetVolume, numbers, m_instance->lengthRate, m_instance->volumeRate);
+        _getFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTetElement, instance->cudaTetDmInverses, instance->cudaTetVolume, numbers, m_instance->lengthRate, m_instance->volumeRate);
         break;
     case 2:
         _getBarrierEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaCollisionPairs, m_instance->Kappa, m_instance->dHat, numbers);
@@ -4995,7 +4995,7 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         _get_triangleFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTriElement, instance->cudaTriDmInverses, instance->cudaTriArea, numbers, m_instance->stretchStiff, m_instance->shearStiff);
         break;
     case 9:
-        _computeSoftConstraintEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTargetVert, instance->cudaTargetIndex, m_instance->softMotionRate, m_animation_fullRate, numbers);
+        _computeSoftConstraintEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTargetVertPos, instance->cudaTargetIndex, m_instance->softMotionRate, m_animation_fullRate, numbers);
         break;
     case 10:
         _getBendingEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numbers, m_instance->bendStiff);
@@ -5314,7 +5314,7 @@ void GIPC::updateBoundary2(std::unique_ptr<GeometryManager>& instance) {
     int numbers = m_vertexNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateBoundary2<< <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaConstraints, numbers);
+    _updateBoundary2<< <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaConstraintsMat, numbers);
 }
 
 
@@ -5336,7 +5336,7 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     m_bvh_ef(instance->LBVH_EF_ptr) {
 
 
-    m_softConsNum = instance->softConsNum;
+    m_softConsNum = instance->numSoftConstraints;
     m_triangleNum = instance->numTriElements;
 
     m_vertexNum = instance->numVertices;

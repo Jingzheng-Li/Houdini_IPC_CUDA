@@ -21,7 +21,7 @@ GeometryManager::GeometryManager() :
     cudaSurfEdge(nullptr),
     cudaBoundaryType(nullptr),
     cudaTempBoundaryType(nullptr),
-    cudaConstraints(nullptr),
+    cudaConstraintsMat(nullptr),
     cudaRestVertPos(nullptr),
     cudaOriginVertPos(nullptr),
     cudaCollisionPairs(nullptr),
@@ -36,11 +36,11 @@ GeometryManager::GeometryManager() :
     cudaSortIndex(nullptr),
     cudaSortMapVertIndex(nullptr),
     cudaTempDouble(nullptr),
-    cudaDmInverses(nullptr),
+    cudaTetDmInverses(nullptr),
     cudaTempMat3x3(nullptr),
     cudaCloseGPNum(nullptr),
     cudaCloseCPNum(nullptr),
-    cudaTargetVert(nullptr),
+    cudaTargetVertPos(nullptr),
     cudaTargetIndex(nullptr),
     cudaXTilta(nullptr),
     cudaFb(nullptr),
@@ -113,7 +113,7 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaSurfVert);
     CUDAFreeSafe(instance->cudaSurfFace);
     CUDAFreeSafe(instance->cudaSurfEdge);
-    CUDAFreeSafe(instance->cudaConstraints);
+    CUDAFreeSafe(instance->cudaConstraintsMat);
     CUDAFreeSafe(instance->cudaRestVertPos);
     CUDAFreeSafe(instance->cudaOriginVertPos);
     CUDAFreeSafe(instance->cudaCollisionPairs);
@@ -128,13 +128,13 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaSortIndex);
     CUDAFreeSafe(instance->cudaSortMapVertIndex);
     CUDAFreeSafe(instance->cudaTempDouble);
-    CUDAFreeSafe(instance->cudaDmInverses);
+    CUDAFreeSafe(instance->cudaTetDmInverses);
     CUDAFreeSafe(instance->cudaTempMat3x3);
     CUDAFreeSafe(instance->cudaBoundaryType);
     CUDAFreeSafe(instance->cudaTempBoundaryType);
     CUDAFreeSafe(instance->cudaCloseGPNum);
     CUDAFreeSafe(instance->cudaCloseCPNum);
-    CUDAFreeSafe(instance->cudaTargetVert);
+    CUDAFreeSafe(instance->cudaTargetVertPos);
     CUDAFreeSafe(instance->cudaTargetIndex);
     CUDAFreeSafe(instance->cudaXTilta);
     CUDAFreeSafe(instance->cudaFb);
