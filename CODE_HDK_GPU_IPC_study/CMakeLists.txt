@@ -65,8 +65,8 @@ target_compile_definitions(${library_name} PRIVATE GIPC_ASSETS_DIR="${CMAKE_CURR
 target_compile_definitions(${library_name} PRIVATE GIPC_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Output/")
 
 target_compile_definitions(${library_name} PRIVATE 
-    USE_SNK 
-    SVD_DOUBLE 
+    USE_SNK
+    SVD_DOUBLE
     ADAPTIVE_KAPPA
     USE_FRICTION
 )

@@ -36,8 +36,6 @@ bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,
                                     SIM_Time timestep) {
 
 
-    
-
     IPC_Solver();
 
     return true;
@@ -48,8 +46,9 @@ void GAS_CUDA_GIPC::IPC_Solver() {
 	CHECK_ERROR(instance, "IPC_Solver geoinstance not initialized");
     CHECK_ERROR(instance->GIPC_ptr, "IPC_Solver GIPC_ptr not initialized");
 
-
-    instance->GIPC_ptr->IPC_Solver();
+    for (int i = 0; i < instance->IPC_substep; i++) {
+        instance->GIPC_ptr->IPC_Solver();
+    }
     
 }
 

@@ -4102,52 +4102,6 @@ void _updateVelocities(double3* _vertexes, double3* _o_vertexes, double3* _veloc
     }
 }
 
-__global__
-void _updateBoundary(double3* _vertexes, int* _btype, double3* _moveDir, double ipc_dt, int numbers) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numbers) return;
-
-    if ((_btype[idx]) == -1|| (_btype[idx]) == 1) {
-        _vertexes[idx] = MATHUTILS::__add(_vertexes[idx], _moveDir[idx]);
-    }
-}
-
-__global__
-void _updateBoundary2(int* _btype, MATHUTILS::Matrix3x3d* _constraints, int numbers) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numbers) return;
-
-    if ((_btype[idx]) == 1) {
-        _btype[idx] = 0;
-        MATHUTILS::__set_Mat_val(_constraints[idx], 1,0,0,0,1,0,0,0,1);
-    }
-
-}
-
-
-__global__
-void _updateBoundaryMoveDir(double3* _vertexes, int* _btype, double3* _moveDir, double ipc_dt, double PI, double alpha, int numbers) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numbers) return;
-
-    double angleX = PI / 2.5 * ipc_dt * alpha;
-    MATHUTILS::Matrix3x3d rotationL, rotationR;
-    MATHUTILS::__set_Mat_val(rotationL, 1, 0, 0, 0, cos(angleX), sin(angleX), 0, -sin(angleX), cos(angleX));
-    MATHUTILS::__set_Mat_val(rotationR, 1, 0, 0, 0, cos(angleX), -sin(angleX), 0, sin(angleX), cos(angleX));
-
-    _moveDir[idx] = make_double3(0, 0, 0);
-    double mvl = -1*ipc_dt*alpha;
-        if ((_btype[idx]) == 1) {
-        _moveDir[idx] = make_double3(mvl,0,0);//MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationL, _vertexes[idx]), _vertexes[idx]);
-    }
-    // if ((_btype[idx]) > 0) {
-    //     _moveDir[idx] = MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationL, _vertexes[idx]), _vertexes[idx]);
-    // }
-    // if ((_btype[idx]) < 0) {
-    //     _moveDir[idx] = MATHUTILS::__minus(MATHUTILS::__M_v_multiply(rotationR, _vertexes[idx]), _vertexes[idx]);
-    // }
-}
-
 
 __global__
 void _calFrictionLastH_gd(const double3* _vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _collisionPair_environment, double* lambda_lastH_gd, uint32_t* _collisionPair_last_gd, double dHat,
@@ -4267,7 +4221,7 @@ void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
     // offset
-    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaTargetVertPos, m_instance->cudaTargetIndex, _gradient, m_instance->cudaGPNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->softMotionRate,m_animation_fullRate, m_softConsNum);
+    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaTargetVertPos, m_instance->cudaTargetIndex, _gradient, m_instance->cudaGPNum, m_BH->mc_H3x3, m_BH->mc_D1Index, m_instance->softMotionRate, m_instance->animation_fullRate, m_softConsNum);
     CUDA_SAFE_CALL(cudaMemcpy(&m_BH->m_DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
 }
 
@@ -4363,7 +4317,7 @@ void GIPC::computeSoftConstraintGradient(double3* _gradient) {
         m_instance->cudaTargetIndex, 
         _gradient, 
         m_instance->softMotionRate, 
-        m_animation_fullRate, 
+        m_instance->animation_fullRate, 
         m_softConsNum);
 }
 
@@ -4995,7 +4949,7 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         _get_triangleFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTriElement, instance->cudaTriDmInverses, instance->cudaTriArea, numbers, m_instance->stretchStiff, m_instance->shearStiff);
         break;
     case 9:
-        _computeSoftConstraintEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTargetVertPos, instance->cudaTargetIndex, m_instance->softMotionRate, m_animation_fullRate, numbers);
+        _computeSoftConstraintEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTargetVertPos, instance->cudaTargetIndex, m_instance->softMotionRate, m_instance->animation_fullRate, numbers);
         break;
     case 10:
         _getBendingEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numbers, m_instance->bendStiff);
@@ -5296,30 +5250,6 @@ void GIPC::updateVelocities(std::unique_ptr<GeometryManager>& instance) {
     _updateVelocities << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaOriginVertPos, instance->cudaVertVel, instance->cudaBoundaryType, m_instance->IPC_dt, numbers);
 }
 
-void GIPC::updateBoundary(std::unique_ptr<GeometryManager>& instance, double alpha) {
-    int numbers = m_vertexNum;
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateBoundary << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, instance->cudaMoveDir, alpha, numbers);
-}
-
-void GIPC::updateBoundaryMoveDir(std::unique_ptr<GeometryManager>& instance, double alpha) {
-    int numbers = m_vertexNum;
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateBoundaryMoveDir << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaBoundaryType, instance->cudaMoveDir, m_instance->IPC_dt, MATHUTILS::PI, alpha, numbers);
-}
-
-void GIPC::updateBoundary2(std::unique_ptr<GeometryManager>& instance) {
-    int numbers = m_vertexNum;
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;//
-    _updateBoundary2<< <blockNum, threadNum >> > (instance->cudaBoundaryType, instance->cudaConstraintsMat, numbers);
-}
-
-
-
-
 
 
 ///////////////////////////////////////////
@@ -5349,9 +5279,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     m_MAX_COLLITION_PAIRS_NUM = instance->MAX_COLLITION_PAIRS_NUM;
     m_MAX_CCD_COLLITION_PAIRS_NUM = instance->MAX_CCD_COLLITION_PAIRS_NUM;
 
-    m_animation_subRate = instance->animation_subRate;
-    m_animation_fullRate = instance->animation_fullRate;
-
     m_cpNum_last[0] = 0;
     m_cpNum_last[1] = 0;
     m_cpNum_last[2] = 0;
@@ -5361,7 +5288,6 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     m_close_cpNum = 0;
     m_close_gpNum = 0;
 
-    m_isRotate = false;
     m_total_Cg_count = 0;
     m_totalCollisionPairs = 0;
 
@@ -5389,35 +5315,6 @@ void GIPC::IPC_Solver() {
     double alpha = 1;
 
 
-    if (m_isRotate) {
-        updateBoundaryMoveDir(m_instance, alpha);
-        buildBVH_FULLCCD(alpha);
-        buildFullCP(alpha);
-        if (m_ccd_cpNum > 0) {
-            double slackness_m = 0.8;
-            alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, m_ccd_cpNum));
-        }
-        updateBoundary(m_instance, alpha);
-        CUDA_SAFE_CALL(cudaMemcpy(
-            m_instance->cudaTempDouble3Mem,
-            m_instance->cudaVertPos,
-            m_vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
-
-        updateBoundaryMoveDir(m_instance, alpha);
-        stepForward(m_instance->cudaVertPos, m_instance->cudaTempDouble3Mem, m_instance->cudaMoveDir, m_instance->cudaBoundaryType, 1, true, m_vertexNum);
-        buildBVH();
-        int numOfIntersect = 0;
-        while (isIntersected(m_instance)) {
-            //printf("type 0 intersection happened\n");
-            alpha /= 2.0;
-            updateBoundaryMoveDir(m_instance, alpha);
-            numOfIntersect++;
-            stepForward(m_instance->cudaVertPos, m_instance->cudaTempDouble3Mem, m_instance->cudaMoveDir, m_instance->cudaBoundaryType, 1, true, m_vertexNum);
-            buildBVH();
-        }
-        buildCP();
-    }
-
     // calculate a lowerbound and upperbound of a kappa, mainly to keep stability of the system
     upperBoundKappa(m_instance->Kappa);
     if (m_instance->Kappa < 1e-16) {
@@ -5438,7 +5335,7 @@ void GIPC::IPC_Solver() {
     buildFrictionSets();
 #endif
 
-    m_animation_fullRate = m_animation_subRate;
+    m_instance->animation_fullRate = m_instance->animation_subRate;
 
     while (true) {
         tempMalloc_closeConstraint();
@@ -5454,7 +5351,7 @@ void GIPC::IPC_Solver() {
         double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
         double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
         
-        bool finishMotion = m_animation_fullRate > 0.99 ? true : false;
+        bool finishMotion = m_instance->animation_fullRate > 0.99 ? true : false;
 
         if (finishMotion) {
             if ((m_cpNum[0] + m_gpNum) > 0) {
@@ -5480,7 +5377,7 @@ void GIPC::IPC_Solver() {
             tempFree_closeConstraint();
         }
 
-        m_animation_fullRate += m_animation_subRate;
+        m_instance->animation_fullRate += m_instance->animation_subRate;
         
 #ifdef USE_FRICTION
         CUDA_SAFE_CALL(cudaFree(mc_lambda_lastH_scalar));

@@ -64,10 +64,6 @@ public:
 
 
 	void updateVelocities(std::unique_ptr<GeometryManager>& instance);
-	void updateBoundary(std::unique_ptr<GeometryManager>& instance, double alpha);
-	void updateBoundaryMoveDir(std::unique_ptr<GeometryManager>& instance, double alpha);
-    void updateBoundary2(std::unique_ptr<GeometryManager>& instance);
-
 	void initKappa(std::unique_ptr<GeometryManager>& instance);
 	void suggestKappa(double& kappa);
 	void upperBoundKappa(double& kappa);
@@ -158,11 +154,6 @@ public:
 
 	int m_MAX_COLLITION_PAIRS_NUM;
 	int m_MAX_CCD_COLLITION_PAIRS_NUM;
-
-	double m_animation_subRate;
-	double m_animation_fullRate;
-
-	bool m_isRotate;
 
 	int m_total_Cg_count;
 	int m_maxCOllisionPairNum;

@@ -148,6 +148,8 @@ public:
     double3* cudaMoveDir;
 
     double IPC_dt;
+    int IPC_fps;
+    int IPC_substep;
 
     int collision_detection_buff_scale;
 
@@ -177,7 +179,6 @@ public:
     double ground_bottom_offset;
     double3 gravityforce;
 
-    bool animation;
     double animation_subRate;
     double animation_fullRate;
 

@@ -93,7 +93,9 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "loadSIMParamsFromHoudini geoinstance not initialized");
 
-	instance->IPC_dt = 0.01;
+	instance->IPC_substep = 3;
+	instance->IPC_fps = 30;
+	instance->IPC_dt = 1.0 / instance->IPC_fps / instance->IPC_substep; // 1/30fps/3substep
 	instance->precondType = 1;
 
 	instance->density = 1e3;
@@ -108,22 +110,18 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	instance->clothYoungModulus = 1e6;
 	instance->stretchStiff = instance->clothYoungModulus / (2 * (1 + instance->PoissonRate));
 	instance->shearStiff = instance->stretchStiff * 0.03;
-	// instance->stretchStiff = 0.0;
-	// instance->shearStiff = 0.0;
 
 	instance->clothDensity = 2e2;
-	instance->softMotionRate = 1e0;
+	instance->softMotionRate = 1.0;
 	instance->Newton_solver_threshold = 1e-1;
 	instance->pcg_threshold = 1e-3;
 	instance->relative_dhat = 1e-3;
-	// instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
-	instance->bendStiff = 1e-3; // TODO: bound is extremely small in the previous expression, find a correct expression
+	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
+	// instance->bendStiff = 1e-3; // TODO: bound is extremely small in the previous expression, find a correct expression
 
-	instance->animation = false;
 	instance->collision_detection_buff_scale = 1;
-	double motion_rate = 1.0;
+	instance->animation_subRate = 1.0 / instance->IPC_substep;
 	instance->animation_fullRate = 0.0;
-	instance->animation_subRate = 1.0 / motion_rate;
 
 	instance->ground_bottom_offset = 0.0;
 	instance->ground_left_offset = -2.0;
