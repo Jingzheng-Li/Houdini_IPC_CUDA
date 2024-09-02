@@ -66,6 +66,7 @@ void GAS_CUDA_Intergrator::transferDynamicCollisionToCUDA(SIM_Object* object) {
 	}
 	CHECK_ERROR(ptidx==collidegdp->getNumPoints(), "Failed to get all collision points");
 
+    CUDAMemcpyHToDSafe(instance->cudaTargetVertPos, instance->collisionVertPos);
     // std::cout << "colliefsf " << instance->collisionVertPos.row(instance->collisionVertPos.rows()-1) << std::endl;
 
 }

@@ -1508,7 +1508,7 @@ int PCG_Process(
     //CUDA_SAFE_CALL(cudaMemcpy(pcg_data->z, _mvDir, vertexNum * sizeof(double3), cudaMemcpyDeviceToDevice));
     if (cgCounts == 0) {
         printf("indefinite exit\n");
-        exit(0);
+        // exit(0);
     }
     return cgCounts;
 }

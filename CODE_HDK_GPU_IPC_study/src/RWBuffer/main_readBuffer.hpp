@@ -18,9 +18,9 @@ protected:
 
     void loadSIMParamsFromHoudini();
 
-    void loadSIMGeometryFromHoudini(const SIM_Geometry *geo, const GU_Detail *gdp);
+    void loadSIMGeometryFromHoudini(SIM_Object* object);
     void loadCollisionGeometryFromHoudini(SIM_Object* object);
-    void transferDetailAttribTOCUDA(const SIM_Geometry *geo, const GU_Detail *gdp);
+    void transferDetailAttribTOCUDA();
     void transferOtherAttribTOCUDA();
 
     void initSIMFEM();

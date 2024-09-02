@@ -246,10 +246,14 @@ void sortGeometry(std::unique_ptr<GeometryManager>& instance, const AABB* _MaxBv
 	// generate cudaSortIndex from 0 to vertex_num - 1
 	thrust::sequence(thrust::device_ptr<uint32_t>(instance->cudaSortIndex), thrust::device_ptr<uint32_t>(instance->cudaSortIndex) + vertex_num);
     thrust::sort_by_key(thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash), thrust::device_ptr<uint64_t>(instance->cudaMortonCodeHash) + vertex_num, thrust::device_ptr<uint32_t>(instance->cudaSortIndex));
+	
+	// act for sortmesh
+	CUDAMallocSafe(instance->cudaTempBoundaryType, instance->numVertices);
 
     updateVertexes(instance->cudaOriginVertPos, instance->cudaVertPos, instance->cudaTempDouble, instance->cudaVertMass, instance->cudaTempMat3x3, instance->cudaTempBoundaryType, instance->cudaConstraintsMat, instance->cudaBoundaryType, instance->cudaSortIndex, instance->cudaSortMapVertIndex, vertex_num);
 
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertPos, instance->cudaOriginVertPos, vertex_num * sizeof(double3), cudaMemcpyDeviceToDevice));
+	CUDA_SAFE_CALL(cudaMemcpy(instance->cudaRestVertPos, instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaVertMass, instance->cudaTempDouble, vertex_num * sizeof(double), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaConstraintsMat, instance->cudaTempMat3x3, vertex_num * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaBoundaryType, instance->cudaTempBoundaryType, vertex_num * sizeof(int), cudaMemcpyDeviceToDevice));
@@ -329,18 +333,19 @@ void SortMesh::sortMesh(std::unique_ptr<GeometryManager>& instance, AABB* LBVHSc
 	int numSurfVerts = instance->numSurfVerts;
 	int numSurfEdges = instance->numSurfEdges;
 	int numSurfFaces = instance->numSurfFaces;
+	int numVertOffset = instance->numSIMVertPos;
 
 	// sort geometry vertex via Morton Code together with verts/mass/constraints...
-    sortGeometry(instance, LBVHScenesize, numVerts, numTetEles, numTriEles);
+    sortGeometry(instance, LBVHScenesize, numVertOffset, numTetEles, numTriEles);
 
 	// update surface through new vert order
-    updateSurfaces(instance->cudaSortMapVertIndex, instance->cudaSurfFace, numVerts, numSurfFaces);
+    updateSurfaces(instance->cudaSortMapVertIndex, instance->cudaSurfFace, numVertOffset, numSurfFaces);
 
-    updateSurfaceEdges(instance->cudaSortMapVertIndex, instance->cudaSurfEdge, numVerts, numSurfEdges);
+    updateSurfaceEdges(instance->cudaSortMapVertIndex, instance->cudaSurfEdge, numVertOffset, numSurfEdges);
 
-    updateTriEdges_adjVerts(instance->cudaSortMapVertIndex, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numVerts, numTriEdges);
+    updateTriEdges_adjVerts(instance->cudaSortMapVertIndex, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numVertOffset, numTriEdges);
 
-    updateSurfaceVerts(instance->cudaSortMapVertIndex, instance->cudaSurfVert, numVerts, numSurfVerts);
+    updateSurfaceVerts(instance->cudaSortMapVertIndex, instance->cudaSurfVert, numVertOffset, numSurfVerts);
 
 }
 
@@ -356,7 +361,7 @@ void SortMesh::sortPreconditioner(std::unique_ptr<GeometryManager>& instance) {
 		instance->MAS_ptr->mc_neighborStartTemp, 
 		instance->cudaSortIndex, 
 		instance->cudaSortMapVertIndex, 
-		instance->numVertices,
+		instance->numSIMVertPos,
 		instance->MAS_ptr->neighborListSize);
 
 }

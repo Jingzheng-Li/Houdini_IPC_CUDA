@@ -16,6 +16,7 @@
 #include <SIM/SIM_Time.h>
 #include <SIM/SIM_Solver.h>
 #include <SIM/SIM_DopDescription.h>
+#include <SIM/SIM_Collider.h>
 #include <GEO/GEO_Primitive.h>
 #include <GEO/GEO_PrimVDB.h>
 #include <UT/UT_Interrupt.h>

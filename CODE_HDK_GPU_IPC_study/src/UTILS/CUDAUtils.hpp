@@ -7,6 +7,8 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
+#include "MathUtils.hpp"
+
 const static int default_threads = 256;
 
 #define CHECK_ERROR(cond, msg) \
@@ -75,10 +77,18 @@ static void CUDAMemcpyHToDSafe(CudaType* dstCudaData, const EigenType& srcEigenD
             temp[i] = make_int2(srcEigenData(i, 0), srcEigenData(i, 1));
         } else if constexpr (std::is_same<CudaType, uint2>::value) {
             temp[i] = make_uint2(srcEigenData(i, 0), srcEigenData(i, 1));
-        } else if constexpr (std::is_same<CudaType, double>::value) {
-            temp[i] = srcEigenData(i);
         } else if constexpr (std::is_same<CudaType, uint32_t>::value) {
             temp[i] = static_cast<uint32_t>(srcEigenData(i));
+        } else if constexpr (std::is_same<CudaType, double>::value) {
+            temp[i] = srcEigenData(i);
+        } else if constexpr (std::is_same<CudaType, int>::value) {
+            temp[i] = srcEigenData(i);
+        } else if constexpr (std::is_same<CudaType, MATHUTILS::Matrix3x3d>::value) {
+            temp[i] = srcEigenData(i);
+        } else if constexpr (std::is_same<CudaType, MATHUTILS::Matrix2x2d>::value) {
+            temp[i] = srcEigenData(i);
+        } else {
+            std::cerr << "\033[1;31m" << "we do not support such type of data in CUDAMemcpyHToDSafe right now" << "\033[0m" << std::endl;
         }
     }
     CUDA_SAFE_CALL(cudaMemcpy(dstCudaData, temp.data(), srcEigenData.rows() * sizeof(CudaType), cudaMemcpyHostToDevice));
@@ -110,6 +120,8 @@ static void CUDAMemcpyDToHSafe(EigenType& dstEigenData, CudaType* srcCudaData) {
             dstEigenData(i) = temp[i];
         } else if constexpr (std::is_same<CudaType, uint32_t>::value) {
             dstEigenData(i) = temp[i];
+        } else {
+            std::cerr << "\033[1;31m" << "we do not support such type of data in CUDAMemcpyDToHSafe right now" << "\033[0m" << std::endl; 
         }
     }
 }

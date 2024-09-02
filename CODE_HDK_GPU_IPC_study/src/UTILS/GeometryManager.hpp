@@ -73,10 +73,12 @@ public:
     Eigen::VectorXd triArea; // numTris
     double* cudaTriArea;
 
-    std::vector<MATHUTILS::Matrix3x3d> DMInverse;
+    // std::vector<MATHUTILS::Matrix3x3d> tetDMInverse;
+    Eigen::Matrix<MATHUTILS::Matrix3x3d, Eigen::Dynamic, 1> tetDMInverse;
     MATHUTILS::Matrix3x3d* cudaTetDmInverses;
 
-    std::vector<MATHUTILS::Matrix2x2d> TriDMInverse;
+    // std::vector<MATHUTILS::Matrix2x2d> triDMInverse;
+    Eigen::Matrix<MATHUTILS::Matrix2x2d, Eigen::Dynamic, 1> triDMInverse;
     MATHUTILS::Matrix2x2d* cudaTriDmInverses;
 
 
@@ -182,6 +184,7 @@ public:
     uint64_t* cudaMortonCodeHash;
     uint32_t* cudaSortIndex;
     uint32_t* cudaSortMapVertIndex;
+    Eigen::Matrix<uint32_t, Eigen::Dynamic, 1> sortMapVertIndex;
 
     double* cudaTempDouble;
     double3* cudaTempDouble3Mem;
