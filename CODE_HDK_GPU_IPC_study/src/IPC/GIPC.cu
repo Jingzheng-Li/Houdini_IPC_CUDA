@@ -269,7 +269,7 @@ double __cal_Barrier_energy(const double3* _vertexes, const double3* _rest_verte
 #elif (RANK == 6)
             double Energy = Kappa * (-(1 / (eps_x * eps_x)) * I1 * I1 + (2 / eps_x) * I1) * (dHat - dHat * I2) * (dHat - dHat * I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2);
 #endif
-            CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero", cuda_error);
+            CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero pee", cuda_error);
             // if (Energy < 0)
             //     printf("I am pee\n");
             return Energy;
@@ -302,8 +302,9 @@ double __cal_Barrier_energy(const double3* _vertexes, const double3* _rest_verte
 #elif (RANK == 6)
                 double Energy = Kappa * (-(1 / (eps_x * eps_x)) * I1 * I1 + (2 / eps_x) * I1) * (dHat - dHat * I2) * (dHat - dHat * I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2);
 #endif
-                if (Energy < 0)
-                    printf("I am pp\n");
+                CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero pp", cuda_error);
+                // if (Energy < 0)
+                //     printf("I am pp\n");
                 return Energy;
             }
             else {
@@ -352,8 +353,9 @@ double __cal_Barrier_energy(const double3* _vertexes, const double3* _rest_verte
 #elif (RANK == 6)
                 double Energy = Kappa * (-(1 / (eps_x * eps_x)) * I1 * I1 + (2 / eps_x) * I1) * (dHat - dHat * I2) * (dHat - dHat * I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2);
 #endif
-                if (Energy < 0)
-                    printf("I am ppe\n");
+                CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero ppe", cuda_error);
+                // if (Energy < 0)
+                //     printf("I am ppe\n");
                 return Energy;
             }
             else {
@@ -5025,6 +5027,7 @@ void GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
     int insectNum = 0;
 
     bool checkInterset = true;
+
     // if under all ACCD/Ground/CFL defined alpha, still intersection happens
     // then we return back to alpha/2 util find collision free alpha 
     while (checkInterset && isIntersected(instance)) {
@@ -5055,10 +5058,11 @@ void GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
         buildBVH();
         buildCP();
         testingE = computeEnergy(instance);
+        CHECK_ERROR_CUDA(numOfLineSearch <= 10, "energy not goes down correctly\n", cuda_error);
     }
-    if (numOfLineSearch > 8) {
-        printf("!!!!!!!!!!!!! energy raise for %d times of numOfLineSearch\n", numOfLineSearch);
-    }
+    // if (numOfLineSearch > 8) {
+    //     printf("!!!!!!!!!!!!! energy raise for %d times of numOfLineSearch\n", numOfLineSearch);
+    // }
         
     // if alpha fails down in past process, then check again will there be intersection again
     if (alpha < LFStepSize) {

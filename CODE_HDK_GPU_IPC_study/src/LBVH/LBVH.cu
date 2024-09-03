@@ -1592,7 +1592,7 @@ void _edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, cons
                         if (segTriIntersect(_vertexes[_edges[obj_idx].x], _vertexes[_edges[obj_idx].y], _vertexes[face.x], _vertexes[face.y], _vertexes[face.z])) {
                             //atomicAdd(_isIntesect, -1);
                             *_isIntesect=-1;
-                            printf("tri: %d %d %d,  edge: %d  %d\n", face.x, face.y, face.z, _edges[obj_idx].x, _edges[obj_idx].y);
+                            printf("tri-edge intersection error\n tri: %d %d %d,  edge: %d  %d\n", face.x, face.y, face.z, _edges[obj_idx].x, _edges[obj_idx].y);
                             return;
                         }
                 }
@@ -1613,7 +1613,7 @@ void _edgeTriIntersectionQuery(const int* _btype, const double3* _vertexes, cons
                         if (segTriIntersect(_vertexes[_edges[obj_idx].x], _vertexes[_edges[obj_idx].y], _vertexes[face.x], _vertexes[face.y], _vertexes[face.z])) {
                             //atomicAdd(_isIntesect, -1);
                             *_isIntesect=-1;
-                            printf("tri: %d %d %d,  edge: %d  %d\n", face.x, face.y, face.z, _edges[obj_idx].x, _edges[obj_idx].y);
+                            printf("tri-edge intersection error\n tri: %d %d %d,  edge: %d  %d\n", face.x, face.y, face.z, _edges[obj_idx].x, _edges[obj_idx].y);
                             return;
                         }
                 }

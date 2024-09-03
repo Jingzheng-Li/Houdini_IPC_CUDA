@@ -305,8 +305,6 @@ void GAS_Read_Buffer::transferDetailAttribTOCUDA() {
 	instance->numTetElements = instance->tetElement.rows();
 	// get simulation triangle edges (for cloth bending only)
 
-	
-
 	// get 1.all triangles 2.tetrahedrao outer surface 3.collision surface as surfaces
 	MATHUTILS::__getTriSurface(instance->triElement, instance->surfFace);
 	MATHUTILS::__getTetSurface(instance->tetElement, instance->vertPos, instance->surfFace);
@@ -376,7 +374,6 @@ void GAS_Read_Buffer::transferDetailAttribTOCUDA() {
 	CUDAMemcpyHToDSafe(instance->cudaTetVolume, instance->tetVolume);
 	CUDAMallocSafe(instance->cudaTriArea, instance->numTriElements);
 	CUDAMemcpyHToDSafe(instance->cudaTriArea, instance->triArea);
-
 
 
 	instance->targetIndex.resize(instance->numSoftConstraints);
@@ -565,7 +562,7 @@ void GAS_Read_Buffer::initSIMBVH() {
 		instance->cudaCollisionPairs,
 		instance->cudaCCDCollisionPairs, 
 		instance->cudaCPNum, 
-		instance->cudaMatIndex, 
+		instance->cudaMatIndex,
 		instance->numSurfFaces,
 		instance->numSurfVerts
 	);
