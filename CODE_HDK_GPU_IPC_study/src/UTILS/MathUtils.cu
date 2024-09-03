@@ -1989,3 +1989,155 @@ namespace MATHUTILS {
 
 }
 
+
+namespace MATHUTILS {
+
+__global__
+void __reduct_max_double(double* _double1Dim, int number) {
+	int idof = blockIdx.x * blockDim.x;
+	int idx = threadIdx.x + idof;
+
+	extern __shared__ double tep[];
+
+	if (idx >= number) return;
+	//int cfid = tid + CONFLICT_FREE_OFFSET(tid);
+	double temp = _double1Dim[idx];
+
+	__threadfence();
+
+	int warpTid = threadIdx.x % 32;
+	int warpId = (threadIdx.x >> 5);
+	int warpNum;
+	//int tidNum = 32;
+	if (blockIdx.x == gridDim.x - 1) {
+		//tidNum = numbers - idof;
+		warpNum = ((number - idof + 31) >> 5);
+	}
+	else {
+		warpNum = ((blockDim.x) >> 5);
+	}
+	for (int i = 1; i < 32; i = (i << 1)) {
+		double tempMax = __shfl_down_sync(0xFFFFFFFF, temp, i);
+		temp = MATHUTILS::__m_max(temp, tempMax);
+	}
+	if (warpTid == 0) {
+		tep[warpId] = temp;
+	}
+	__syncthreads();
+	if (threadIdx.x >= warpNum) return;
+	if (warpNum > 1) {
+		//	tidNum = warpNum;
+		temp = tep[threadIdx.x];
+
+		//	warpNum = ((tidNum + 31) >> 5);
+		for (int i = 1; i < warpNum; i = (i << 1)) {
+			double tempMax = __shfl_down_sync(0xFFFFFFFF, temp, i);
+			temp = MATHUTILS::__m_max(temp, tempMax);
+		}
+	}
+	if (threadIdx.x == 0) {
+		_double1Dim[blockIdx.x] = temp;
+	}
+}
+
+
+__global__
+void _reduct_min_double(double* _double1Dim, int number) {
+	int idof = blockIdx.x * blockDim.x;
+	int idx = threadIdx.x + idof;
+
+	extern __shared__ double tep[];
+
+	if (idx >= number) return;
+	//int cfid = tid + CONFLICT_FREE_OFFSET(tid);
+	double temp = _double1Dim[idx];
+
+	__threadfence();
+
+
+	int warpTid = threadIdx.x % 32;
+	int warpId = (threadIdx.x >> 5);
+	int warpNum;
+	//int tidNum = 32;
+	if (blockIdx.x == gridDim.x - 1) {
+		//tidNum = numbers - idof;
+		warpNum = ((number - idof + 31) >> 5);
+	}
+	else {
+		warpNum = ((blockDim.x) >> 5);
+	}
+	for (int i = 1; i < 32; i = (i << 1)) {
+		double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+		temp = MATHUTILS::__m_min(temp, tempMin);
+	}
+	if (warpTid == 0) {
+		tep[warpId] = temp;
+	}
+	__syncthreads();
+	if (threadIdx.x >= warpNum) return;
+	if (warpNum > 1) {
+		//	tidNum = warpNum;
+		temp = tep[threadIdx.x];
+
+		//	warpNum = ((tidNum + 31) >> 5);
+		for (int i = 1; i < warpNum; i = (i << 1)) {
+			double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+			temp = MATHUTILS::__m_min(temp, tempMin);
+		}
+	}
+	if (threadIdx.x == 0) {
+		_double1Dim[blockIdx.x] = temp;
+	}
+}
+
+
+__global__
+void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {
+	int idof = blockIdx.x * blockDim.x;
+	int idx = threadIdx.x + idof;
+	extern __shared__ double tep[];
+	if (idx >= number) return;
+
+	//int cfid = tid + CONFLICT_FREE_OFFSET(tid);
+	double3 tempMove = _double3Dim[idx];
+
+	double temp = MATHUTILS::__m_max(MATHUTILS::__m_max(abs(tempMove.x), abs(tempMove.y)), abs(tempMove.z));
+
+	int warpTid = threadIdx.x % 32;
+	int warpId = (threadIdx.x >> 5);
+	int warpNum;
+	//int tidNum = 32;
+	if (blockIdx.x == gridDim.x - 1) {
+		//tidNum = numbers - idof;
+		warpNum = ((number - idof + 31) >> 5);
+	}
+	else {
+		warpNum = ((blockDim.x) >> 5);
+	}
+	for (int i = 1; i < 32; i = (i << 1)) {
+		double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+		temp = MATHUTILS::__m_max(temp, tempMin);
+	}
+	if (warpTid == 0) {
+		tep[warpId] = temp;
+	}
+	__syncthreads();
+	if (threadIdx.x >= warpNum) return;
+	if (warpNum > 1) {
+		//	tidNum = warpNum;
+		temp = tep[threadIdx.x];
+
+		//	warpNum = ((tidNum + 31) >> 5);
+		for (int i = 1; i < warpNum; i = (i << 1)) {
+			double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+			temp = MATHUTILS::__m_max(temp, tempMin);
+		}
+	}
+	if (threadIdx.x == 0) {
+		_double1Dim[blockIdx.x] = temp;
+	}
+}
+
+
+}
+

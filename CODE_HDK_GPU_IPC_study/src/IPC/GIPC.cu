@@ -25,101 +25,101 @@
 
 __device__ bool cuda_error = false;
 
-__global__
-void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {
-    int idof = blockIdx.x * blockDim.x;
-    int idx = threadIdx.x + idof;
-    extern __shared__ double tep[];
-    if (idx >= number) return;
+// __global__
+// void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number) {
+//     int idof = blockIdx.x * blockDim.x;
+//     int idx = threadIdx.x + idof;
+//     extern __shared__ double tep[];
+//     if (idx >= number) return;
 
-    //int cfid = tid + CONFLICT_FREE_OFFSET(tid);
-    double3 tempMove = _double3Dim[idx];
+//     //int cfid = tid + CONFLICT_FREE_OFFSET(tid);
+//     double3 tempMove = _double3Dim[idx];
 
-    double temp = MATHUTILS::__m_max(MATHUTILS::__m_max(abs(tempMove.x), abs(tempMove.y)), abs(tempMove.z));
+//     double temp = MATHUTILS::__m_max(MATHUTILS::__m_max(abs(tempMove.x), abs(tempMove.y)), abs(tempMove.z));
 
-    int warpTid = threadIdx.x % 32;
-    int warpId = (threadIdx.x >> 5);
-    int warpNum;
-    //int tidNum = 32;
-    if (blockIdx.x == gridDim.x - 1) {
-        //tidNum = numbers - idof;
-        warpNum = ((number - idof + 31) >> 5);
-    }
-    else {
-        warpNum = ((blockDim.x) >> 5);
-    }
-    for (int i = 1; i < 32; i = (i << 1)) {
-        double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
-        temp = MATHUTILS::__m_max(temp, tempMin);
-    }
-    if (warpTid == 0) {
-        tep[warpId] = temp;
-    }
-    __syncthreads();
-    if (threadIdx.x >= warpNum) return;
-    if (warpNum > 1) {
-        //	tidNum = warpNum;
-        temp = tep[threadIdx.x];
+//     int warpTid = threadIdx.x % 32;
+//     int warpId = (threadIdx.x >> 5);
+//     int warpNum;
+//     //int tidNum = 32;
+//     if (blockIdx.x == gridDim.x - 1) {
+//         //tidNum = numbers - idof;
+//         warpNum = ((number - idof + 31) >> 5);
+//     }
+//     else {
+//         warpNum = ((blockDim.x) >> 5);
+//     }
+//     for (int i = 1; i < 32; i = (i << 1)) {
+//         double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+//         temp = MATHUTILS::__m_max(temp, tempMin);
+//     }
+//     if (warpTid == 0) {
+//         tep[warpId] = temp;
+//     }
+//     __syncthreads();
+//     if (threadIdx.x >= warpNum) return;
+//     if (warpNum > 1) {
+//         //	tidNum = warpNum;
+//         temp = tep[threadIdx.x];
 
-        //	warpNum = ((tidNum + 31) >> 5);
-        for (int i = 1; i < warpNum; i = (i << 1)) {
-            double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
-            temp = MATHUTILS::__m_max(temp, tempMin);
-        }
-    }
-    if (threadIdx.x == 0) {
-        _double1Dim[blockIdx.x] = temp;
-    }
-}
+//         //	warpNum = ((tidNum + 31) >> 5);
+//         for (int i = 1; i < warpNum; i = (i << 1)) {
+//             double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+//             temp = MATHUTILS::__m_max(temp, tempMin);
+//         }
+//     }
+//     if (threadIdx.x == 0) {
+//         _double1Dim[blockIdx.x] = temp;
+//     }
+// }
 
-__global__
-void _reduct_min_double(double* _double1Dim, int number) {
-    int idof = blockIdx.x * blockDim.x;
-    int idx = threadIdx.x + idof;
+// __global__
+// void _reduct_min_double(double* _double1Dim, int number) {
+//     int idof = blockIdx.x * blockDim.x;
+//     int idx = threadIdx.x + idof;
 
-    extern __shared__ double tep[];
+//     extern __shared__ double tep[];
 
-    if (idx >= number) return;
-    //int cfid = tid + CONFLICT_FREE_OFFSET(tid);
-    double temp = _double1Dim[idx];
+//     if (idx >= number) return;
+//     //int cfid = tid + CONFLICT_FREE_OFFSET(tid);
+//     double temp = _double1Dim[idx];
 
-    __threadfence();
+//     __threadfence();
 
 
-    int warpTid = threadIdx.x % 32;
-    int warpId = (threadIdx.x >> 5);
-    int warpNum;
-    //int tidNum = 32;
-    if (blockIdx.x == gridDim.x - 1) {
-        //tidNum = numbers - idof;
-        warpNum = ((number - idof + 31) >> 5);
-    }
-    else {
-        warpNum = ((blockDim.x) >> 5);
-    }
-    for (int i = 1; i < 32; i = (i << 1)) {
-        double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
-        temp = MATHUTILS::__m_min(temp, tempMin);
-    }
-    if (warpTid == 0) {
-        tep[warpId] = temp;
-    }
-    __syncthreads();
-    if (threadIdx.x >= warpNum) return;
-    if (warpNum > 1) {
-        //	tidNum = warpNum;
-        temp = tep[threadIdx.x];
+//     int warpTid = threadIdx.x % 32;
+//     int warpId = (threadIdx.x >> 5);
+//     int warpNum;
+//     //int tidNum = 32;
+//     if (blockIdx.x == gridDim.x - 1) {
+//         //tidNum = numbers - idof;
+//         warpNum = ((number - idof + 31) >> 5);
+//     }
+//     else {
+//         warpNum = ((blockDim.x) >> 5);
+//     }
+//     for (int i = 1; i < 32; i = (i << 1)) {
+//         double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+//         temp = MATHUTILS::__m_min(temp, tempMin);
+//     }
+//     if (warpTid == 0) {
+//         tep[warpId] = temp;
+//     }
+//     __syncthreads();
+//     if (threadIdx.x >= warpNum) return;
+//     if (warpNum > 1) {
+//         //	tidNum = warpNum;
+//         temp = tep[threadIdx.x];
 
-        //	warpNum = ((tidNum + 31) >> 5);
-        for (int i = 1; i < warpNum; i = (i << 1)) {
-            double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
-            temp = MATHUTILS::__m_min(temp, tempMin);
-        }
-    }
-    if (threadIdx.x == 0) {
-        _double1Dim[blockIdx.x] = temp;
-    }
-}
+//         //	warpNum = ((tidNum + 31) >> 5);
+//         for (int i = 1; i < warpNum; i = (i << 1)) {
+//             double tempMin = __shfl_down_sync(0xFFFFFFFF, temp, i);
+//             temp = MATHUTILS::__m_min(temp, tempMin);
+//         }
+//     }
+//     if (threadIdx.x == 0) {
+//         _double1Dim[blockIdx.x] = temp;
+//     }
+// }
 
 __global__
 void _reduct_M_double2(double2* _double2Dim, int number) {
@@ -174,53 +174,53 @@ void _reduct_M_double2(double2* _double2Dim, int number) {
     }
 }
 
-__global__
-void _reduct_max_double(double* _double1Dim, int number) {
-    int idof = blockIdx.x * blockDim.x;
-    int idx = threadIdx.x + idof;
+// __global__
+// void _reduct_max_double(double* _double1Dim, int number) {
+//     int idof = blockIdx.x * blockDim.x;
+//     int idx = threadIdx.x + idof;
 
-    extern __shared__ double tep[];
+//     extern __shared__ double tep[];
 
-    if (idx >= number) return;
-    //int cfid = tid + CONFLICT_FREE_OFFSET(tid);
-    double temp = _double1Dim[idx];
+//     if (idx >= number) return;
+//     //int cfid = tid + CONFLICT_FREE_OFFSET(tid);
+//     double temp = _double1Dim[idx];
 
-    __threadfence();
+//     __threadfence();
 
-    int warpTid = threadIdx.x % 32;
-    int warpId = (threadIdx.x >> 5);
-    int warpNum;
-    //int tidNum = 32;
-    if (blockIdx.x == gridDim.x - 1) {
-        //tidNum = numbers - idof;
-        warpNum = ((number - idof + 31) >> 5);
-    }
-    else {
-        warpNum = ((blockDim.x) >> 5);
-    }
-    for (int i = 1; i < 32; i = (i << 1)) {
-        double tempMax = __shfl_down_sync(0xFFFFFFFF, temp, i);
-        temp = MATHUTILS::__m_max(temp, tempMax);
-    }
-    if (warpTid == 0) {
-        tep[warpId] = temp;
-    }
-    __syncthreads();
-    if (threadIdx.x >= warpNum) return;
-    if (warpNum > 1) {
-        //	tidNum = warpNum;
-        temp = tep[threadIdx.x];
+//     int warpTid = threadIdx.x % 32;
+//     int warpId = (threadIdx.x >> 5);
+//     int warpNum;
+//     //int tidNum = 32;
+//     if (blockIdx.x == gridDim.x - 1) {
+//         //tidNum = numbers - idof;
+//         warpNum = ((number - idof + 31) >> 5);
+//     }
+//     else {
+//         warpNum = ((blockDim.x) >> 5);
+//     }
+//     for (int i = 1; i < 32; i = (i << 1)) {
+//         double tempMax = __shfl_down_sync(0xFFFFFFFF, temp, i);
+//         temp = MATHUTILS::__m_max(temp, tempMax);
+//     }
+//     if (warpTid == 0) {
+//         tep[warpId] = temp;
+//     }
+//     __syncthreads();
+//     if (threadIdx.x >= warpNum) return;
+//     if (warpNum > 1) {
+//         //	tidNum = warpNum;
+//         temp = tep[threadIdx.x];
 
-        //	warpNum = ((tidNum + 31) >> 5);
-        for (int i = 1; i < warpNum; i = (i << 1)) {
-            double tempMax = __shfl_down_sync(0xFFFFFFFF, temp, i);
-            temp = MATHUTILS::__m_max(temp, tempMax);
-        }
-    }
-    if (threadIdx.x == 0) {
-        _double1Dim[blockIdx.x] = temp;
-    }
-}
+//         //	warpNum = ((tidNum + 31) >> 5);
+//         for (int i = 1; i < warpNum; i = (i << 1)) {
+//             double tempMax = __shfl_down_sync(0xFFFFFFFF, temp, i);
+//             temp = MATHUTILS::__m_max(temp, tempMax);
+//         }
+//     }
+//     if (threadIdx.x == 0) {
+//         _double1Dim[blockIdx.x] = temp;
+//     }
+// }
 
 __device__
 double __cal_Barrier_energy(const double3* _vertexes, const double3* _rest_vertexes, int4 MMCVIDI, double _Kappa, double _dHat) {
@@ -4316,7 +4316,7 @@ double GIPC::self_largestFeasibleStepSize(double slackness, double* mqueue, int 
 
     while (numbers > 1) {
         //_reduct_max_box << <blockNum, threadNum, sharedMsize >> > (_tempLeafBox, numbers);
-        _reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
+        MATHUTILS::__reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
         numbers = blockNum;
         blockNum = (numbers + threadNum - 1) / threadNum;
 
@@ -4347,7 +4347,7 @@ double GIPC::cfl_largestSpeed(double* mqueue) {
 
     while (numbers > 1) {
         //_reduct_max_box << <blockNum, threadNum, sharedMsize >> > (_tempLeafBox, numbers);
-        _reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
+        MATHUTILS::__reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
         numbers = blockNum;
         blockNum = (numbers + threadNum - 1) / threadNum;
 
@@ -4420,7 +4420,7 @@ double GIPC::ground_largestFeasibleStepSize(double slackness, double* mqueue) {
 
     while (numbers > 1) {
         //_reduct_max_box << <blockNum, threadNum, sharedMsize >> > (_tempLeafBox, numbers);
-        _reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
+        MATHUTILS::__reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
         numbers = blockNum;
         blockNum = (numbers + threadNum - 1) / threadNum;
 
@@ -4448,7 +4448,7 @@ double GIPC::InjectiveStepSize(double slackness, double errorRate, double* mqueu
 
     while (numbers > 1) {
         //_reduct_max_box << <blockNum, threadNum, sharedMsize >> > (_tempLeafBox, numbers);
-        _reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
+        MATHUTILS::__reduct_max_double << <blockNum, threadNum, sharedMsize >> > (mqueue, numbers);
         numbers = blockNum;
         blockNum = (numbers + threadNum - 1) / threadNum;
 
@@ -4659,31 +4659,31 @@ void calKineticGradient(double3* _vertexes, double3* _xTilta, double3* _gradient
 }
 
 
-double calcMinMovement(const double3* _moveDir, double* _queue, const int& number) {
-    int numbers = number;
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;
-    unsigned int sharedMsize = sizeof(double) * (threadNum >> 5);
+// double calcMinMovement(const double3* _moveDir, double* _queue, const int& number) {
+//     int numbers = number;
+//     const unsigned int threadNum = default_threads;
+//     int blockNum = (numbers + threadNum - 1) / threadNum;
+//     unsigned int sharedMsize = sizeof(double) * (threadNum >> 5);
 
-    _reduct_max_double3_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, _queue, numbers);
-    //CUDA_SAFE_CALL(cudaDeviceSynchronize());
+//     _reduct_max_double3_to_double << <blockNum, threadNum, sharedMsize >> > (_moveDir, _queue, numbers);
+//     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-    numbers = blockNum;
-    blockNum = (numbers + threadNum - 1) / threadNum;
+//     numbers = blockNum;
+//     blockNum = (numbers + threadNum - 1) / threadNum;
 
-    while (numbers > 1) {
-        //_reduct_max_box << <blockNum, threadNum, sharedMsize >> > (_tempLeafBox, numbers);
-        _reduct_max_double << <blockNum, threadNum, sharedMsize >> > (_queue, numbers);
-        numbers = blockNum;
-        blockNum = (numbers + threadNum - 1) / threadNum;
+//     while (numbers > 1) {
+//         //_reduct_max_box << <blockNum, threadNum, sharedMsize >> > (_tempLeafBox, numbers);
+//         MATHUTILS::__reduct_max_double << <blockNum, threadNum, sharedMsize >> > (_queue, numbers);
+//         numbers = blockNum;
+//         blockNum = (numbers + threadNum - 1) / threadNum;
 
-    }
-    //cudaMemcpy(_leafBoxes, _tempLeafBox, sizeof(AABB), cudaMemcpyDeviceToDevice);
-    double minValue;
-    cudaMemcpy(&minValue, _queue, sizeof(double), cudaMemcpyDeviceToHost);
+//     }
+//     //cudaMemcpy(_leafBoxes, _tempLeafBox, sizeof(AABB), cudaMemcpyDeviceToDevice);
+//     double minValue;
+//     cudaMemcpy(&minValue, _queue, sizeof(double), cudaMemcpyDeviceToHost);
 
-    return minValue;
-}
+//     return minValue;
+// }
 
 void stepForward(double3* _vertexes, double3* _vertexesTemp, double3* _moveDir, int* bType, double alpha, bool moveBoundary, int numbers) {
     const unsigned int threadNum = default_threads;
@@ -5058,7 +5058,7 @@ void GIPC::lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha,
         buildBVH();
         buildCP();
         testingE = computeEnergy(instance);
-        CHECK_ERROR_CUDA(numOfLineSearch <= 10, "energy not goes down correctly\n", cuda_error);
+        CHECK_ERROR_CUDA(numOfLineSearch <= 10, "energy not drops down correctly in more than ten iterations\n", cuda_error);
     }
     // if (numOfLineSearch > 8) {
     //     printf("!!!!!!!!!!!!! energy raise for %d times of numOfLineSearch\n", numOfLineSearch);
@@ -5118,82 +5118,82 @@ void GIPC::tempFree_closeConstraint() {
 }
 
 
-int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
+// int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
-    std::cout.precision(18);
+//     std::cout.precision(18);
 
-    int iterCap = 10000, iterk = 0;
-    CUDA_SAFE_CALL(cudaMemset(instance->cudaMoveDir, 0, instance->numVertices * sizeof(double3)));
+//     int iterCap = 10000, iterk = 0;
+//     CUDA_SAFE_CALL(cudaMemset(instance->cudaMoveDir, 0, instance->numVertices * sizeof(double3)));
 
-    instance->totalPCGCount = 0;
-    instance->totalCollisionPairs = 0;
+//     instance->totalPCGCount = 0;
+//     instance->totalCollisionPairs = 0;
 
-    for (; iterk < iterCap; ++iterk) {
+//     for (; iterk < iterCap; ++iterk) {
 
-        instance->totalCollisionPairs += instance->cpNum[0];
+//         instance->totalCollisionPairs += instance->cpNum[0];
         
-        m_BH->updateDNum(instance->numTriElements, instance->numTetElements, instance->cpNum + 1, instance->cpNumLast + 1, instance->numTriEdges);
+//         m_BH->updateDNum(instance->numTriElements, instance->numTetElements, instance->cpNum + 1, instance->cpNumLast + 1, instance->numTriEdges);
 
-        // calculate gradient gradx(g) and Hessian gradx^2(g)
-        computeGradientAndHessian(instance);
+//         // calculate gradient gradx(g) and Hessian gradx^2(g)
+//         computeGradientAndHessian(instance);
 
-        double distToOpt_PN = calcMinMovement(instance->cudaMoveDir, m_pcg_data->mc_squeue, instance->numVertices);
-        // line search iteration stop 
-        bool gradVanish = (distToOpt_PN < sqrt(instance->Newton_solver_threshold * instance->Newton_solver_threshold * instance->bboxDiagSize2 * instance->IPC_dt * instance->IPC_dt));
-        if (iterk > 0 && gradVanish) {
-            break;
-        }
+//         double distToOpt_PN = calcMinMovement(instance->cudaMoveDir, m_pcg_data->mc_squeue, instance->numVertices);
+//         // line search iteration stop 
+//         bool gradVanish = (distToOpt_PN < sqrt(instance->Newton_solver_threshold * instance->Newton_solver_threshold * instance->bboxDiagSize2 * instance->IPC_dt * instance->IPC_dt));
+//         if (iterk > 0 && gradVanish) {
+//             break;
+//         }
 
-        // solve PCG with MAS Preconditioner and get instance->cudaMoveDir (i.e. dx)
-        instance->totalPCGCount += calculateMovingDirection(instance, instance->cpNum[0], instance->precondType);
+//         // solve PCG with MAS Preconditioner and get instance->cudaMoveDir (i.e. dx)
+//         instance->totalPCGCount += calculateMovingDirection(instance, instance->cpNum[0], instance->precondType);
 
-        double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
+//         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 
-        alpha = MATHUTILS::__m_min(alpha, ground_largestFeasibleStepSize(slackness_a, m_pcg_data->mc_squeue));
-        // alpha = MATHUTILS::__m_min(alpha, InjectiveStepSize(0.2, 1e-6, m_pcg_data->mc_squeue, instance->cudaTetElement));
-        alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, instance->cpNum[0]));
+//         alpha = MATHUTILS::__m_min(alpha, ground_largestFeasibleStepSize(slackness_a, m_pcg_data->mc_squeue));
+//         // alpha = MATHUTILS::__m_min(alpha, InjectiveStepSize(0.2, 1e-6, m_pcg_data->mc_squeue, instance->cudaTetElement));
+//         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, instance->cpNum[0]));
         
-        double temp_alpha = alpha;
-        double alpha_CFL = alpha;
+//         double temp_alpha = alpha;
+//         double alpha_CFL = alpha;
 
-        double ccd_size = 1.0;
-#ifdef USE_FRICTION
-        ccd_size = 0.6;
-#endif
+//         double ccd_size = 1.0;
+// #ifdef USE_FRICTION
+//         ccd_size = 0.6;
+// #endif
 
-        // build BVH tree of type ccd, get collision pairs num instance->ccdCpNum, 
-        // if instance->ccdCpNum > 0, means there will be collision in temp_alpha substep
-        buildBVH_FULLCCD(temp_alpha);
-        buildFullCP(temp_alpha);
-        if (instance->ccdCpNum > 0) {
-            // obtain max velocity of moveDir
-            double maxSpeed = cfl_largestSpeed(m_pcg_data->mc_squeue);
-            alpha_CFL = sqrt(instance->dHat) / maxSpeed * 0.5;
-            alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
-            if (temp_alpha > 2 * alpha_CFL) {
-                alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, instance->ccdCpNum) * ccd_size);
-                alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
-            }
-        }
+//         // build BVH tree of type ccd, get collision pairs num instance->ccdCpNum, 
+//         // if instance->ccdCpNum > 0, means there will be collision in temp_alpha substep
+//         buildBVH_FULLCCD(temp_alpha);
+//         buildFullCP(temp_alpha);
+//         if (instance->ccdCpNum > 0) {
+//             // obtain max velocity of moveDir
+//             double maxSpeed = cfl_largestSpeed(m_pcg_data->mc_squeue);
+//             alpha_CFL = sqrt(instance->dHat) / maxSpeed * 0.5;
+//             alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
+//             if (temp_alpha > 2 * alpha_CFL) {
+//                 alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, instance->ccdCpNum) * ccd_size);
+//                 alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
+//             }
+//         }
 
-        //printf("alpha:  %f\n", alpha);
+//         //printf("alpha:  %f\n", alpha);
 
-        lineSearch(instance, alpha, alpha_CFL);
-        postLineSearch(instance, alpha);
+//         lineSearch(instance, alpha, alpha_CFL);
+//         postLineSearch(instance, alpha);
 
-        CUDA_SAFE_CALL(cudaDeviceSynchronize());
+//         CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-    }
+//     }
     
-    printf("\n");
-    printf("Kappa: %f  iteration k:  %d \n", instance->Kappa, iterk);
-    std::cout << "instance->totalPCGCount: " << instance->totalPCGCount << std::endl;
-    std::cout << "instance->totalCollisionPairs: " << instance->totalCollisionPairs << std::endl;
-    printf("\n");
+//     printf("\n");
+//     printf("Kappa: %f  iteration k:  %d \n", instance->Kappa, iterk);
+//     std::cout << "instance->totalPCGCount: " << instance->totalPCGCount << std::endl;
+//     std::cout << "instance->totalCollisionPairs: " << instance->totalCollisionPairs << std::endl;
+//     printf("\n");
 
-    return iterk;
+//     return iterk;
    
-}
+// }
 
 void GIPC::updateVelocities(std::unique_ptr<GeometryManager>& instance) {
     int numbers = instance->numVertices;
@@ -5248,117 +5248,117 @@ void GIPC::CUDA_FREE_GIPC() {
 }
 
 
-bool GIPC::IPC_Solver() {
+// bool GIPC::IPC_Solver() {
 
-    bool host_cuda_error = false;
-    cudaMemcpyToSymbol(cuda_error, &host_cuda_error, sizeof(bool));
+//     bool host_cuda_error = false;
+//     cudaMemcpyToSymbol(cuda_error, &host_cuda_error, sizeof(bool));
 
-    // calculate a lowerbound and upperbound of a kappa, mainly to keep stability of the system
-    upperBoundKappa(m_instance->Kappa);
-    if (m_instance->Kappa < 1e-16) {
-        // init Kappa, basically only active for 1st frame, to give you a first suggest kappa value.
-        suggestKappa(m_instance->Kappa);
-    }
-    initKappa(m_instance);
+//     // calculate a lowerbound and upperbound of a kappa, mainly to keep stability of the system
+//     upperBoundKappa(m_instance->Kappa);
+//     if (m_instance->Kappa < 1e-16) {
+//         // init Kappa, basically only active for 1st frame, to give you a first suggest kappa value.
+//         suggestKappa(m_instance->Kappa);
+//     }
+//     initKappa(m_instance);
 
 
-#ifdef USE_FRICTION
-    CUDAMallocSafe(m_instance->cudaLambdaLastHScalar, m_instance->cpNum[0]);
-    CUDAMallocSafe(m_instance->cudaDistCoord, m_instance->cpNum[0]);
-    CUDAMallocSafe(m_instance->cudaTanBasis, m_instance->cpNum[0]);
-    CUDAMallocSafe(m_instance->cudaCollisonPairsLastH, m_instance->cpNum[0]);
-    CUDAMallocSafe(m_instance->cudaMatIndexLast, m_instance->cpNum[0]);
-    CUDAMallocSafe(m_instance->cudaLambdaLastHScalarGd, m_instance->gpNum);
-    CUDAMallocSafe(m_instance->cudaCollisonPairsLastHGd, m_instance->gpNum);
-    buildFrictionSets();
+// #ifdef USE_FRICTION
+//     CUDAMallocSafe(m_instance->cudaLambdaLastHScalar, m_instance->cpNum[0]);
+//     CUDAMallocSafe(m_instance->cudaDistCoord, m_instance->cpNum[0]);
+//     CUDAMallocSafe(m_instance->cudaTanBasis, m_instance->cpNum[0]);
+//     CUDAMallocSafe(m_instance->cudaCollisonPairsLastH, m_instance->cpNum[0]);
+//     CUDAMallocSafe(m_instance->cudaMatIndexLast, m_instance->cpNum[0]);
+//     CUDAMallocSafe(m_instance->cudaLambdaLastHScalarGd, m_instance->gpNum);
+//     CUDAMallocSafe(m_instance->cudaCollisonPairsLastHGd, m_instance->gpNum);
+//     buildFrictionSets();
 
-#endif
+// #endif
 
-    m_instance->animation_fullRate = m_instance->animation_subRate;
+//     m_instance->animation_fullRate = m_instance->animation_subRate;
 
-    while (true) {
-        tempMalloc_closeConstraint();
+//     while (true) {
+//         tempMalloc_closeConstraint();
 
-        CUDAMemcpyHToDSafe(m_instance->cudaCloseCPNum, Eigen::VectorXi::Zero(1));
-        CUDAMemcpyHToDSafe(m_instance->cudaCloseGPNum, Eigen::VectorXi::Zero(1));
+//         CUDAMemcpyHToDSafe(m_instance->cudaCloseCPNum, Eigen::VectorXi::Zero(1));
+//         CUDAMemcpyHToDSafe(m_instance->cudaCloseGPNum, Eigen::VectorXi::Zero(1));
 
-        solve_subIP(m_instance);
+//         solve_subIP(m_instance);
 
-        double2 minMaxDist1 = minMaxGroundDist();
-        double2 minMaxDist2 = minMaxSelfDist();
+//         double2 minMaxDist1 = minMaxGroundDist();
+//         double2 minMaxDist2 = minMaxSelfDist();
 
-        double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
-        double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
+//         double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
+//         double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
         
-        bool finishMotion = m_instance->animation_fullRate > 0.99 ? true : false;
+//         bool finishMotion = m_instance->animation_fullRate > 0.99 ? true : false;
 
-        if (finishMotion) {
-            if ((m_instance->cpNum[0] + m_instance->gpNum) > 0) {
+//         if (finishMotion) {
+//             if ((m_instance->cpNum[0] + m_instance->gpNum) > 0) {
 
-                if (minDist < m_instance->dTol) {
-                    tempFree_closeConstraint();
-                    break;
-                }
-                else if (maxDist < m_instance->dHat) {
-                    tempFree_closeConstraint();
-                    break;
-                }
-                else {
-                    tempFree_closeConstraint();
-                }
-            }
-            else {
-                tempFree_closeConstraint();
-                break;
-            }
-        }
-        else {
-            tempFree_closeConstraint();
-        }
+//                 if (minDist < m_instance->dTol) {
+//                     tempFree_closeConstraint();
+//                     break;
+//                 }
+//                 else if (maxDist < m_instance->dHat) {
+//                     tempFree_closeConstraint();
+//                     break;
+//                 }
+//                 else {
+//                     tempFree_closeConstraint();
+//                 }
+//             }
+//             else {
+//                 tempFree_closeConstraint();
+//                 break;
+//             }
+//         }
+//         else {
+//             tempFree_closeConstraint();
+//         }
 
-        m_instance->animation_fullRate += m_instance->animation_subRate;
+//         m_instance->animation_fullRate += m_instance->animation_subRate;
         
-#ifdef USE_FRICTION
-        CUDAFreeSafe(m_instance->cudaLambdaLastHScalar);
-        CUDAFreeSafe(m_instance->cudaDistCoord);
-        CUDAFreeSafe(m_instance->cudaTanBasis);
-        CUDAFreeSafe(m_instance->cudaCollisonPairsLastH);
-        CUDAFreeSafe(m_instance->cudaMatIndexLast);
-        CUDAFreeSafe(m_instance->cudaLambdaLastHScalarGd);
-        CUDAFreeSafe(m_instance->cudaCollisonPairsLastHGd);
+// #ifdef USE_FRICTION
+//         CUDAFreeSafe(m_instance->cudaLambdaLastHScalar);
+//         CUDAFreeSafe(m_instance->cudaDistCoord);
+//         CUDAFreeSafe(m_instance->cudaTanBasis);
+//         CUDAFreeSafe(m_instance->cudaCollisonPairsLastH);
+//         CUDAFreeSafe(m_instance->cudaMatIndexLast);
+//         CUDAFreeSafe(m_instance->cudaLambdaLastHScalarGd);
+//         CUDAFreeSafe(m_instance->cudaCollisonPairsLastHGd);
 
-        CUDAMallocSafe(m_instance->cudaLambdaLastHScalar, m_instance->cpNum[0]);
-        CUDAMallocSafe(m_instance->cudaDistCoord, m_instance->cpNum[0]);
-        CUDAMallocSafe(m_instance->cudaTanBasis, m_instance->cpNum[0]);
-        CUDAMallocSafe(m_instance->cudaCollisonPairsLastH, m_instance->cpNum[0]);
-        CUDAMallocSafe(m_instance->cudaMatIndexLast, m_instance->cpNum[0]);
-        CUDAMallocSafe(m_instance->cudaLambdaLastHScalarGd, m_instance->gpNum);
-        CUDAMallocSafe(m_instance->cudaCollisonPairsLastHGd, m_instance->gpNum);
-        buildFrictionSets();
-#endif
-    }
+//         CUDAMallocSafe(m_instance->cudaLambdaLastHScalar, m_instance->cpNum[0]);
+//         CUDAMallocSafe(m_instance->cudaDistCoord, m_instance->cpNum[0]);
+//         CUDAMallocSafe(m_instance->cudaTanBasis, m_instance->cpNum[0]);
+//         CUDAMallocSafe(m_instance->cudaCollisonPairsLastH, m_instance->cpNum[0]);
+//         CUDAMallocSafe(m_instance->cudaMatIndexLast, m_instance->cpNum[0]);
+//         CUDAMallocSafe(m_instance->cudaLambdaLastHScalarGd, m_instance->gpNum);
+//         CUDAMallocSafe(m_instance->cudaCollisonPairsLastHGd, m_instance->gpNum);
+//         buildFrictionSets();
+// #endif
+//     }
 
 
-#ifdef USE_FRICTION
-    CUDAFreeSafe(m_instance->cudaLambdaLastHScalar);
-    CUDAFreeSafe(m_instance->cudaDistCoord);
-    CUDAFreeSafe(m_instance->cudaTanBasis);
-    CUDAFreeSafe(m_instance->cudaCollisonPairsLastH);
-    CUDAFreeSafe(m_instance->cudaMatIndexLast);
-    CUDAFreeSafe(m_instance->cudaLambdaLastHScalarGd);
-    CUDAFreeSafe(m_instance->cudaCollisonPairsLastHGd);
-#endif
+// #ifdef USE_FRICTION
+//     CUDAFreeSafe(m_instance->cudaLambdaLastHScalar);
+//     CUDAFreeSafe(m_instance->cudaDistCoord);
+//     CUDAFreeSafe(m_instance->cudaTanBasis);
+//     CUDAFreeSafe(m_instance->cudaCollisonPairsLastH);
+//     CUDAFreeSafe(m_instance->cudaMatIndexLast);
+//     CUDAFreeSafe(m_instance->cudaLambdaLastHScalarGd);
+//     CUDAFreeSafe(m_instance->cudaCollisonPairsLastHGd);
+// #endif
 
-    updateVelocities(m_instance);
+//     updateVelocities(m_instance);
 
-    FEMENERGY::computeXTilta(m_instance, 1);
+//     FEMENERGY::computeXTilta(m_instance, 1);
 
-    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+//     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-    cudaMemcpyFromSymbol(&host_cuda_error, cuda_error, sizeof(bool));
+//     cudaMemcpyFromSymbol(&host_cuda_error, cuda_error, sizeof(bool));
 
-    return host_cuda_error;
+//     return host_cuda_error;
 
-}
+// }
 
 

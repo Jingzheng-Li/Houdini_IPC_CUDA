@@ -2,6 +2,7 @@
 
 #include "UTILS/HoudiniUtils.hpp"
 #include "UTILS/GeometryManager.hpp"
+#include "ImplicitIntergrator.cuh"
 
 class GAS_CUDA_Intergrator : public GAS_SubSolver {
 
@@ -19,6 +20,8 @@ protected:
 
     void transferDynamicCollisionToCUDA(SIM_Object* object);
 
+protected:
+    void gas_IPC_Solver();
 
 private:
 

@@ -68,7 +68,7 @@ public:
 	void suggestKappa(double& kappa);
 	void upperBoundKappa(double& kappa);
 
-	int solve_subIP(std::unique_ptr<GeometryManager>& instance);
+	// int solve_subIP(std::unique_ptr<GeometryManager>& instance);
 	void buildFrictionSets();
 	bool Inverse_Physics(std::unique_ptr<GeometryManager>& instance);
 
@@ -77,7 +77,7 @@ public:
 	void computeInverseGradient(std::unique_ptr<GeometryManager>& instance);
 	void computeFldm(double3* _deltaPos, double3* fldm);
 
-	bool IPC_Solver();
+	// bool IPC_Solver();
 
 
 public:

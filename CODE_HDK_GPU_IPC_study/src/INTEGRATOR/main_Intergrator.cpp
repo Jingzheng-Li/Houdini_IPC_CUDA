@@ -34,6 +34,8 @@ bool GAS_CUDA_Intergrator::solveGasSubclass(SIM_Engine& engine,
 
     transferDynamicCollisionToCUDA(object);
 
+    gas_IPC_Solver();
+
     return true;
 }
 
@@ -69,4 +71,25 @@ void GAS_CUDA_Intergrator::transferDynamicCollisionToCUDA(SIM_Object* object) {
     CUDAMemcpyHToDSafe(instance->cudaTargetVertPos, instance->collisionVertPos);
 
 }
+
+
+void GAS_CUDA_Intergrator::gas_IPC_Solver() {
+    auto &instance = GeometryManager::instance;
+	CHECK_ERROR(instance, "gas_IPC_Solver geoinstance not initialized");
+    CHECK_ERROR(instance->GIPC_ptr, "gas_IPC_Solver GIPC_ptr not initialized");
+    CHECK_ERROR(instance->LBVH_E_ptr, "not initialize m_bvh_f");
+    CHECK_ERROR(instance->LBVH_F_ptr, "not initialize m_bvh_e");
+    CHECK_ERROR(instance->LBVH_EF_ptr, "not initialize m_bvh_ef");
+    CHECK_ERROR(instance->PCGData_ptr, "not initialize m_pcg_data");
+    CHECK_ERROR(instance->BH_ptr, "not initialize m_BH");
+    CHECK_ERROR(instance->Integrator_ptr, "not initialize Integrator_ptr");
+
+    for (int i = 0; i < instance->IPC_substep; i++) {
+        bool cuda_error = instance->Integrator_ptr->IPC_Solver();
+        CHECK_ERROR(!cuda_error, "IPC_Solver meet some errors, please check what happens");
+    }
+    
+}
+
+
 
