@@ -30,20 +30,18 @@
 #include <eigen3/Eigen/Core>
 
 
-#define BLUE_TEXT "\033[34m"
-#define RESET_TEXT "\033[0m"
-#define PRINT_BLUE(msg) \
-    std::cout << BLUE_TEXT << msg << RESET_TEXT << std::endl;
-
 #define CHECK_ERROR(cond, msg) \
     if (!(cond)) { \
         std::cerr << "\033[1;31m" << msg << "\033[0m" << std::endl; \
+        addError(nullptr, SIM_MESSAGE, msg, UT_ERROR_ABORT); \
         return; \
     }
+
 
 #define CHECK_ERROR_SOLVER(cond, msg) \
     if (!(cond)) { \
         std::cerr << "\033[1;31m" << msg << "\033[0m" << std::endl; \
+        addError(nullptr, SIM_MESSAGE, msg, UT_ERROR_ABORT); \
         return false; \
     }
 

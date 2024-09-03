@@ -11,9 +11,10 @@
 
 const static int default_threads = 256;
 
-#define CHECK_ERROR(cond, msg) \
+#define CHECK_ERROR_CUDA(cond, msg, error) \
     if (!(cond)) { \
-        std::cerr << "\033[1;31m" << msg << "\033[0m" << std::endl; \
+        printf("\033[1;31mCUDA Error: %s\033[0m\n", msg); \
+        error = true; \
         return; \
     }
 

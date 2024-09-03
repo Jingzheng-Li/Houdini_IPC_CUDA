@@ -18,7 +18,7 @@ protected:
                         SIM_Time timestep) override;
 
 protected:
-    void IPC_Solver();
+    void gas_IPC_Solver();
 
 private:
 

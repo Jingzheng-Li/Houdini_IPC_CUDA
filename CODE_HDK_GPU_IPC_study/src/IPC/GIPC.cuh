@@ -31,8 +31,8 @@ public:
 
 	void computeCloseGroundVal();
 	void computeSelfCloseVal();
-	bool checkCloseGroundVal();
-	bool checkSelfCloseVal();
+	// bool checkCloseGroundVal();
+	// bool checkSelfCloseVal();
 	double2 minMaxGroundDist();
 	double2 minMaxSelfDist();
 	
@@ -77,7 +77,7 @@ public:
 	void computeInverseGradient(std::unique_ptr<GeometryManager>& instance);
 	void computeFldm(double3* _deltaPos, double3* fldm);
 
-	void IPC_Solver();
+	bool IPC_Solver();
 
 
 public:
@@ -100,8 +100,8 @@ public:
 
 	// double3* mc_targetVert;	
 	// uint32_t* mc_targetInd;	
-	uint32_t m_softConsNum;
-	uint32_t m_triangleNum;
+	// uint32_t m_softConsNum;
+	// uint32_t m_triangleNum;
 
 	// double3* mc_moveDir;
 
@@ -121,13 +121,13 @@ public:
 	// uint32_t* mc_gpNum;
 	// uint32_t* mc_close_gpNum;
 
-	uint32_t m_cpNum[5];
-	uint32_t m_ccd_cpNum;
-	uint32_t m_gpNum;
-	uint32_t m_close_cpNum;
-	uint32_t m_close_gpNum;
-	uint32_t m_gpNum_last;
-	uint32_t m_cpNum_last[5];
+	// uint32_t m_cpNum[5];
+	// uint32_t m_gpNum;
+	// uint32_t m_ccd_cpNum;
+	// uint32_t m_close_cpNum;
+	// uint32_t m_close_gpNum;
+	// uint32_t m_gpNum_last;
+	// uint32_t m_cpNum_last[5];
 
 
 
@@ -144,16 +144,15 @@ public:
 	uint32_t* mc_collisonPairs_lastH_gd;
 
 
-	uint32_t m_vertexNum;
-	uint32_t m_surf_vertexNum;
-	uint32_t m_surf_edgeNum;
-	uint32_t m_tri_edge_num;
-	uint32_t m_surf_faceNum;
-	uint32_t m_tetrahedraNum;
+	// uint32_t m_vertexNum;
+	// uint32_t m_surf_vertexNum;
+	// uint32_t m_surf_edgeNum;
+	// uint32_t m_tri_edge_num;
+	// uint32_t m_surf_faceNum;
+	// uint32_t m_tetrahedraNum;
 
-
-	int m_MAX_COLLITION_PAIRS_NUM;
-	int m_MAX_CCD_COLLITION_PAIRS_NUM;
+	// int m_MAX_COLLITION_PAIRS_NUM;
+	// int m_MAX_CCD_COLLITION_PAIRS_NUM;
 
 	int m_total_Cg_count;
 	int m_maxCOllisionPairNum;

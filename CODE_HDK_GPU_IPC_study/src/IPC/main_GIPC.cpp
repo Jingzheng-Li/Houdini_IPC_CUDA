@@ -36,18 +36,24 @@ bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,
                                     SIM_Time timestep) {
 
 
-    IPC_Solver();
+    gas_IPC_Solver();
 
     return true;
 }
 
-void GAS_CUDA_GIPC::IPC_Solver() {
+void GAS_CUDA_GIPC::gas_IPC_Solver() {
     auto &instance = GeometryManager::instance;
-	CHECK_ERROR(instance, "IPC_Solver geoinstance not initialized");
-    CHECK_ERROR(instance->GIPC_ptr, "IPC_Solver GIPC_ptr not initialized");
+	CHECK_ERROR(instance, "gas_IPC_Solver geoinstance not initialized");
+    CHECK_ERROR(instance->GIPC_ptr, "gas_IPC_Solver GIPC_ptr not initialized");
+    CHECK_ERROR(instance->LBVH_E_ptr, "not initialize m_bvh_f");
+    CHECK_ERROR(instance->LBVH_F_ptr, "not initialize m_bvh_e");
+    CHECK_ERROR(instance->LBVH_EF_ptr, "not initialize m_bvh_ef");
+    CHECK_ERROR(instance->PCGData_ptr, "not initialize m_pcg_data");
+    CHECK_ERROR(instance->BH_ptr, "not initialize m_BH");
 
     for (int i = 0; i < instance->IPC_substep; i++) {
-        instance->GIPC_ptr->IPC_Solver();
+        bool cuda_error = instance->GIPC_ptr->IPC_Solver();
+        CHECK_ERROR(!cuda_error, "IPC_Solver meet some errors, please check what happens");
     }
     
 }

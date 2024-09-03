@@ -56,8 +56,6 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 
 	if (!FIRSTFRAME::hou_initialized) {
 		
-		PRINT_BLUE("running_initialized");
-
 		if (!instance) {
 			instance = std::unique_ptr<GeometryManager>(new GeometryManager());
 		}
