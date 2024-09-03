@@ -49,7 +49,18 @@ GeometryManager::GeometryManager() :
     cudaTriEdges(nullptr),
     cudaTriEdgeAdjVertex(nullptr),
     cudaTempDouble3Mem(nullptr),
-    cudaTriDmInverses(nullptr)
+    cudaTriDmInverses(nullptr),
+    cudaCloseConstraintID(nullptr),
+    cudaCloseConstraintVal(nullptr),
+    cudaCloseMConstraintID(nullptr),
+    cudaCloseMConstraintVal(nullptr),
+    cudaLambdaLastHScalar(nullptr),
+    cudaDistCoord(nullptr),
+    cudaTanBasis(nullptr),
+    cudaCollisonPairsLastH(nullptr),
+    cudaMatIndexLast(nullptr),
+    cudaLambdaLastHScalarGd(nullptr),
+    cudaCollisonPairsLastHGd(nullptr)
     {}
 
 GeometryManager::~GeometryManager() {
@@ -144,5 +155,17 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaTriEdgeAdjVertex);
     CUDAFreeSafe(instance->cudaTempDouble3Mem);
     CUDAFreeSafe(instance->cudaTriDmInverses);
+    CUDAFreeSafe(instance->cudaCloseConstraintID);
+    CUDAFreeSafe(instance->cudaCloseConstraintVal);
+    CUDAFreeSafe(instance->cudaCloseMConstraintID);
+    CUDAFreeSafe(instance->cudaCloseMConstraintVal);
+    CUDAFreeSafe(instance->cudaLambdaLastHScalar);
+    CUDAFreeSafe(instance->cudaDistCoord);
+    CUDAFreeSafe(instance->cudaTanBasis);
+    CUDAFreeSafe(instance->cudaCollisonPairsLastH);
+    CUDAFreeSafe(instance->cudaMatIndexLast);
+    CUDAFreeSafe(instance->cudaLambdaLastHScalarGd);
+    CUDAFreeSafe(instance->cudaCollisonPairsLastHGd);
+
     
 }

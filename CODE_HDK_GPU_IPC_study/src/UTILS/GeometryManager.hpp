@@ -216,5 +216,26 @@ public:
 	uint32_t gpNumLast;
 	uint32_t cpNumLast[5];
 
+    int totalPCGCount;
+    int totalCollisionPairs;
+
+
+
+    uint32_t* cudaCloseConstraintID;
+	double* cudaCloseConstraintVal;
+	int4* cudaCloseMConstraintID;
+	double* cudaCloseMConstraintVal;
+
+    // friction parameters
+    double* cudaLambdaLastHScalar;
+	double2* cudaDistCoord;
+	MATHUTILS::Matrix3x2d* cudaTanBasis;
+	int4* cudaCollisonPairsLastH;
+	int* cudaMatIndexLast;
+	double* cudaLambdaLastHScalarGd;
+	uint32_t* cudaCollisonPairsLastHGd;
+
+
+
 };
 

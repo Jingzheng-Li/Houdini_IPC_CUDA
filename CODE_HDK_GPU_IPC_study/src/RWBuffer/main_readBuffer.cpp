@@ -320,7 +320,6 @@ void GAS_Read_Buffer::transferDetailAttribTOCUDA() {
 	instance->boundaryTypies.conservativeResize(instance->vertPos.rows());
 	instance->boundaryTypies.bottomRows(instance->collisionVertPos.rows()) = instance->collisionBoundaryType;
 
-
 	CUDAMallocSafe(instance->cudaVertPos, instance->numVertices);
 	CUDAMallocSafe(instance->cudaVertVel, instance->numVertices);
 	CUDAMallocSafe(instance->cudaVertMass, instance->numVertices);
@@ -336,8 +335,6 @@ void GAS_Read_Buffer::transferDetailAttribTOCUDA() {
 	CUDAMemcpyHToDSafe(instance->cudaRestVertPos, instance->vertPos);
 	CUDAMemcpyHToDSafe(instance->cudaTetElement, instance->tetElement);
 	CUDAMemcpyHToDSafe(instance->cudaTriElement, instance->triElement);
-
-
 
 
 	instance->tetVolume.resize(instance->numTetElements);
