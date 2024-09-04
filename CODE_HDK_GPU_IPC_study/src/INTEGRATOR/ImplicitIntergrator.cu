@@ -132,10 +132,37 @@ void ImplicitIntegrator::computeGradientAndHessian(std::unique_ptr<GeometryManag
     CUDA_SAFE_CALL(cudaMemcpy(instance->cudaD3Index + instance->cpNum[3] + instance->cpNumLast[3], instance->cudaTriElement, instance->numTriElements * sizeof(uint3), cudaMemcpyDeviceToDevice));
 
     // calculate Ground gradient save in H3x3
-    m_gipc->computeGroundGradientAndHessian(instance->cudaFb);
+    // m_gipc->computeGroundGradientAndHessian(instance->cudaFb);
+    FEMENERGY::computeGroundGradientAndHessian(
+        instance->cudaVertPos,
+        instance->cudaGroundOffset,
+        instance->cudaGroundNormal,
+        instance->cudaEnvCollisionPairs,
+        instance->cudaFb,
+        instance->cudaGPNum,
+        instance->cudaH3x3,
+        instance->cudaD1Index,
+        instance->gpNum,
+        instance->DNum,
+        instance->dHat,
+        instance->Kappa
+    );
 
     // calcukate Soft Constraint Gradient and Hessian
-    m_gipc->computeSoftConstraintGradientAndHessian(instance->cudaFb);
+    // m_gipc->computeSoftConstraintGradientAndHessian(instance->cudaFb);
+    FEMENERGY::computeSoftConstraintGradientAndHessian(
+        instance->cudaVertPos,
+        instance->cudaTargetVertPos,
+        instance->cudaTargetIndex,
+        instance->cudaGPNum,
+        instance->cudaH3x3,
+        instance->cudaD1Index,
+        instance->cudaFb,
+        instance->DNum,
+        instance->softMotionRate,
+        instance->softAnimationFullRate,
+        instance->numSoftConstraints
+    );
 
 }
 
@@ -252,7 +279,7 @@ bool ImplicitIntegrator::IPC_Solver() {
 
 #endif
 
-    m_instance->animation_fullRate = m_instance->animation_subRate;
+    m_instance->softAnimationFullRate = m_instance->softAnimationSubRate;
 
     while (true) {
         m_gipc->tempMalloc_closeConstraint();
@@ -268,7 +295,7 @@ bool ImplicitIntegrator::IPC_Solver() {
         double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
         double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
         
-        bool finishMotion = m_instance->animation_fullRate > 0.99 ? true : false;
+        bool finishMotion = m_instance->softAnimationFullRate > 0.99 ? true : false;
 
         if (finishMotion) {
             if ((m_instance->cpNum[0] + m_instance->gpNum) > 0) {
@@ -294,7 +321,7 @@ bool ImplicitIntegrator::IPC_Solver() {
             m_gipc->tempFree_closeConstraint();
         }
 
-        m_instance->animation_fullRate += m_instance->animation_subRate;
+        m_instance->softAnimationFullRate += m_instance->softAnimationSubRate;
         
 #ifdef USE_FRICTION
         CUDAFreeSafe(m_instance->cudaLambdaLastHScalar);
@@ -329,12 +356,19 @@ bool ImplicitIntegrator::IPC_Solver() {
 
     m_gipc->updateVelocities(m_instance);
 
-    FEMENERGY::computeXTilta(m_instance, 1);
+    FEMENERGY::computeXTilta(
+        m_instance->cudaBoundaryType,
+        m_instance->cudaVertVel,
+        m_instance->cudaOriginVertPos,
+        m_instance->cudaXTilta,
+        m_instance->IPC_dt,
+        m_instance->numSIMVertPos,
+        1
+    );
 
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     // cudaMemcpyFromSymbol(&host_cuda_error, cuda_error, sizeof(bool));
-
     // return host_cuda_error;
 
     return false;

@@ -177,8 +177,8 @@ public:
     double ground_bottom_offset;
     double3 gravityforce;
 
-    double animation_subRate;
-    double animation_fullRate;
+    double softAnimationSubRate;
+    double softAnimationFullRate;
 
     uint64_t* cudaMortonCodeHash;
     uint32_t* cudaSortIndex;

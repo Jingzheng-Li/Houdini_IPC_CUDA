@@ -1443,11 +1443,11 @@ namespace FEMENERGY {
         _xTilta[idx] = MATHUTILS::__add(_o_vertexes[idx], MATHUTILS::__add(MATHUTILS::__s_vec_multiply(_velocities[idx], ipc_dt), gravityDtSq)); 
     }
 
-    void computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate) {
-        int numbers = instance->numVertices;
+    void computeXTilta(int* _btype, double3* _velocities, double3* _o_vertexes, double3* _xTilta, const double& ipc_dt, const int& numverts, const double& rate) {
+        int numbers = numverts;
         const unsigned int threadNum = default_threads;
         int blockNum = (numbers + threadNum - 1) / threadNum;
-        _computeXTilta <<<blockNum, threadNum>>> (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
+        _computeXTilta <<<blockNum, threadNum>>> (_btype, _velocities, _o_vertexes, _xTilta, ipc_dt, rate, numbers);
     }
 
     __global__
@@ -1518,59 +1518,159 @@ namespace FEMENERGY {
     }
 
 
-    // __global__
-    // void _computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double dHat, double Kappa, int number) {
-    //     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    //     if (idx >= number) return;
+    __global__
+    void _computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double dHat, double Kappa, int number) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= number) return;
 
-    //     double3 normal = *g_normal;
-    //     // only range for those collision points, if not collision at all, mesh points won't appear into this calculation at all
-    //     int gidx = _environment_collisionPair[idx];
-    //     double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
-    //     double dist2 = dist * dist;
+        double3 normal = *g_normal;
+        // only range for those collision points, if not collision at all, mesh points won't appear into this calculation at all
+        int gidx = _environment_collisionPair[idx];
+        double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
+        double dist2 = dist * dist;
 
-    //     double t = dist2 - dHat;
-    //     double g_b = t * log(dist2 / dHat) * -2.0 - (t * t) / dist2;
-    //     double H_b = (log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
+        double t = dist2 - dHat;
+        double g_b = t * log(dist2 / dHat) * -2.0 - (t * t) / dist2;
+        double H_b = (log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
 
-    //     //printf("H_b   dist   g_b    is  %lf  %lf  %lf\n", H_b, dist2, g_b);
+        //printf("H_b   dist   g_b    is  %lf  %lf  %lf\n", H_b, dist2, g_b);
 
-    //     double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
+        double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
 
-    //     {
-    //         atomicAdd(&(gradient[gidx].x), grad.x);
-    //         atomicAdd(&(gradient[gidx].y), grad.y);
-    //         atomicAdd(&(gradient[gidx].z), grad.z);
-    //     }
+        {
+            atomicAdd(&(gradient[gidx].x), grad.x);
+            atomicAdd(&(gradient[gidx].y), grad.y);
+            atomicAdd(&(gradient[gidx].z), grad.z);
+        }
 
-    //     double param = 4.0 * H_b * dist2 + 2.0 * g_b;
-    //     if (param > 0) {
-    //         MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
-    //         MATHUTILS::Matrix3x3d Hpg = MATHUTILS::__S_Mat_multiply(nn, Kappa * param);
+        double param = 4.0 * H_b * dist2 + 2.0 * g_b;
+        if (param > 0) {
+            MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
+            MATHUTILS::Matrix3x3d Hpg = MATHUTILS::__S_Mat_multiply(nn, Kappa * param);
 
-    //         int pidx = atomicAdd(_gpNum, 1);
-    //         H3x3[pidx] = Hpg;
-    //         D1Index[pidx] = gidx;
-    //     }
+            int pidx = atomicAdd(_gpNum, 1);
+            H3x3[pidx] = Hpg;
+            D1Index[pidx] = gidx;
+        }
 
-    //     //_environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
-    // }
+        //_environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
+    }
 
 
-    // void computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double3* _gradient, double dHat, double Kappa, uint32_t hostgpNum, uint32_t hostDNum, ) {
-    // #ifndef USE_FRICTION  
-    //     CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));
-    // #endif
-    //     int numbers = hostgpNum;
-    //     if (numbers < 1) {
-    //         CUDA_SAFE_CALL(cudaMemcpy(&hostDNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
-    //         return;
-    //     }
-    //     const unsigned int threadNum = default_threads;
-    //     int blockNum = (numbers + threadNum - 1) / threadNum; //
-    //     _computeGroundGradientAndHessian << <blockNum, threadNum >> > (vertexes, g_offset, g_normal, _environment_collisionPair,_gradient, _gpNum, H3x3, D1Index, dHat, Kappa, numbers);
-    //     CUDA_SAFE_CALL(cudaMemcpy(&hostDNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
-    // }
+    __global__
+    void _computeGroundGradient(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, double dHat, double Kappa, int number) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= number) return;
+        double3 normal = *g_normal;
+        int gidx = _environment_collisionPair[idx];
+        double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
+        double dist2 = dist * dist;
+
+        double t = dist2 - dHat;
+        double g_b = t * std::log(dist2 / dHat) * -2.0 - (t * t) / dist2;
+
+        //double H_b = (std::log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
+        double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
+
+        {
+            atomicAdd(&(gradient[gidx].x), grad.x);
+            atomicAdd(&(gradient[gidx].y), grad.y);
+            atomicAdd(&(gradient[gidx].z), grad.z);
+        }
+    }
+
+
+    __global__
+    void _computeSoftConstraintGradientAndHessian(const double3* vertexes, const double3* targetVert, const uint32_t* targetInd, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double motionRate, double rate, int number) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= number) return;
+        
+        uint32_t vInd = targetInd[idx];
+        double x = vertexes[vInd].x, y = vertexes[vInd].y, z = vertexes[vInd].z, a = targetVert[idx].x, b = targetVert[idx].y, c = targetVert[idx].z;
+        //double dis = MATHUTILS::__squaredNorm(MATHUTILS::__minus(vertexes[vInd], targetVert[idx]));
+        //printf("%f\n", dis);
+        double d = motionRate;
+        {
+            atomicAdd(&(gradient[vInd].x), d * rate * rate * (x - a));
+            atomicAdd(&(gradient[vInd].y), d * rate * rate * (y - b));
+            atomicAdd(&(gradient[vInd].z), d * rate * rate * (z - c));
+        }
+        MATHUTILS::Matrix3x3d Hpg;
+        Hpg.m[0][0] = rate * rate * d;
+        Hpg.m[0][1] = 0;
+        Hpg.m[0][2] = 0;
+        Hpg.m[1][0] = 0;
+        Hpg.m[1][1] = rate * rate * d;
+        Hpg.m[1][2] = 0;
+        Hpg.m[2][0] = 0;
+        Hpg.m[2][1] = 0;
+        Hpg.m[2][2] = rate * rate * d;
+        int pidx = atomicAdd(_gpNum, 1);
+        H3x3[pidx] = Hpg;
+        D1Index[pidx] = vInd;
+        // _environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
+    }
+
+
+    __global__
+    void _computeSoftConstraintGradient(const double3* vertexes, const double3* targetVert, const uint32_t* targetInd, double3* gradient, double motionRate, double rate, int number) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= number) return;
+        uint32_t vInd = targetInd[idx];
+        double x = vertexes[vInd].x, y = vertexes[vInd].y, z = vertexes[vInd].z, a = targetVert[idx].x, b = targetVert[idx].y, c = targetVert[idx].z;
+        //double dis = MATHUTILS::__squaredNorm(MATHUTILS::__minus(vertexes[vInd], targetVert[idx]));
+        //printf("%f\n", dis);
+        double d = motionRate;
+        {
+            atomicAdd(&(gradient[vInd].x), d * rate * rate * (x - a));
+            atomicAdd(&(gradient[vInd].y), d * rate * rate * (y - b));
+            atomicAdd(&(gradient[vInd].z), d * rate * rate * (z - c));
+        }
+    }
+
+
+
+    void computeGroundGradientAndHessian(const double3* _vertexes, const double* _groundOffset, const double3* _groundNormal, const uint32_t* _environment_collisionPair, double3* _gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* _H3x3, uint32_t* _D1Index, uint32_t h_gpNum, uint32_t* h_DNum, double dHat, double Kappa) {
+    #ifndef USE_FRICTION  
+        CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));
+    #endif
+        int numbers = h_gpNum;
+        if (numbers < 1) {
+            CUDA_SAFE_CALL(cudaMemcpy(h_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+            return;
+        }
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum; //
+        _computeGroundGradientAndHessian << <blockNum, threadNum >> > (_vertexes, _groundOffset, _groundNormal, _environment_collisionPair, _gradient, _gpNum, _H3x3, _D1Index, dHat, Kappa, numbers);
+        CUDA_SAFE_CALL(cudaMemcpy(h_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+    }
+
+    void computeGroundGradient(const double3* _vertexes, const double* _groundOffset, const double3* _groundNormal, const uint32_t* _environment_collisionPair, double3* _gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* _H3x3, uint32_t h_gpNum, double dHat, double mKappa) {
+        int numbers = h_gpNum;
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum; //
+        _computeGroundGradient << <blockNum, threadNum >> > (_vertexes, _groundOffset, _groundNormal, _environment_collisionPair, _gradient, _gpNum, _H3x3, dHat, mKappa, numbers);
+    }
+
+    void computeSoftConstraintGradientAndHessian(const double3* _vertexes, const double3* _targetVert, const uint32_t* _targetInd, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* _H3x3, uint32_t* _D1Index, double3* _gradient, uint32_t* h_DNum, double softMotionRate, double softAnimationFullRate, uint32_t softNum) {        
+        int numbers = softNum;
+        if (numbers < 1) {
+            CUDA_SAFE_CALL(cudaMemcpy(h_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+            return;
+        }
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum; //
+        _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (_vertexes, _targetVert, _targetInd, _gradient, _gpNum, _H3x3, _D1Index, softMotionRate, softAnimationFullRate, softNum);
+        CUDA_SAFE_CALL(cudaMemcpy(h_DNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+    }
+
+    void computeSoftConstraintGradient(const double3* _vertexes, const double3* _targetVert, const uint32_t* _targetInd, double3* _gradient, double softMotionRate, double softAnimationFullRate, uint32_t softNum) {
+        int numbers = softNum;
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum; //
+        _computeSoftConstraintGradient << <blockNum, threadNum >> > (_vertexes, _targetVert, 
+        _targetInd, _gradient, softMotionRate, softAnimationFullRate, softNum);
+    }
 
 
 }; // namespace FEMENERGY

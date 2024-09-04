@@ -45,10 +45,10 @@ public:
 
 	int calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type = 0);
 	// void computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance);
-	void computeGroundGradientAndHessian(double3* _gradient);
-	void computeGroundGradient(double3* _gradient, double mKap);
-	void computeSoftConstraintGradientAndHessian(double3* _gradient);
-	void computeSoftConstraintGradient(double3* _gradient);
+	// void computeGroundGradientAndHessian(double3* _gradient);
+	// void computeGroundGradient(double3* _gradient, double mKap);
+	// void computeSoftConstraintGradientAndHessian(double3* _gradient);
+	// void computeSoftConstraintGradient(double3* _gradient);
 
 	double computeEnergy(std::unique_ptr<GeometryManager>& instance);
 	double Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryManager>& instance);

@@ -2945,53 +2945,53 @@ void _calFrictionGradient(const double3* _vertexes,
 }
 
 
-__global__
-void _computeSoftConstraintGradientAndHessian(const double3* vertexes, const double3* targetVert, const uint32_t* targetInd, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double motionRate, double rate, int number) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= number) return;
+// __global__
+// void _computeSoftConstraintGradientAndHessian(const double3* vertexes, const double3* targetVert, const uint32_t* targetInd, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double motionRate, double rate, int number) {
+//     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+//     if (idx >= number) return;
     
-    uint32_t vInd = targetInd[idx];
-    double x = vertexes[vInd].x, y = vertexes[vInd].y, z = vertexes[vInd].z, a = targetVert[idx].x, b = targetVert[idx].y, c = targetVert[idx].z;
-    //double dis = MATHUTILS::__squaredNorm(MATHUTILS::__minus(vertexes[vInd], targetVert[idx]));
-    //printf("%f\n", dis);
-    double d = motionRate;
-    {
-        atomicAdd(&(gradient[vInd].x), d * rate * rate * (x - a));
-        atomicAdd(&(gradient[vInd].y), d * rate * rate * (y - b));
-        atomicAdd(&(gradient[vInd].z), d * rate * rate * (z - c));
-    }
-    MATHUTILS::Matrix3x3d Hpg;
-    Hpg.m[0][0] = rate * rate * d;
-    Hpg.m[0][1] = 0;
-    Hpg.m[0][2] = 0;
-    Hpg.m[1][0] = 0;
-    Hpg.m[1][1] = rate * rate * d;
-    Hpg.m[1][2] = 0;
-    Hpg.m[2][0] = 0;
-    Hpg.m[2][1] = 0;
-    Hpg.m[2][2] = rate * rate * d;
-    int pidx = atomicAdd(_gpNum, 1);
-    H3x3[pidx] = Hpg;
-    D1Index[pidx] = vInd;
-    // _environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
-}
+//     uint32_t vInd = targetInd[idx];
+//     double x = vertexes[vInd].x, y = vertexes[vInd].y, z = vertexes[vInd].z, a = targetVert[idx].x, b = targetVert[idx].y, c = targetVert[idx].z;
+//     //double dis = MATHUTILS::__squaredNorm(MATHUTILS::__minus(vertexes[vInd], targetVert[idx]));
+//     //printf("%f\n", dis);
+//     double d = motionRate;
+//     {
+//         atomicAdd(&(gradient[vInd].x), d * rate * rate * (x - a));
+//         atomicAdd(&(gradient[vInd].y), d * rate * rate * (y - b));
+//         atomicAdd(&(gradient[vInd].z), d * rate * rate * (z - c));
+//     }
+//     MATHUTILS::Matrix3x3d Hpg;
+//     Hpg.m[0][0] = rate * rate * d;
+//     Hpg.m[0][1] = 0;
+//     Hpg.m[0][2] = 0;
+//     Hpg.m[1][0] = 0;
+//     Hpg.m[1][1] = rate * rate * d;
+//     Hpg.m[1][2] = 0;
+//     Hpg.m[2][0] = 0;
+//     Hpg.m[2][1] = 0;
+//     Hpg.m[2][2] = rate * rate * d;
+//     int pidx = atomicAdd(_gpNum, 1);
+//     H3x3[pidx] = Hpg;
+//     D1Index[pidx] = vInd;
+//     // _environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
+// }
 
 
-__global__
-void _computeSoftConstraintGradient(const double3* vertexes, const double3* targetVert, const uint32_t* targetInd, double3* gradient, double motionRate, double rate, int number) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= number) return;
-    uint32_t vInd = targetInd[idx];
-    double x = vertexes[vInd].x, y = vertexes[vInd].y, z = vertexes[vInd].z, a = targetVert[idx].x, b = targetVert[idx].y, c = targetVert[idx].z;
-    //double dis = MATHUTILS::__squaredNorm(MATHUTILS::__minus(vertexes[vInd], targetVert[idx]));
-    //printf("%f\n", dis);
-    double d = motionRate;
-    {
-        atomicAdd(&(gradient[vInd].x), d * rate * rate * (x - a));
-        atomicAdd(&(gradient[vInd].y), d * rate * rate * (y - b));
-        atomicAdd(&(gradient[vInd].z), d * rate * rate * (z - c));
-    }
-}
+// __global__
+// void _computeSoftConstraintGradient(const double3* vertexes, const double3* targetVert, const uint32_t* targetInd, double3* gradient, double motionRate, double rate, int number) {
+//     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+//     if (idx >= number) return;
+//     uint32_t vInd = targetInd[idx];
+//     double x = vertexes[vInd].x, y = vertexes[vInd].y, z = vertexes[vInd].z, a = targetVert[idx].x, b = targetVert[idx].y, c = targetVert[idx].z;
+//     //double dis = MATHUTILS::__squaredNorm(MATHUTILS::__minus(vertexes[vInd], targetVert[idx]));
+//     //printf("%f\n", dis);
+//     double d = motionRate;
+//     {
+//         atomicAdd(&(gradient[vInd].x), d * rate * rate * (x - a));
+//         atomicAdd(&(gradient[vInd].y), d * rate * rate * (y - b));
+//         atomicAdd(&(gradient[vInd].z), d * rate * rate * (z - c));
+//     }
+// }
 
 __global__
 void _GroundCollisionDetectIPC(const double3* vertexes, const uint32_t* surfVertIds, const double* g_offset, const double3* g_normal, uint32_t* _environment_collisionPair, uint32_t* _gpNum, double dHat, int number) {
@@ -3005,65 +3005,65 @@ void _GroundCollisionDetectIPC(const double3* vertexes, const uint32_t* surfVert
 
 
 
-__global__
-void _computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double dHat, double Kappa, int number) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= number) return;
+// __global__
+// void _computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double dHat, double Kappa, int number) {
+//     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+//     if (idx >= number) return;
 
-    double3 normal = *g_normal;
-    // only range for those collision points, if not collision at all, mesh points won't appear into this calculation at all
-    int gidx = _environment_collisionPair[idx];
-    double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
-    double dist2 = dist * dist;
+//     double3 normal = *g_normal;
+//     // only range for those collision points, if not collision at all, mesh points won't appear into this calculation at all
+//     int gidx = _environment_collisionPair[idx];
+//     double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
+//     double dist2 = dist * dist;
 
-    double t = dist2 - dHat;
-    double g_b = t * log(dist2 / dHat) * -2.0 - (t * t) / dist2;
-    double H_b = (log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
+//     double t = dist2 - dHat;
+//     double g_b = t * log(dist2 / dHat) * -2.0 - (t * t) / dist2;
+//     double H_b = (log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
 
-    //printf("H_b   dist   g_b    is  %lf  %lf  %lf\n", H_b, dist2, g_b);
+//     //printf("H_b   dist   g_b    is  %lf  %lf  %lf\n", H_b, dist2, g_b);
 
-    double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
+//     double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
 
-    {
-        atomicAdd(&(gradient[gidx].x), grad.x);
-        atomicAdd(&(gradient[gidx].y), grad.y);
-        atomicAdd(&(gradient[gidx].z), grad.z);
-    }
+//     {
+//         atomicAdd(&(gradient[gidx].x), grad.x);
+//         atomicAdd(&(gradient[gidx].y), grad.y);
+//         atomicAdd(&(gradient[gidx].z), grad.z);
+//     }
 
-    double param = 4.0 * H_b * dist2 + 2.0 * g_b;
-    if (param > 0) {
-        MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
-        MATHUTILS::Matrix3x3d Hpg = MATHUTILS::__S_Mat_multiply(nn, Kappa * param);
+//     double param = 4.0 * H_b * dist2 + 2.0 * g_b;
+//     if (param > 0) {
+//         MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
+//         MATHUTILS::Matrix3x3d Hpg = MATHUTILS::__S_Mat_multiply(nn, Kappa * param);
 
-        int pidx = atomicAdd(_gpNum, 1);
-        H3x3[pidx] = Hpg;
-        D1Index[pidx] = gidx;
-    }
+//         int pidx = atomicAdd(_gpNum, 1);
+//         H3x3[pidx] = Hpg;
+//         D1Index[pidx] = gidx;
+//     }
 
-    //_environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
-}
+//     //_environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
+// }
 
-__global__
-void _computeGroundGradient(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, double dHat, double Kappa, int number) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= number) return;
-    double3 normal = *g_normal;
-    int gidx = _environment_collisionPair[idx];
-    double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
-    double dist2 = dist * dist;
+// __global__
+// void _computeGroundGradient(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, double dHat, double Kappa, int number) {
+//     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+//     if (idx >= number) return;
+//     double3 normal = *g_normal;
+//     int gidx = _environment_collisionPair[idx];
+//     double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
+//     double dist2 = dist * dist;
 
-    double t = dist2 - dHat;
-    double g_b = t * std::log(dist2 / dHat) * -2.0 - (t * t) / dist2;
+//     double t = dist2 - dHat;
+//     double g_b = t * std::log(dist2 / dHat) * -2.0 - (t * t) / dist2;
 
-    //double H_b = (std::log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
-    double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
+//     //double H_b = (std::log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
+//     double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
 
-    {
-        atomicAdd(&(gradient[gidx].x), grad.x);
-        atomicAdd(&(gradient[gidx].y), grad.y);
-        atomicAdd(&(gradient[gidx].z), grad.z);
-    }
-}
+//     {
+//         atomicAdd(&(gradient[gidx].x), grad.x);
+//         atomicAdd(&(gradient[gidx].y), grad.y);
+//         atomicAdd(&(gradient[gidx].z), grad.z);
+//     }
+// }
 
 __global__
 void _computeGroundCloseVal(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double dTol, uint32_t* _closeConstraintID, double* _closeConstraintVal, uint32_t* _close_gpNum, int number) {
@@ -4192,34 +4192,34 @@ void GIPC::GroundCollisionDetect() {
 
 }
 
-void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
+// void GIPC::computeSoftConstraintGradientAndHessian(double3* _gradient) {
     
-    int numbers = m_instance->numSoftConstraints;
-    if (numbers < 1) {
-        CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
-        return;
-    }
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum;
-    // offset
-    _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaTargetVertPos, m_instance->cudaTargetIndex, _gradient, m_instance->cudaGPNum, m_instance->cudaH3x3, m_instance->cudaD1Index, m_instance->softMotionRate, m_instance->animation_fullRate, m_instance->numSoftConstraints);
-    CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
-}
+//     int numbers = m_instance->numSoftConstraints;
+//     if (numbers < 1) {
+//         CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
+//         return;
+//     }
+//     const unsigned int threadNum = default_threads;
+//     int blockNum = (numbers + threadNum - 1) / threadNum;
+//     // offset
+//     _computeSoftConstraintGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaTargetVertPos, m_instance->cudaTargetIndex, _gradient, m_instance->cudaGPNum, m_instance->cudaH3x3, m_instance->cudaD1Index, m_instance->softMotionRate, m_instance->softAnimationFullRate, m_instance->numSoftConstraints);
+//     CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
+// }
 
-void GIPC::computeGroundGradientAndHessian(double3* _gradient) {
-#ifndef USE_FRICTION  
-    CUDA_SAFE_CALL(cudaMemset(m_instance->cudaGPNum, 0, sizeof(uint32_t)));
-#endif
-    int numbers = m_instance->gpNum;
-    if (numbers < 1) {
-        CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
-        return;
-    }
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaGroundOffset, m_instance->cudaGroundNormal, m_instance->cudaEnvCollisionPairs, _gradient, m_instance->cudaGPNum, m_instance->cudaH3x3, m_instance->cudaD1Index, m_instance->dHat, m_instance->Kappa, numbers);
-    CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
-}
+// void GIPC::computeGroundGradientAndHessian(double3* _gradient) {
+// #ifndef USE_FRICTION  
+//     CUDA_SAFE_CALL(cudaMemset(m_instance->cudaGPNum, 0, sizeof(uint32_t)));
+// #endif
+//     int numbers = m_instance->gpNum;
+//     if (numbers < 1) {
+//         CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
+//         return;
+//     }
+//     const unsigned int threadNum = default_threads;
+//     int blockNum = (numbers + threadNum - 1) / threadNum; //
+//     _computeGroundGradientAndHessian << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaGroundOffset, m_instance->cudaGroundNormal, m_instance->cudaEnvCollisionPairs, _gradient, m_instance->cudaGPNum, m_instance->cudaH3x3, m_instance->cudaD1Index, m_instance->dHat, m_instance->Kappa, numbers);
+//     CUDA_SAFE_CALL(cudaMemcpy(&m_instance->DNum, m_instance->cudaGPNum, sizeof(int), cudaMemcpyDeviceToHost));
+// }
 
 void GIPC::computeCloseGroundVal() {
     int numbers = m_instance->gpNum;
@@ -4263,28 +4263,28 @@ double2 GIPC::minMaxGroundDist() {
     return minMaxValue;
 }
 
-void GIPC::computeGroundGradient(double3* _gradient, double mKappa) {
-    int numbers = m_instance->gpNum;
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum; //
-    _computeGroundGradient << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaGroundOffset, m_instance->cudaGroundNormal, m_instance->cudaEnvCollisionPairs, _gradient, m_instance->cudaGPNum, m_instance->cudaH3x3, m_instance->dHat, mKappa, numbers);
-}
+// void GIPC::computeGroundGradient(double3* _gradient, double mKappa) {
+//     int numbers = m_instance->gpNum;
+//     const unsigned int threadNum = default_threads;
+//     int blockNum = (numbers + threadNum - 1) / threadNum; //
+//     _computeGroundGradient << <blockNum, threadNum >> > (m_instance->cudaVertPos, m_instance->cudaGroundOffset, m_instance->cudaGroundNormal, m_instance->cudaEnvCollisionPairs, _gradient, m_instance->cudaGPNum, m_instance->cudaH3x3, m_instance->dHat, mKappa, numbers);
+// }
 
-void GIPC::computeSoftConstraintGradient(double3* _gradient) {
-    int numbers = m_instance->numSoftConstraints;
+// void GIPC::computeSoftConstraintGradient(double3* _gradient) {
+//     int numbers = m_instance->numSoftConstraints;
 
-    const unsigned int threadNum = default_threads;
-    int blockNum = (numbers + threadNum - 1) / threadNum; //
-    // offset
-    _computeSoftConstraintGradient << <blockNum, threadNum >> > (
-        m_instance->cudaVertPos, 
-        m_instance->cudaTargetVertPos, 
-        m_instance->cudaTargetIndex, 
-        _gradient, 
-        m_instance->softMotionRate, 
-        m_instance->animation_fullRate, 
-        m_instance->numSoftConstraints);
-}
+//     const unsigned int threadNum = default_threads;
+//     int blockNum = (numbers + threadNum - 1) / threadNum; //
+//     // offset
+//     _computeSoftConstraintGradient << <blockNum, threadNum >> > (
+//         m_instance->cudaVertPos, 
+//         m_instance->cudaTargetVertPos, 
+//         m_instance->cudaTargetIndex, 
+//         _gradient, 
+//         m_instance->softMotionRate, 
+//         m_instance->softAnimationFullRate, 
+//         m_instance->numSoftConstraints);
+// }
 
 double GIPC::self_largestFeasibleStepSize(double slackness, double* mqueue, int numbers) {
     //slackness = 0.9;
@@ -4727,8 +4727,30 @@ void GIPC::initKappa(std::unique_ptr<GeometryManager>& instance) {
         FEMENERGY::calKineticGradient(instance->cudaVertPos, instance->cudaXTilta, _GE, instance->cudaVertMass, instance->numVertices);
         FEMENERGY::calculate_fem_gradient(instance->cudaTetDmInverses, instance->cudaVertPos, instance->cudaTetElement, instance->cudaTetVolume, _GE, instance->numTetElements, m_instance->lengthRate, m_instance->volumeRate, m_instance->IPC_dt);
         // FEMENERGY::calculate_triangle_fem_gradient(instance->triDmInverses, instance->cudaVertPos, instance->triangles, instance->area, _GE, triangleNum, stretchStiff, shearStiff, IPC_dt);
-        computeSoftConstraintGradient(_GE);
-        computeGroundGradient(_gc,1);
+        // computeSoftConstraintGradient(_GE);
+        // computeGroundGradient(_gc,1);
+        FEMENERGY::computeSoftConstraintGradient(
+            instance->cudaVertPos,
+            instance->cudaTargetVertPos,
+            instance->cudaTargetIndex,
+            _GE,
+            instance->softMotionRate,
+            instance->softAnimationFullRate,
+            instance->numSoftConstraints
+        );
+        FEMENERGY::computeGroundGradient(
+            instance->cudaVertPos,
+            instance->cudaGroundOffset,
+            instance->cudaGroundNormal,
+            instance->cudaEnvCollisionPairs,
+            _gc,
+            instance->cudaGPNum,
+            instance->cudaH3x3,
+            instance->gpNum,
+            instance->dHat,
+            1
+        );
+
         calBarrierGradient(_gc,1);
         double gsum = reduction2Kappa(0, _gc, _GE, m_pcg_data->mc_squeue, instance->numVertices);
         double gsnorm = reduction2Kappa(1, _gc, _GE, m_pcg_data->mc_squeue, instance->numVertices);
@@ -4893,7 +4915,7 @@ double GIPC::Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryMa
         _get_triangleFEMEnergy_Reduction_3D << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTriElement, instance->cudaTriDmInverses, instance->cudaTriArea, numbers, m_instance->stretchStiff, m_instance->shearStiff);
         break;
     case 9:
-        _computeSoftConstraintEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTargetVertPos, instance->cudaTargetIndex, m_instance->softMotionRate, m_instance->animation_fullRate, numbers);
+        _computeSoftConstraintEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaTargetVertPos, instance->cudaTargetIndex, m_instance->softMotionRate, m_instance->softAnimationFullRate, numbers);
         break;
     case 10:
         _getBendingEnergy_Reduction << <blockNum, threadNum, sharedMsize >> > (queue, instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaTriEdges, instance->cudaTriEdgeAdjVertex, numbers, m_instance->bendStiff);
@@ -5182,7 +5204,7 @@ void GIPC::CUDA_FREE_GIPC() {
 
 // #endif
 
-//     m_instance->animation_fullRate = m_instance->animation_subRate;
+//     m_instance->softAnimationFullRate = m_instance->softAnimationSubRate;
 
 //     while (true) {
 //         tempMalloc_closeConstraint();
@@ -5198,7 +5220,7 @@ void GIPC::CUDA_FREE_GIPC() {
 //         double minDist = MATHUTILS::__m_min(minMaxDist1.x, minMaxDist2.x);
 //         double maxDist = MATHUTILS::__m_max(minMaxDist1.y, minMaxDist2.y);
         
-//         bool finishMotion = m_instance->animation_fullRate > 0.99 ? true : false;
+//         bool finishMotion = m_instance->softAnimationFullRate > 0.99 ? true : false;
 
 //         if (finishMotion) {
 //             if ((m_instance->cpNum[0] + m_instance->gpNum) > 0) {
@@ -5224,7 +5246,7 @@ void GIPC::CUDA_FREE_GIPC() {
 //             tempFree_closeConstraint();
 //         }
 
-//         m_instance->animation_fullRate += m_instance->animation_subRate;
+//         m_instance->softAnimationFullRate += m_instance->softAnimationSubRate;
         
 // #ifdef USE_FRICTION
 //         CUDAFreeSafe(m_instance->cudaLambdaLastHScalar);

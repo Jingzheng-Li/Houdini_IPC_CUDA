@@ -72,7 +72,15 @@ bool GAS_Read_Buffer::solveGasSubclass(SIM_Engine& engine,
 		initSIMPCG();
 		initSIMIPC();
 
-		FEMENERGY::computeXTilta(instance, 1); // get a initial guess
+		FEMENERGY::computeXTilta(
+			instance->cudaBoundaryType,
+			instance->cudaVertVel,
+			instance->cudaOriginVertPos,
+			instance->cudaXTilta,
+			instance->IPC_dt,
+			instance->numSIMVertPos,
+			1
+		);
 
 		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
@@ -117,8 +125,8 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	// instance->bendStiff = 1e-3; // TODO: bound is extremely small in the previous expression, find a correct expression
 
 	instance->collision_detection_buff_scale = 1;
-	instance->animation_subRate = 1.0 / instance->IPC_substep;
-	instance->animation_fullRate = 0.0;
+	instance->softAnimationSubRate = 1.0 / instance->IPC_substep;
+	instance->softAnimationFullRate = 0.0;
 
 	instance->ground_bottom_offset = 0.0;
 	instance->ground_left_offset = -2.0;
