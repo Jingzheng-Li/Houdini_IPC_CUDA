@@ -23,6 +23,7 @@ public:
 
 	void computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance);
 
+    void updateDNum(const int& tri_Num, const int& tet_number, const uint32_t* cpNums, const uint32_t* last_cpNums, const int& tri_edge_number);
 
 public:
     std::unique_ptr<GeometryManager>& m_instance;
@@ -31,7 +32,5 @@ public:
     std::unique_ptr<LBVH_E>& m_bvh_e;
 	std::unique_ptr<LBVH_EF>& m_bvh_ef;
     std::unique_ptr<PCGData>& m_pcg_data;
-    std::unique_ptr<BHessian>& m_BH;
-
 
 };

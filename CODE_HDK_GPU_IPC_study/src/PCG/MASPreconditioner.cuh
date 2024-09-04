@@ -4,7 +4,6 @@
 #include "UTILS/CUDAUtils.hpp"
 #include "UTILS/MathUtils.cuh"
 #include "UTILS/GeometryManager.hpp"
-#include "BHessian.cuh"
 
 class MASPreconditioner {
 
@@ -38,9 +37,9 @@ public:
 
 	int ReorderRealtime(int cpNum);
 
-	void PrepareHessian(const std::unique_ptr<GeometryManager>& instance, const std::unique_ptr<BHessian>& BH, const double* masses);
+	void PrepareHessian(const std::unique_ptr<GeometryManager>& instance, const double* masses);
 
-	void setPreconditioner(const std::unique_ptr<GeometryManager>& instance, const std::unique_ptr<BHessian>& BH, const double* masses, int cpNum);
+	void setPreconditioner(const std::unique_ptr<GeometryManager>& instance, int cpNum);
 
 	void BuildCollisionConnection(unsigned int* connectionMsk, int* coarseTableSpace, int level, int cpNum);
 

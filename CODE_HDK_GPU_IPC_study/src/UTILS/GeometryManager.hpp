@@ -15,7 +15,6 @@ class AABB;
 class LBVH_E;
 class LBVH_F;
 class LBVH_EF;
-class BHessian;
 class MASPreconditioner;
 class PCGData;
 class GIPC;
@@ -36,7 +35,6 @@ public:
     std::unique_ptr<LBVH_F> LBVH_F_ptr;
     std::unique_ptr<LBVH_E> LBVH_E_ptr;
     std::unique_ptr<LBVH_EF> LBVH_EF_ptr;
-    std::unique_ptr<BHessian> BH_ptr;
     std::unique_ptr<MASPreconditioner> MAS_ptr;
     std::unique_ptr<PCGData> PCGData_ptr;
     std::unique_ptr<GIPC> GIPC_ptr;

@@ -10,8 +10,8 @@ ImplicitIntegrator::ImplicitIntegrator(std::unique_ptr<GeometryManager>& instanc
     m_bvh_f(instance->LBVH_F_ptr),
     m_bvh_e(instance->LBVH_E_ptr),
     m_bvh_ef(instance->LBVH_EF_ptr),
-    m_pcg_data(instance->PCGData_ptr),
-    m_BH(instance->BH_ptr) {}
+    m_pcg_data(instance->PCGData_ptr)
+    {}
 
 ImplicitIntegrator::~ImplicitIntegrator() {};
 
@@ -20,6 +20,18 @@ ImplicitIntegrator::~ImplicitIntegrator() {};
 
 
 
+void ImplicitIntegrator::updateDNum(const int& tri_Num, const int& tet_number, const uint32_t* cpNums, const uint32_t* last_cpNums, const int& tri_edge_number) {
+    m_instance->DNum[1] = cpNums[1];
+    m_instance->DNum[2] = cpNums[2] + tri_Num;
+    m_instance->DNum[3] = tet_number + cpNums[3] + tri_edge_number;
+
+#ifdef USE_FRICTION
+    m_instance->DNum[1] += last_cpNums[1];
+    m_instance->DNum[2] += last_cpNums[2];
+    m_instance->DNum[3] += last_cpNums[3];
+#endif
+
+}
 
 double calcMinMovement(const double3* _moveDir, double* _queue, const int& number) {
     int numbers = number;
@@ -144,7 +156,7 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
 
         instance->totalCollisionPairs += instance->cpNum[0];
         
-        m_BH->updateDNum(instance->numTriElements, instance->numTetElements, instance->cpNum + 1, instance->cpNumLast + 1, instance->numTriEdges);
+        updateDNum(instance->numTriElements, instance->numTetElements, instance->cpNum + 1, instance->cpNumLast + 1, instance->numTriEdges);
 
         // calculate gradient gradx(g) and Hessian gradx^2(g)
         computeGradientAndHessian(instance);

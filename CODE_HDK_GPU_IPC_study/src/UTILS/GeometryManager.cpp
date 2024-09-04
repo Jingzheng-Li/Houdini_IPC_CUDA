@@ -99,10 +99,6 @@ void GeometryManager::freeCUDAptr() {
     if (instance->LBVH_EF_ptr) {
         instance->LBVH_EF_ptr.reset();
     }
-    if (instance->BH_ptr) {
-        instance->BH_ptr->CUDA_FREE_BHESSIAN();
-        instance->BH_ptr.reset();
-    }
     if (instance->MAS_ptr) {
         instance->MAS_ptr->CUDA_FREE_MAS();
         instance->MAS_ptr.reset();

@@ -5,7 +5,6 @@
 #include "LBVH/SortMesh.cuh"
 
 #include "LBVH/LBVH.cuh"
-#include "PCG/BHessian.cuh"
 #include "PCG/MASPreconditioner.cuh"
 #include "PCG/PCGSolver.cuh"
 #include "FEMEnergy.cuh"
@@ -481,6 +480,17 @@ void GAS_Read_Buffer::transferOtherAttribTOCUDA() {
 	CUDAMemcpyHToDSafe(instance->cudaCloseGPNum, Eigen::VectorXi::Zero(1));
 
 
+    CUDAMallocSafe(instance->cudaH3x3, 2 * instance->numSurfVerts);
+    CUDAMallocSafe(instance->cudaH6x6, 2 * (instance->numSurfVerts + instance->numSurfEdges));
+    CUDAMallocSafe(instance->cudaH9x9, (2 * (instance->numSurfEdges + instance->numSurfVerts) + instance->numTriElements));    
+    CUDAMallocSafe(instance->cudaH12x12, (2 * (instance->numSurfVerts + instance->numSurfEdges) + instance->numTetElements + instance->numTriEdges));
+
+    CUDAMallocSafe(instance->cudaD1Index, 2 * instance->numSurfVerts);
+    CUDAMallocSafe(instance->cudaD2Index, 2 * (instance->numSurfVerts + instance->numSurfEdges));
+    CUDAMallocSafe(instance->cudaD3Index, (2 * (instance->numSurfEdges + instance->numSurfVerts)+ instance->numTriElements));
+    CUDAMallocSafe(instance->cudaD4Index, (2 * (instance->numSurfVerts + instance->numSurfEdges) + instance->numTetElements + instance->numTriEdges));
+
+
 	CHECK_ERROR(instance->vertPos.rows() == instance->numVertices, "numVerts not match with Eigen");
 	CHECK_ERROR(instance->tetElement.rows() == instance->numTetElements, "numTetEles not match with Eigen");
 	CHECK_ERROR(instance->triElement.rows() == instance->numTriElements, "numTriEles not match with Eigen");
@@ -601,12 +611,6 @@ void GAS_Read_Buffer::initSIMBVH() {
 void GAS_Read_Buffer::initSIMPCG() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
-
-	// init BH_ptr
-	if (!instance->BH_ptr) {
-		instance->BH_ptr = std::make_unique<BHessian>(instance);
-	}
-	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numTetElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
 
 	// init PCGData_ptr
 	if (!instance->PCGData_ptr) {

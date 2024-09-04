@@ -4942,14 +4942,14 @@ double GIPC::computeEnergy(std::unique_ptr<GeometryManager>& instance) {
 
 int GIPC::calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type) {
     if (preconditioner_type == 0) {
-        int cgCount = PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, instance->cudaMoveDir, instance->numVertices, instance->numTetElements, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
+        int cgCount = PCGSOLVER::PCG_Process(instance, m_pcg_data, instance->cudaMoveDir, instance->numVertices, instance->numTetElements, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
         return cgCount;
     }
     else if (preconditioner_type == 1) {
-        int cgCount = PCGSOLVER::MASPCG_Process(instance, m_pcg_data, m_BH, instance->cudaMoveDir, instance->numVertices, instance->numTetElements, m_instance->IPC_dt, m_instance->meanVolume, cpNum, m_instance->pcg_threshold);
+        int cgCount = PCGSOLVER::MASPCG_Process(instance, m_pcg_data, instance->cudaMoveDir, instance->numVertices, instance->numTetElements, m_instance->IPC_dt, m_instance->meanVolume, cpNum, m_instance->pcg_threshold);
         if (cgCount == 3000) {
             printf("MASPCG fail, turn to PCG\n");
-            cgCount = PCGSOLVER::PCG_Process(instance, m_pcg_data, m_BH, instance->cudaMoveDir, instance->numVertices, instance->numTetElements, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
+            cgCount = PCGSOLVER::PCG_Process(instance, m_pcg_data, instance->cudaMoveDir, instance->numVertices, instance->numTetElements, m_instance->IPC_dt, m_instance->meanVolume, m_instance->pcg_threshold);
             printf("PCG finish:  %d\n", cgCount);
         }
         return cgCount;
@@ -5103,83 +5103,6 @@ void GIPC::tempFree_closeConstraint() {
 }
 
 
-// int GIPC::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
-
-//     std::cout.precision(18);
-
-//     int iterCap = 10000, iterk = 0;
-//     CUDA_SAFE_CALL(cudaMemset(instance->cudaMoveDir, 0, instance->numVertices * sizeof(double3)));
-
-//     instance->totalPCGCount = 0;
-//     instance->totalCollisionPairs = 0;
-
-//     for (; iterk < iterCap; ++iterk) {
-
-//         instance->totalCollisionPairs += instance->cpNum[0];
-        
-//         m_BH->updateDNum(instance->numTriElements, instance->numTetElements, instance->cpNum + 1, instance->cpNumLast + 1, instance->numTriEdges);
-
-//         // calculate gradient gradx(g) and Hessian gradx^2(g)
-//         computeGradientAndHessian(instance);
-
-//         double distToOpt_PN = calcMinMovement(instance->cudaMoveDir, m_pcg_data->mc_squeue, instance->numVertices);
-//         // line search iteration stop 
-//         bool gradVanish = (distToOpt_PN < sqrt(instance->Newton_solver_threshold * instance->Newton_solver_threshold * instance->bboxDiagSize2 * instance->IPC_dt * instance->IPC_dt));
-//         if (iterk > 0 && gradVanish) {
-//             break;
-//         }
-
-//         // solve PCG with MAS Preconditioner and get instance->cudaMoveDir (i.e. dx)
-//         instance->totalPCGCount += calculateMovingDirection(instance, instance->cpNum[0], instance->precondType);
-
-//         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
-
-//         alpha = MATHUTILS::__m_min(alpha, ground_largestFeasibleStepSize(slackness_a, m_pcg_data->mc_squeue));
-//         // alpha = MATHUTILS::__m_min(alpha, InjectiveStepSize(0.2, 1e-6, m_pcg_data->mc_squeue, instance->cudaTetElement));
-//         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, instance->cpNum[0]));
-        
-//         double temp_alpha = alpha;
-//         double alpha_CFL = alpha;
-
-//         double ccd_size = 1.0;
-// #ifdef USE_FRICTION
-//         ccd_size = 0.6;
-// #endif
-
-//         // build BVH tree of type ccd, get collision pairs num instance->ccdCpNum, 
-//         // if instance->ccdCpNum > 0, means there will be collision in temp_alpha substep
-//         buildBVH_FULLCCD(temp_alpha);
-//         buildFullCP(temp_alpha);
-//         if (instance->ccdCpNum > 0) {
-//             // obtain max velocity of moveDir
-//             double maxSpeed = cfl_largestSpeed(m_pcg_data->mc_squeue);
-//             alpha_CFL = sqrt(instance->dHat) / maxSpeed * 0.5;
-//             alpha = MATHUTILS::__m_min(alpha, alpha_CFL);
-//             if (temp_alpha > 2 * alpha_CFL) {
-//                 alpha = MATHUTILS::__m_min(temp_alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, instance->ccdCpNum) * ccd_size);
-//                 alpha = MATHUTILS::__m_max(alpha, alpha_CFL);
-//             }
-//         }
-
-//         //printf("alpha:  %f\n", alpha);
-
-//         lineSearch(instance, alpha, alpha_CFL);
-//         postLineSearch(instance, alpha);
-
-//         CUDA_SAFE_CALL(cudaDeviceSynchronize());
-
-//     }
-    
-//     printf("\n");
-//     printf("Kappa: %f  iteration k:  %d \n", instance->Kappa, iterk);
-//     std::cout << "instance->totalPCGCount: " << instance->totalPCGCount << std::endl;
-//     std::cout << "instance->totalCollisionPairs: " << instance->totalCollisionPairs << std::endl;
-//     printf("\n");
-
-//     return iterk;
-   
-// }
-
 void GIPC::updateVelocities(std::unique_ptr<GeometryManager>& instance) {
     int numbers = instance->numVertices;
     const unsigned int threadNum = default_threads;
@@ -5199,8 +5122,8 @@ GIPC::GIPC(std::unique_ptr<GeometryManager>& instance)
     m_bvh_f(instance->LBVH_F_ptr),
     m_bvh_e(instance->LBVH_E_ptr),
     m_bvh_ef(instance->LBVH_EF_ptr),
-    m_pcg_data(instance->PCGData_ptr),
-    m_BH(instance->BH_ptr) {
+    m_pcg_data(instance->PCGData_ptr)
+    {
 
     instance->cpNum[0] = 0;
     instance->cpNum[1] = 0;

@@ -49,7 +49,6 @@ bool GAS_CUDA_GIPC::solveGasSubclass(SIM_Engine& engine,
 //     CHECK_ERROR(instance->LBVH_F_ptr, "not initialize m_bvh_e");
 //     CHECK_ERROR(instance->LBVH_EF_ptr, "not initialize m_bvh_ef");
 //     CHECK_ERROR(instance->PCGData_ptr, "not initialize m_pcg_data");
-//     CHECK_ERROR(instance->BH_ptr, "not initialize m_BH");
 
 //     for (int i = 0; i < instance->IPC_substep; i++) {
 //         bool cuda_error = instance->GIPC_ptr->IPC_Solver();

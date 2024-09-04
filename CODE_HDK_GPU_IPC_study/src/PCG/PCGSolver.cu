@@ -1290,7 +1290,7 @@ int vertexNum, double alpha = 1) {
     return result;
 }
 
-void Solve_PCG_AX_B(const std::unique_ptr<GeometryManager>& instance, const double3* c, double3* q, const std::unique_ptr<BHessian>& BH, int vertNum) {
+void Solve_PCG_AX_B(const std::unique_ptr<GeometryManager>& instance, const double3* c, double3* q, int vertNum) {
     int numbers = vertNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
@@ -1355,7 +1355,7 @@ double My_PCG_General_v_v_Reduction_Algorithm(
     return result;
 }
 
-void Solve_PCG_AX_B2(const std::unique_ptr<GeometryManager>& instance, const double3* c, double3* q, const std::unique_ptr<BHessian>& BH, int vertNum) {
+void Solve_PCG_AX_B2(const std::unique_ptr<GeometryManager>& instance, const double3* c, double3* q, int vertNum) {
     int numbers = vertNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
@@ -1370,7 +1370,7 @@ void Solve_PCG_AX_B2(const std::unique_ptr<GeometryManager>& instance, const dou
 
 }
 
-void construct_P(const std::unique_ptr<GeometryManager>& instance, MATHUTILS::Matrix3x3d* P, const std::unique_ptr<BHessian>& BH, int vertNum) {
+void construct_P(const std::unique_ptr<GeometryManager>& instance, MATHUTILS::Matrix3x3d* P, int vertNum) {
     int numbers = vertNum;
     const unsigned int threadNum = default_threads;
     int blockNum = (numbers + threadNum - 1) / threadNum;
@@ -1404,7 +1404,6 @@ void construct_P(const std::unique_ptr<GeometryManager>& instance, MATHUTILS::Ma
 void construct_P2(
     const std::unique_ptr<GeometryManager>& instance,
     std::unique_ptr<PCGData>& pcg_data,
-    const std::unique_ptr<BHessian>& BH,
     int vertNum) {
 
     int numbers = vertNum;
@@ -1461,8 +1460,7 @@ void PCG_constraintFilter(const std::unique_ptr<GeometryManager>& instance, cons
 
 int PCG_Process(
     std::unique_ptr<GeometryManager>& instance, 
-    std::unique_ptr<PCGData>& pcg_data, 
-    const std::unique_ptr<BHessian>& BH,
+    std::unique_ptr<PCGData>& pcg_data,
     double3* _mvDir, 
     int vertexNum, 
     int tetrahedraNum, 
@@ -1470,7 +1468,7 @@ int PCG_Process(
     double meanVolumn, 
     double threshold) {
 
-    construct_P2(instance, pcg_data, BH, vertexNum);
+    construct_P2(instance, pcg_data, vertexNum);
 
     double deltaN = 0;
     double delta0 = 0;
@@ -1479,7 +1477,7 @@ int PCG_Process(
     CUDA_SAFE_CALL(cudaMemset(pcg_data->mc_dx, 0x0, vertexNum * sizeof(double3)));
     CUDA_SAFE_CALL(cudaMemset(pcg_data->mc_r, 0x0, vertexNum * sizeof(double3)));
     delta0 = My_PCG_add_Reduction_Algorithm(1, instance, pcg_data, vertexNum);
-    //Solve_PCG_AX_B2(instance, pcg_data->z, pcg_data->r, BH, vertexNum);
+    //Solve_PCG_AX_B2(instance, pcg_data->z, pcg_data->r, vertexNum);
     deltaN = My_PCG_add_Reduction_Algorithm(2, instance, pcg_data, vertexNum);
     //std::cout << "gpu  delta0:   " << delta0 << "      deltaN:   " << deltaN << std::endl;
     //double errorRate = std::min(1e-8 * 0.5 * IPC_dt / std::pow(meanVolumn, 1), 1e-4);
@@ -1490,7 +1488,7 @@ int PCG_Process(
         cgCounts++;
         //std::cout << "delta0:   " << delta0 << "      deltaN:   " << deltaN << "      iteration_counts:      " << cgCounts << std::endl;
         //CUDA_SAFE_CALL(cudaMemset(pcg_data->q, 0, vertexNum * sizeof(double3)));
-        Solve_PCG_AX_B2(instance, pcg_data->mc_c, pcg_data->mc_q, BH, vertexNum);
+        Solve_PCG_AX_B2(instance, pcg_data->mc_c, pcg_data->mc_q, vertexNum);
         double tempSum = My_PCG_add_Reduction_Algorithm(3, instance, pcg_data, vertexNum);
         double alpha = deltaN / tempSum;
         deltaO = deltaN;
@@ -1515,7 +1513,6 @@ int PCG_Process(
 int MASPCG_Process(
     std::unique_ptr<GeometryManager>& instance, 
     std::unique_ptr<PCGData>& pcg_data, 
-    const std::unique_ptr<BHessian>& BH, 
     double3* _mvDir, 
     int vertexNum, 
     int tetrahedraNum, 
@@ -1524,7 +1521,7 @@ int MASPCG_Process(
     int cpNum, 
     double threshold) {
 
-    instance->MAS_ptr->setPreconditioner(instance, BH, instance->cudaVertMass, cpNum);
+    instance->MAS_ptr->setPreconditioner(instance, cpNum);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     double deltaN = 0;
     double delta0 = 0;
@@ -1549,7 +1546,7 @@ int MASPCG_Process(
     deltaN = My_PCG_General_v_v_Reduction_Algorithm(instance, pcg_data, pcg_data->mc_r, pcg_data->mc_c, vertexNum);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     //delta0 = My_PCG_add_Reduction_Algorithm(1, mesh, pcg_data, vertexNum);
-    //Solve_PCG_AX_B2(mesh, pcg_data->z, pcg_data->r, BH, vertexNum);
+    //Solve_PCG_AX_B2(mesh, pcg_data->z, pcg_data->r, vertexNum);
     //deltaN = My_PCG_add_Reduction_Algorithm(2, mesh, pcg_data, vertexNum);
     //std::cout << "gpu  delta0:   " << delta0 << "      deltaN:   " << deltaN << std::endl;
     //double errorRate = std::min(1e-8 * 0.5 * IPC_dt / std::pow(meanVolumn, 1), 1e-4);
@@ -1561,7 +1558,7 @@ int MASPCG_Process(
         cgCounts++;
         //std::cout << "delta0:   " << delta0 << "      deltaN:   " << deltaN << "      iteration_counts:      " << cgCounts << std::endl;
         //CUDA_SAFE_CALL(cudaMemset(pcg_data->q, 0, vertexNum * sizeof(double3)));
-        Solve_PCG_AX_B2(instance, pcg_data->mc_c, pcg_data->mc_q, BH, vertexNum);
+        Solve_PCG_AX_B2(instance, pcg_data->mc_c, pcg_data->mc_q, vertexNum);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());
         double tempSum = My_PCG_add_Reduction_Algorithm(3, instance, pcg_data, vertexNum);
         //CUDA_SAFE_CALL(cudaDeviceSynchronize());

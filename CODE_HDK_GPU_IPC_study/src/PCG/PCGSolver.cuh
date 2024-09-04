@@ -4,7 +4,6 @@
 #include "UTILS/MathUtils.cuh"
 #include "UTILS/GeometryManager.hpp"
 
-#include "BHessian.cuh"
 #include "MASPreconditioner.cuh"
 
 
@@ -41,7 +40,6 @@ namespace PCGSOLVER {
 	int PCG_Process(
 		std::unique_ptr<GeometryManager>& instance, 
 		std::unique_ptr<PCGData>& pcg_data, 
-		const std::unique_ptr<BHessian>& BH,
 		double3* _mvDir, 
 		int vertexNum, 
 		int tetrahedraNum, 
@@ -52,7 +50,6 @@ namespace PCGSOLVER {
     int MASPCG_Process(
 		std::unique_ptr<GeometryManager>& instance, 
 		std::unique_ptr<PCGData>& pcg_data, 
-		const std::unique_ptr<BHessian>& BH,
 		double3* _mvDir, 
 		int vertexNum, 
 		int tetrahedraNum, 
