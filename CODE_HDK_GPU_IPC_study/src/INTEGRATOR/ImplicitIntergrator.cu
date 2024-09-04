@@ -1896,10 +1896,8 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
         m_gipc->buildCP();
         testingE = computeEnergy(instance);
         CHECK_ERROR_CUDA(numOfLineSearch <= 10, "energy not drops down correctly in more than ten iterations\n", host_cuda_error);
+        if (numOfLineSearch > 10) return;
     }
-    // if (numOfLineSearch > 8) {
-    //     printf("!!!!!!!!!!!!! energy raise for %d times of numOfLineSearch\n", numOfLineSearch);
-    // }
         
     // if alpha fails down in past process, then check again will there be intersection again
     if (alpha < LFStepSize) {

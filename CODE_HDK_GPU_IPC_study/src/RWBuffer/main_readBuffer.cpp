@@ -98,10 +98,10 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "loadSIMParamsFromHoudini geoinstance not initialized");
 
-	instance->IPC_substep = 3;
+	instance->IPC_substep = 1;
 	instance->IPC_fps = 30;
 	instance->IPC_dt = 1.0 / instance->IPC_fps / instance->IPC_substep; // 1/30fps/3substep
-	instance->precondType = 1;
+	instance->precondType = 0;
 
 	instance->density = 1e3;
 	instance->YoungModulus = 1e5;
@@ -110,21 +110,22 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	instance->volumeRateLame = instance->YoungModulus * instance->PoissonRate / ((1 + instance->PoissonRate) * (1 - 2 * instance->PoissonRate));
 	instance->lengthRate = 4 * instance->lengthRateLame / 3;
 	instance->volumeRate = instance->volumeRateLame + 5 * instance->lengthRateLame / 6;
+
 	instance->frictionRate = 0.4;
+	instance->clothDensity = 2e2;
 	instance->clothThickness = 1e-3;
 	instance->clothYoungModulus = 1e6;
 	instance->stretchStiff = instance->clothYoungModulus / (2 * (1 + instance->PoissonRate));
 	instance->shearStiff = instance->stretchStiff * 0.03;
-
-	instance->clothDensity = 2e2;
-	instance->softMotionRate = 1.0;
-	instance->Newton_solver_threshold = 1e-1;
-	instance->pcg_threshold = 1e-3;
-	instance->relative_dhat = 1e-3;
 	instance->bendStiff = instance->clothYoungModulus * pow(instance->clothThickness, 3) / (24 * (1 - instance->PoissonRate * instance->PoissonRate));
 	// instance->bendStiff = 1e-3; // TODO: bound is extremely small in the previous expression, find a correct expression
 
+	instance->relative_dhat = 1e-3;
+	instance->Newton_solver_threshold = 1e-1;
+	instance->pcg_threshold = 1e-3;
 	instance->collision_detection_buff_scale = 1;
+
+	instance->softMotionRate = double(instance->IPC_substep);
 	instance->softAnimationSubRate = 1.0 / instance->IPC_substep;
 	instance->softAnimationFullRate = 0.0;
 
@@ -135,7 +136,8 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	instance->ground_far_offset = 2.0;
 
 	instance->gravityforce = make_double3(0.0, -9.8, 0.0);
-	
+	instance->windforce = make_double3(0.0, 0.0, 0.0);
+
 }
 
 
@@ -676,29 +678,30 @@ void GAS_Read_Buffer::debugSIM() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
-	std::cout << "numVerts~~" << instance->numVertices << std::endl;
-	std::cout << "numTriElems~~" << instance->numTriElements << std::endl;
-	std::cout << "numTetElems~~" << instance->numTetElements << std::endl;
-	int maxSIMGeoNumbers = instance->numVertices > instance->numTriElements ? instance->numVertices : instance->numTriElements; 
-	std::cout << "maxSIMGeoNumbers~~~~" << maxSIMGeoNumbers << std::endl;
-	std::cout << "numSurfVerts~~" << instance->surfVert.rows() << std::endl;
-	std::cout << "numSurfEdges~~" << instance->surfEdge.rows() << std::endl;
-	std::cout << "numSurfFaces~~" << instance->surfFace.rows() << std::endl;
-	std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
-	std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
-	std::cout << "numTriEdges~~" << instance->triEdges.rows() << std::endl;
-	std::cout << "masslast~~" << instance->vertMass.row(instance->numVertices-1) << std::endl;
-	std::cout << "numMasses: " << instance->vertMass.rows() << std::endl;
-	std::cout << "numVolume: " << instance->tetVolume.rows() << std::endl;
-	std::cout << "numAreas: " << instance->triArea.rows() << std::endl;
-	printf("meanMass: %f\n", instance->meanMass);
-	printf("meanVolum: %f\n", instance->meanVolume);
+	// std::cout << "numVerts~~" << instance->numVertices << std::endl;
+	// std::cout << "numTriElems~~" << instance->numTriElements << std::endl;
+	// std::cout << "numTetElems~~" << instance->numTetElements << std::endl;
+	// int maxSIMGeoNumbers = instance->numVertices > instance->numTriElements ? instance->numVertices : instance->numTriElements; 
+	// std::cout << "maxSIMGeoNumbers~~~~" << maxSIMGeoNumbers << std::endl;
+	// std::cout << "numSurfVerts~~" << instance->surfVert.rows() << std::endl;
+	// std::cout << "numSurfEdges~~" << instance->surfEdge.rows() << std::endl;
+	// std::cout << "numSurfFaces~~" << instance->surfFace.rows() << std::endl;
+	// std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
+	// std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
+	// std::cout << "numTriEdges~~" << instance->triEdges.rows() << std::endl;
+	// std::cout << "masslast~~" << instance->vertMass.row(instance->numVertices-1) << std::endl;
+	// std::cout << "numMasses: " << instance->vertMass.rows() << std::endl;
+	// std::cout << "numVolume: " << instance->tetVolume.rows() << std::endl;
+	// std::cout << "numAreas: " << instance->triArea.rows() << std::endl;
+	// printf("meanMass: %f\n", instance->meanMass);
+	// printf("meanVolum: %f\n", instance->meanVolume);
 
-	double totalvertpos = 0.0;
-	for(int i = 0; i < instance->numVertices; i++) {
-		totalvertpos += instance->vertPos.row(i).x();
-	}
-	totalvertpos /= instance->numVertices;
-	std::cout << "totalvertpos~~~~~~~~~~" << totalvertpos << std::endl;
+	// double totalvertpos = 0.0;
+	// for(int i = 0; i < instance->numVertices; i++) {
+	// 	totalvertpos += instance->vertPos.row(i).x();
+	// }
+	// totalvertpos /= instance->numVertices;
+	// std::cout << "totalvertpos~~~~~~~~~~" << totalvertpos << std::endl;
+
 
 }

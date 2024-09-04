@@ -163,7 +163,6 @@ public:
     double stretchStiff;
     double shearStiff;
     double clothDensity;
-    double softMotionRate;
     double bendStiff;
     double Newton_solver_threshold;
     double pcg_threshold;
@@ -173,8 +172,11 @@ public:
     double ground_near_offset;
     double ground_far_offset;
     double ground_bottom_offset;
-    double3 gravityforce;
 
+    double3 gravityforce;
+    double3 windforce;
+
+    double softMotionRate;
     double softAnimationSubRate;
     double softAnimationFullRate;
 
