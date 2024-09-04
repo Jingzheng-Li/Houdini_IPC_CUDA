@@ -380,10 +380,15 @@ namespace MATHUTILS {
 
 
 namespace MATHUTILS {
+	
 	__global__ void __reduct_max_double(double* _double1Dim, int number);
 
 	__global__ void _reduct_min_double(double* _double1Dim, int number);
 
 	__global__ void _reduct_max_double3_to_double(const double3* _double3Dim, double* _double1Dim, int number);
+
+	__global__ void __add_reduction(double* mem, int numbers);
+
+	__global__ void _reduct_M_double2(double2* _double2Dim, int number);
 
 };

@@ -23,6 +23,30 @@ public:
 
 	void computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance);
 
+    int calculateMovingDirection(std::unique_ptr<GeometryManager>& instance, int cpNum, int preconditioner_type = 0);
+
+    double ground_largestFeasibleStepSize(double slackness, double* mqueue);
+	double self_largestFeasibleStepSize(double slackness, double* mqueue, int numbers);
+	double InjectiveStepSize(double slackness, double errorRate, double* mqueue, uint4* tets);
+	double cfl_largestSpeed(double* mqueue);
+
+	double computeEnergy(std::unique_ptr<GeometryManager>& instance);
+	double Energy_Add_Reduction_Algorithm(int type, std::unique_ptr<GeometryManager>& instance);
+	void lineSearch(std::unique_ptr<GeometryManager>& instance, double& alpha, const double& cfl_alpha);
+	void postLineSearch(std::unique_ptr<GeometryManager>& instance, double alpha);
+
+	void tempMalloc_closeConstraint();
+	void tempFree_closeConstraint();
+
+    void updateVelocities(std::unique_ptr<GeometryManager>& instance);
+
+    void computeCloseGroundVal();
+	void computeSelfCloseVal();
+    double2 minMaxGroundDist();
+	double2 minMaxSelfDist();
+
+
+
     void updateDNum(const int& tri_Num, const int& tet_number, const uint32_t* cpNums, const uint32_t* last_cpNums, const int& tri_edge_number);
 
 public:
