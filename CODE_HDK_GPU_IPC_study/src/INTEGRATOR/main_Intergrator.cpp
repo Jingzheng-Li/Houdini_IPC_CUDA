@@ -34,6 +34,8 @@ bool GAS_CUDA_Intergrator::solveGasSubclass(SIM_Engine& engine,
 
     transferDynamicCollisionToCUDA(object);
 
+    debugPrint();
+
     gas_IPC_Solver();
 
     return true;
@@ -89,6 +91,93 @@ void GAS_CUDA_Intergrator::gas_IPC_Solver() {
     }
     
 }
+
+
+double3 add_double3(const double3& a, const double3& b) {
+    return make_double3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+void GAS_CUDA_Intergrator::debugPrint() {
+    auto &instance = GeometryManager::instance;
+
+    // std::cout << "IPC_substep: " << instance->IPC_substep << std::endl;
+    // std::cout << "IPC_fps: " << instance->IPC_fps << std::endl;
+    // std::cout << "IPC_dt: " << instance->IPC_dt << std::endl;
+    // std::cout << "precondType: " << instance->precondType << std::endl;
+
+    // // Printing physical properties
+    // std::cout << "density: " << instance->density << std::endl;
+    // std::cout << "YoungModulus: " << instance->YoungModulus << std::endl;
+    // std::cout << "PoissonRate: " << instance->PoissonRate << std::endl;
+    // std::cout << "lengthRateLame: " << instance->lengthRateLame << std::endl;
+    // std::cout << "volumeRateLame: " << instance->volumeRateLame << std::endl;
+    // std::cout << "lengthRate: " << instance->lengthRate << std::endl;
+    // std::cout << "volumeRate: " << instance->volumeRate << std::endl;
+
+    // // Printing cloth parameters
+    // std::cout << "frictionRate: " << instance->frictionRate << std::endl;
+    // std::cout << "clothDensity: " << instance->clothDensity << std::endl;
+    // std::cout << "clothThickness: " << instance->clothThickness << std::endl;
+    // std::cout << "clothYoungModulus: " << instance->clothYoungModulus << std::endl;
+    // std::cout << "stretchStiff: " << instance->stretchStiff << std::endl;
+    // std::cout << "shearStiff: " << instance->shearStiff << std::endl;
+    // std::cout << "bendStiff: " << instance->bendStiff << std::endl;
+
+    // // Printing collision and solver parameters
+    // std::cout << "relative_dhat: " << instance->relative_dhat << std::endl;
+    // std::cout << "Newton_solver_threshold: " << instance->Newton_solver_threshold << std::endl;
+    // std::cout << "pcg_threshold: " << instance->pcg_threshold << std::endl;
+    // std::cout << "collision_detection_buff_scale: " << instance->collision_detection_buff_scale << std::endl;
+
+    // // Printing motion and animation rates
+    // std::cout << "softMotionRate: " << instance->softMotionRate << std::endl;
+    // std::cout << "softAnimationSubRate: " << instance->softAnimationSubRate << std::endl;
+    // std::cout << "softAnimationFullRate: " << instance->softAnimationFullRate << std::endl;
+
+    // // Printing ground offsets
+    // std::cout << "ground_bottom_offset: " << instance->ground_bottom_offset << std::endl;
+    // std::cout << "ground_left_offset: " << instance->ground_left_offset << std::endl;
+    // std::cout << "ground_right_offset: " << instance->ground_right_offset << std::endl;
+    // std::cout << "ground_near_offset: " << instance->ground_near_offset << std::endl;
+    // std::cout << "ground_far_offset: " << instance->ground_far_offset << std::endl;
+
+    // // Printing forces
+    // std::cout << "gravityforce: (" << instance->gravityforce.x << ", " 
+    //           << instance->gravityforce.y << ", " << instance->gravityforce.z << ")" << std::endl;
+    // std::cout << "windforce: (" << instance->windforce.x << ", " 
+    //           << instance->windforce.y << ", " << instance->windforce.z << ")" << std::endl;
+
+    // std::cout << "numSoftConstraints: " << instance->numSoftConstraints << std::endl;
+
+
+
+    // std::vector<double3> new_vel(instance->numVertices);
+    // CUDA_SAFE_CALL(cudaMemcpy(new_vel.data(), instance->cudaVertVel, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToHost));
+    // double3 sum_vel = std::accumulate(new_vel.begin(), new_vel.end(), make_double3(0.0, 0.0, 0.0), add_double3);
+	// std::cout << "sum_vel!!!!!!!!!!!! " << sum_vel.x << " " << sum_vel.y << " " << sum_vel.z << std::endl;
+
+    std::vector<double3> new_targetpos(instance->numSoftConstraints);
+    CUDA_SAFE_CALL(cudaMemcpy(new_targetpos.data(), instance->cudaTargetVertPos, instance->numSoftConstraints * sizeof(double3), cudaMemcpyDeviceToHost));
+    double3 sum_targetpos = std::accumulate(new_targetpos.begin(), new_targetpos.end(), make_double3(0.0, 0.0, 0.0), add_double3);
+    std::cout << "sum_targetpos! " << sum_targetpos.x << " " << sum_targetpos.y << " " << sum_targetpos.z << std::endl;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

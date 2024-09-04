@@ -33,4 +33,12 @@ private:
                         "gas cuda intergrator",
                         getDopDescription());
 
+
+
+
+
+protected:
+    void debugPrint();
+
+
 };

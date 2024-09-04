@@ -80,7 +80,7 @@ target_compile_options(${library_name}
         -lineinfo
         --ptxas-options=-allow-expensive-optimizations=true
         -Xcudafe
-        "--display_error_number --diag_suppress=implicit_return_from_non_void_function --diag_suppress=2642"
+        "--display_error_number --diag_suppress=implicit_return_from_non_void_function --diag_suppress=2642 --diag_suppress=20012"
     >
     PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:
         --extended-lambda

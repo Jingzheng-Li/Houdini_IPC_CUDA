@@ -689,19 +689,19 @@ void GAS_Read_Buffer::debugSIM() {
 	// std::cout << "MAX_CCD_COLLITION_PAIRS_NUM~" << instance->MAX_CCD_COLLITION_PAIRS_NUM << std::endl;
 	// std::cout << "MAX_COLLITION_PAIRS_NUM~" << instance->MAX_COLLITION_PAIRS_NUM << std::endl;
 	// std::cout << "numTriEdges~~" << instance->triEdges.rows() << std::endl;
-	// std::cout << "masslast~~" << instance->vertMass.row(instance->numVertices-1) << std::endl;
 	// std::cout << "numMasses: " << instance->vertMass.rows() << std::endl;
 	// std::cout << "numVolume: " << instance->tetVolume.rows() << std::endl;
 	// std::cout << "numAreas: " << instance->triArea.rows() << std::endl;
 	// printf("meanMass: %f\n", instance->meanMass);
 	// printf("meanVolum: %f\n", instance->meanVolume);
 
-	// double totalvertpos = 0.0;
-	// for(int i = 0; i < instance->numVertices; i++) {
-	// 	totalvertpos += instance->vertPos.row(i).x();
-	// }
-	// totalvertpos /= instance->numVertices;
-	// std::cout << "totalvertpos~~~~~~~~~~" << totalvertpos << std::endl;
+    // std::cout << "IPCKappa~~~" << instance->Kappa << std::endl; 
+    // std::cout << "dHat~~~" << instance->dHat << std::endl; 
+    // std::cout << "fDhat~~~" << instance->fDhat << std::endl; 
+    // std::cout << "bboxDiagSize2~~~" << instance->bboxDiagSize2 << std::endl; 
+    // std::cout << "relative_dhat~~~" << instance->relative_dhat << std::endl; 
+    // std::cout << "dTol~~~" << instance->dTol << std::endl; 
+    // std::cout << "minKappaCoef~~~" << instance->minKappaCoef << std::endl; 
 
 
 }
