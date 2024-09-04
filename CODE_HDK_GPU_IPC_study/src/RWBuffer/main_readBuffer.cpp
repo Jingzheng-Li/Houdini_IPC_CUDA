@@ -604,15 +604,15 @@ void GAS_Read_Buffer::initSIMPCG() {
 
 	// init BH_ptr
 	if (!instance->BH_ptr) {
-		instance->BH_ptr = std::make_unique<BHessian>();
+		instance->BH_ptr = std::make_unique<BHessian>(instance);
 	}
 	instance->BH_ptr->CUDA_MALLOC_BHESSIAN(instance->numTetElements, instance->numSurfVerts, instance->numSurfFaces, instance->numSurfEdges, instance->numTriElements, instance->numTriEdges);
 
 	// init PCGData_ptr
 	if (!instance->PCGData_ptr) {
-		instance->PCGData_ptr = std::make_unique<PCGData>(instance);
+		instance->PCGData_ptr = std::make_unique<PCGData>();
 	}
-	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numTetElements);
+	instance->PCGData_ptr->CUDA_MALLOC_PCGDATA(instance->numVertices, instance->numTetElements, instance->precondType);
 	instance->PCGData_ptr->mc_b = instance->cudaFb;
 	instance->cudaMoveDir = instance->PCGData_ptr->mc_dx; // cudaMovedir will be mc_dx
 

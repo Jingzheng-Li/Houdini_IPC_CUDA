@@ -1686,7 +1686,7 @@ int MASPreconditioner::ReorderRealtime(int cpNum)
 
 //#include <fstream>
 
-void MASPreconditioner::PrepareHessian(const std::unique_ptr<BHessian>& BH, const double* masses)
+void MASPreconditioner::PrepareHessian(const std::unique_ptr<GeometryManager>& instance, const std::unique_ptr<BHessian>& BH, const double* masses)
 {
     //cudaEvent_t start, end0, end1, end2;
     //cudaEventCreate(&start);
@@ -1707,22 +1707,22 @@ void MASPreconditioner::PrepareHessian(const std::unique_ptr<BHessian>& BH, cons
     //cudaEventRecord(end0);
 
 
-    number = BH->m_DNum[3] * 144 + BH->m_DNum[2] * 81 + BH->m_DNum[1] * 36 + BH->m_DNum[0] * 9;
+    number = instance->DNum[3] * 144 + instance->DNum[2] * 81 + instance->DNum[1] * 36 + instance->DNum[0] * 9;
     numBlocks = (number + blockSize - 1) / blockSize;
 
-    _prepareHessian<<<numBlocks, blockSize>>>(BH->mc_H12x12,
-                                              BH->mc_H9x9,
-                                              BH->mc_H6x6,
-                                              BH->mc_H3x3,
-                                              BH->mc_D4Index,
-                                              BH->mc_D3Index,
-                                              BH->mc_D2Index,
-                                              BH->mc_D1Index,
+    _prepareHessian<<<numBlocks, blockSize>>>(instance->cudaH12x12,
+                                              instance->cudaH9x9,
+                                              instance->cudaH6x6,
+                                              instance->cudaH3x3,
+                                              instance->cudaD4Index,
+                                              instance->cudaD3Index,
+                                              instance->cudaD2Index,
+                                              instance->cudaD1Index,
                                               mc_Mat96,
-                                              BH->m_DNum[3] * 144,
-                                              BH->m_DNum[2] * 81,
-                                              BH->m_DNum[1] * 36,
-                                              BH->m_DNum[0] * 9,
+                                              instance->DNum[3] * 144,
+                                              instance->DNum[2] * 81,
+                                              instance->DNum[1] * 36,
+                                              instance->DNum[0] * 9,
                                               mc_goingNext,
                                               levelnum);
 
@@ -1791,7 +1791,7 @@ void MASPreconditioner::CollectFinalZ(double3* Z)
 
 }
 
-void MASPreconditioner::setPreconditioner(const std::unique_ptr<BHessian>& BH, const double* masses, int cpNum) {
+void MASPreconditioner::setPreconditioner(const std::unique_ptr<GeometryManager>& instance, const std::unique_ptr<BHessian>& BH, const double* masses, int cpNum) {
 
     CUDA_SAFE_CALL(cudaMemcpy(mc_neighborList,
                               mc_neighborListInit,
@@ -1813,7 +1813,7 @@ void MASPreconditioner::setPreconditioner(const std::unique_ptr<BHessian>& BH, c
     CUDA_SAFE_CALL(cudaMemset(
         mc_Mat96, 0, totalNumberClusters / BANKSIZE * sizeof(MATHUTILS::Matrix96x96T)));
 
-    PrepareHessian(BH, masses);
+    PrepareHessian(instance, BH, masses);
 
     //cudaEventRecord(end1);
 }

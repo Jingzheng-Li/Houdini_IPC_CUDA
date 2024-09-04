@@ -60,7 +60,15 @@ GeometryManager::GeometryManager() :
     cudaCollisonPairsLastH(nullptr),
     cudaMatIndexLast(nullptr),
     cudaLambdaLastHScalarGd(nullptr),
-    cudaCollisonPairsLastHGd(nullptr)
+    cudaCollisonPairsLastHGd(nullptr),
+    cudaD1Index(nullptr),
+    cudaD2Index(nullptr),
+    cudaD3Index(nullptr),
+    cudaD4Index(nullptr),
+    cudaH3x3(nullptr),
+    cudaH6x6(nullptr),
+    cudaH9x9(nullptr),
+    cudaH12x12(nullptr)
     {}
 
 GeometryManager::~GeometryManager() {
@@ -166,6 +174,12 @@ void GeometryManager::freeCUDA() {
     CUDAFreeSafe(instance->cudaMatIndexLast);
     CUDAFreeSafe(instance->cudaLambdaLastHScalarGd);
     CUDAFreeSafe(instance->cudaCollisonPairsLastHGd);
-
+    CUDAFreeSafe(instance->cudaD1Index);
+    CUDAFreeSafe(instance->cudaD2Index);
+    CUDAFreeSafe(instance->cudaD4Index);
+    CUDAFreeSafe(instance->cudaH3x3);
+    CUDAFreeSafe(instance->cudaH6x6);
+    CUDAFreeSafe(instance->cudaH9x9);
+    CUDAFreeSafe(instance->cudaH12x12);
     
 }

@@ -6,13 +6,11 @@
 // update PCGData 
 /////////////////////////////
 
-PCGData::PCGData(std::unique_ptr<GeometryManager>& instance) {
-    m_precondType = instance->precondType;
-};
+PCGData::PCGData() {};
 
 PCGData::~PCGData() {};
 
-void PCGData::CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum) {
+void PCGData::CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum, const int& precondtype) {
     CUDAMallocSafe(mc_squeue, MATHUTILS::__m_max(vertexNum, tetrahedraNum));
     CUDAMallocSafe(mc_P, vertexNum);
     CUDAMallocSafe(mc_r, vertexNum);
@@ -23,7 +21,7 @@ void PCGData::CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum
     CUDAMallocSafe(mc_dx, vertexNum);
     CUDA_SAFE_CALL(cudaMemset(mc_z, 0, vertexNum * sizeof(double3)));
 
-    if (m_precondType == 1) {
+    if (precondtype == 1) {
         CUDAMallocSafe(mc_preconditionTempVec3, vertexNum);
         CUDAMallocSafe(mc_filterTempVec3, vertexNum);
     }
@@ -40,10 +38,9 @@ void PCGData::CUDA_FREE_PCGDATA() {
     CUDAFreeSafe(mc_s);
     CUDAFreeSafe(mc_dx);
     
-    if (m_precondType == 1) {
-        CUDAFreeSafe(mc_filterTempVec3);
-        CUDAFreeSafe(mc_preconditionTempVec3);
-    }
+    CUDAFreeSafe(mc_filterTempVec3);
+    CUDAFreeSafe(mc_preconditionTempVec3);
+
 }
 
 
@@ -1299,26 +1296,26 @@ void Solve_PCG_AX_B(const std::unique_ptr<GeometryManager>& instance, const doub
     int blockNum = (numbers + threadNum - 1) / threadNum;
     __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaVertMass, c, q, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    numbers = BH->m_DNum[3];
+    numbers = instance->DNum[3];
     if (numbers > 0) {
         //unsigned int sharedMsize = sizeof(double) * threadNum;
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX12_b << <blockNum, threadNum >> > (BH->mc_H12x12, BH->mc_D4Index, c, q, numbers);
+        __PCG_Solve_AX12_b << <blockNum, threadNum >> > (instance->cudaH12x12, instance->cudaD4Index, c, q, numbers);
     }
-    numbers = BH->m_DNum[2];
+    numbers = instance->DNum[2];
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX9_b << <blockNum, threadNum >> > (BH->mc_H9x9, BH->mc_D3Index, c, q, numbers);
+        __PCG_Solve_AX9_b << <blockNum, threadNum >> > (instance->cudaH9x9, instance->cudaD3Index, c, q, numbers);
     }
-    numbers = BH->m_DNum[1];
+    numbers = instance->DNum[1];
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX6_b << <blockNum, threadNum >> > (BH->mc_H6x6, BH->mc_D2Index, c, q, numbers);
+        __PCG_Solve_AX6_b << <blockNum, threadNum >> > (instance->cudaH6x6, instance->cudaD2Index, c, q, numbers);
     }
-    numbers = BH->m_DNum[0];
+    numbers = instance->DNum[0];
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_Solve_AX3_b << <blockNum, threadNum >> > (BH->mc_H3x3, BH->mc_D1Index, c, q, numbers);
+        __PCG_Solve_AX3_b << <blockNum, threadNum >> > (instance->cudaH3x3, instance->cudaD1Index, c, q, numbers);
     }
 
 }
@@ -1364,12 +1361,12 @@ void Solve_PCG_AX_B2(const std::unique_ptr<GeometryManager>& instance, const dou
     int blockNum = (numbers + threadNum - 1) / threadNum;
     __PCG_Solve_AX_mass_b << <blockNum, threadNum >> > (instance->cudaVertMass, c, q, numbers);
 
-    int offset4 = (BH->m_DNum[3] * 144 + threadNum - 1) / threadNum;
-    int offset3 = (BH->m_DNum[2] * 81 + threadNum - 1) / threadNum;
-    int offset2 = (BH->m_DNum[1] * 36 + threadNum - 1) / threadNum;
-    int offset1 = (BH->m_DNum[0] + threadNum - 1) / threadNum;
+    int offset4 = (instance->DNum[3] * 144 + threadNum - 1) / threadNum;
+    int offset3 = (instance->DNum[2] * 81 + threadNum - 1) / threadNum;
+    int offset2 = (instance->DNum[1] * 36 + threadNum - 1) / threadNum;
+    int offset1 = (instance->DNum[0] + threadNum - 1) / threadNum;
     blockNum = offset1 + offset2 + offset3 + offset4;
-    __PCG_Solve_AXALL_b2 << <blockNum, threadNum >> > (BH->mc_H12x12, BH->mc_H9x9, BH->mc_H6x6, BH->mc_H3x3, BH->mc_D4Index, BH->mc_D3Index, BH->mc_D2Index, BH->mc_D1Index, c, q, BH->m_DNum[3] * 144, BH->m_DNum[2] * 81, BH->m_DNum[1] * 36, BH->m_DNum[0], offset4, offset3, offset2);
+    __PCG_Solve_AXALL_b2 << <blockNum, threadNum >> > (instance->cudaH12x12, instance->cudaH9x9, instance->cudaH6x6, instance->cudaH3x3, instance->cudaD4Index, instance->cudaD3Index, instance->cudaD2Index, instance->cudaD1Index, c, q, instance->DNum[3] * 144, instance->DNum[2] * 81, instance->DNum[1] * 36, instance->DNum[0], offset4, offset3, offset2);
 
 }
 
@@ -1379,25 +1376,25 @@ void construct_P(const std::unique_ptr<GeometryManager>& instance, MATHUTILS::Ma
     int blockNum = (numbers + threadNum - 1) / threadNum;
     __PCG_mass_P << <blockNum, threadNum >> > (instance->cudaVertMass, P, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
-    numbers = BH->m_DNum[3] * 12;
+    numbers = instance->DNum[3] * 12;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX12_P << <blockNum, threadNum >> > (BH->mc_H12x12, BH->mc_D4Index, P, numbers);
+        __PCG_AX12_P << <blockNum, threadNum >> > (instance->cudaH12x12, instance->cudaD4Index, P, numbers);
     }
-    numbers = BH->m_DNum[2] * 9;
+    numbers = instance->DNum[2] * 9;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX9_P << <blockNum, threadNum >> > (BH->mc_H9x9, BH->mc_D3Index, P, numbers);
+        __PCG_AX9_P << <blockNum, threadNum >> > (instance->cudaH9x9, instance->cudaD3Index, P, numbers);
     }
-    numbers = BH->m_DNum[1] * 6;
+    numbers = instance->DNum[1] * 6;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX6_P << <blockNum, threadNum >> > (BH->mc_H6x6, BH->mc_D2Index, P, numbers);
+        __PCG_AX6_P << <blockNum, threadNum >> > (instance->cudaH6x6, instance->cudaD2Index, P, numbers);
     }
-    numbers = BH->m_DNum[0] * 3;
+    numbers = instance->DNum[0] * 3;
     if (numbers > 0) {
         blockNum = (numbers + threadNum - 1) / threadNum;
-        __PCG_AX3_P << <blockNum, threadNum >> > (BH->mc_H3x3, BH->mc_D1Index, P, numbers);
+        __PCG_AX3_P << <blockNum, threadNum >> > (instance->cudaH3x3, instance->cudaD1Index, P, numbers);
     }
     blockNum = (vertNum + threadNum - 1) / threadNum;
     //__PCG_inverse_P << <blockNum, threadNum >> > (P, vertNum);
@@ -1416,23 +1413,23 @@ void construct_P2(
     __PCG_mass_P <<<blockNum, threadNum >>> (instance->cudaVertMass, pcg_data->mc_P, numbers);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-    numbers = BH->m_DNum[3] * 12 + BH->m_DNum[2] * 9 + BH->m_DNum[1] * 6 + BH->m_DNum[0] * 3;
+    numbers = instance->DNum[3] * 12 + instance->DNum[2] * 9 + instance->DNum[1] * 6 + instance->DNum[0] * 3;
     blockNum = (numbers + threadNum - 1) / threadNum;
 
     __PCG_AXALL_P <<<blockNum, threadNum>>> (
-        BH->mc_H12x12, 
-        BH->mc_H9x9, 
-        BH->mc_H6x6, 
-        BH->mc_H3x3, 
-        BH->mc_D4Index, 
-        BH->mc_D3Index, 
-        BH->mc_D2Index, 
-        BH->mc_D1Index, 
+        instance->cudaH12x12, 
+        instance->cudaH9x9, 
+        instance->cudaH6x6, 
+        instance->cudaH3x3, 
+        instance->cudaD4Index, 
+        instance->cudaD3Index, 
+        instance->cudaD2Index, 
+        instance->cudaD1Index, 
         pcg_data->mc_P, 
-        BH->m_DNum[3] * 12, 
-        BH->m_DNum[2] * 9, 
-        BH->m_DNum[1] * 6, 
-        BH->m_DNum[0] * 3);
+        instance->DNum[3] * 12, 
+        instance->DNum[2] * 9, 
+        instance->DNum[1] * 6, 
+        instance->DNum[0] * 3);
 
     blockNum = (vertNum + threadNum - 1) / threadNum;
     __PCG_inverse_P << <blockNum, threadNum >> > (pcg_data->mc_P, vertNum);
@@ -1527,7 +1524,7 @@ int MASPCG_Process(
     int cpNum, 
     double threshold) {
 
-    instance->MAS_ptr->setPreconditioner(BH, instance->cudaVertMass, cpNum);
+    instance->MAS_ptr->setPreconditioner(instance, BH, instance->cudaVertMass, cpNum);
     //CUDA_SAFE_CALL(cudaDeviceSynchronize());
     double deltaN = 0;
     double delta0 = 0;

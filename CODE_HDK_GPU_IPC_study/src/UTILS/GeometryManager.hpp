@@ -226,6 +226,19 @@ public:
 	int4* cudaCloseMConstraintID;
 	double* cudaCloseMConstraintVal;
 
+
+    // Hessian Matrix parameters
+    uint32_t* cudaD1Index;//pIndex, DpeIndex, DptIndex;
+	uint2* cudaD2Index;
+	uint3* cudaD3Index;
+	uint4* cudaD4Index;
+	MATHUTILS::Matrix3x3d* cudaH3x3;
+	MATHUTILS::Matrix6x6d* cudaH6x6;
+	MATHUTILS::Matrix9x9d* cudaH9x9;
+	MATHUTILS::Matrix12x12d* cudaH12x12;
+    uint32_t DNum[4];
+
+
     // friction parameters
     double* cudaLambdaLastHScalar;
 	double2* cudaDistCoord;

@@ -10,7 +10,7 @@
 
 class PCGData {
 public:
-    PCGData(std::unique_ptr<GeometryManager>& instance);
+    PCGData();
     ~PCGData();
 
 public:
@@ -29,10 +29,8 @@ public:
 	double3* mc_filterTempVec3;
 	double3* mc_preconditionTempVec3;
 	
-	int m_precondType;
-
 public:
-    void CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum);
+    void CUDA_MALLOC_PCGDATA(const int& vertexNum, const int& tetrahedraNum, const int& precondtype);
     void CUDA_FREE_PCGDATA();
 
 };

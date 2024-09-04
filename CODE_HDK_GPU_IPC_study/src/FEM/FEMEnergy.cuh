@@ -103,6 +103,11 @@ namespace FEMENERGY {
 
     void computeXTilta(std::unique_ptr<GeometryManager>& instance, const double& rate);
 
+    __global__
+    void _calKineticGradient(double3* vertexes, double3* xTilta, double3* gradient, double* masses, int numbers);
+
+    void calKineticGradient(double3* _vertexes, double3* _xTilta, double3* _gradient, double* _masses, int numbers);
+
     void calculate_triangle_fem_gradient_hessian(MATHUTILS::Matrix2x2d* triDmInverses, const double3* vertexes, const uint3* triangles,
     MATHUTILS::Matrix9x9d* Hessians, const uint32_t& offset, const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearStiff, double IPC_dt);
 
@@ -117,6 +122,13 @@ namespace FEMENERGY {
 
     void calculate_triangle_fem_gradient(MATHUTILS::Matrix2x2d* triDmInverses, const double3* vertexes, const uint3* triangles,
     const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearStiff, double IPC_dt);
+
+    // __global__ 
+    // void _computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double dHat, double Kappa, int number);
+
+    // void computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double3* _gradient, double dHat, double Kappa, uint32_t hostgpNum, uint32_t hostDNum);
+
+
 
 } // namespace FEMENERGY
 

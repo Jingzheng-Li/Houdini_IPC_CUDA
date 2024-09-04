@@ -48,6 +48,88 @@ double calcMinMovement(const double3* _moveDir, double* _queue, const int& numbe
 }
 
 
+
+
+void ImplicitIntegrator::computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance) {
+
+    // rhs = M * (x_tilta - (xn + dt*vn)))
+    FEMENERGY::calKineticGradient(
+        instance->cudaVertPos, 
+        instance->cudaXTilta, 
+        instance->cudaFb, 
+        instance->cudaVertMass, 
+        instance->numVertices);
+
+    CUDA_SAFE_CALL(cudaMemset(instance->cudaCPNum, 0, 5 * sizeof(uint32_t)));
+
+    // calculate barrier gradient and Hessian
+    m_gipc->calBarrierGradientAndHessian(
+        instance->cudaFb, 
+        m_instance->Kappa);
+
+#ifdef USE_FRICTION
+    m_gipc->calFrictionGradient(instance->cudaFb, instance);
+    m_gipc->calFrictionHessian(instance);
+#endif
+
+    // rhs += -dt^2 * vol * force
+    // lhs += dt^2 * H12x12
+    FEMENERGY::calculate_tetrahedra_fem_gradient_hessian(
+        instance->cudaTetDmInverses, 
+        instance->cudaVertPos, 
+        instance->cudaTetElement, 
+        instance->cudaH12x12,
+        instance->cpNum[4] + instance->cpNumLast[4], 
+        instance->cudaTetVolume,
+        instance->cudaFb, 
+        instance->numTetElements, 
+        m_instance->lengthRate, 
+        m_instance->volumeRate, 
+        m_instance->IPC_dt);
+
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaD4Index + instance->cpNum[4] + instance->cpNumLast[4], instance->cudaTetElement, instance->numTetElements * sizeof(uint4),cudaMemcpyDeviceToDevice));
+
+    // rhs += -dt^2 * area * force
+    // lhs += dt^2 * H9x9
+    FEMENERGY::calculate_triangle_fem_gradient_hessian(
+        instance->cudaTriDmInverses, 
+        instance->cudaVertPos, 
+        instance->cudaTriElement, 
+        instance->cudaH9x9, 
+        instance->cpNum[3] + instance->cpNumLast[3], 
+        instance->cudaTriArea, 
+        instance->cudaFb, 
+        instance->numTriElements, 
+        m_instance->stretchStiff, 
+        m_instance->shearStiff, 
+        m_instance->IPC_dt);
+    
+    FEMENERGY::calculate_bending_gradient_hessian(
+        instance->cudaVertPos, 
+        instance->cudaRestVertPos, 
+        instance->cudaTriEdges, 
+        instance->cudaTriEdgeAdjVertex, 
+        instance->cudaH12x12, 
+        instance->cudaD4Index, 
+        instance->cpNum[4] + instance->cpNumLast[4] + instance->numTetElements, 
+        instance->cudaFb, 
+        instance->numTriEdges, 
+        m_instance->bendStiff, 
+        m_instance->IPC_dt);
+
+    CUDA_SAFE_CALL(cudaMemcpy(instance->cudaD3Index + instance->cpNum[3] + instance->cpNumLast[3], instance->cudaTriElement, instance->numTriElements * sizeof(uint3), cudaMemcpyDeviceToDevice));
+
+    // calculate Ground gradient save in H3x3
+    m_gipc->computeGroundGradientAndHessian(instance->cudaFb);
+
+    // calcukate Soft Constraint Gradient and Hessian
+    m_gipc->computeSoftConstraintGradientAndHessian(instance->cudaFb);
+
+}
+
+
+
+
 int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
     std::cout.precision(18);
@@ -65,7 +147,7 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
         m_BH->updateDNum(instance->numTriElements, instance->numTetElements, instance->cpNum + 1, instance->cpNumLast + 1, instance->numTriEdges);
 
         // calculate gradient gradx(g) and Hessian gradx^2(g)
-        m_gipc->computeGradientAndHessian(instance);
+        computeGradientAndHessian(instance);
 
         double distToOpt_PN = calcMinMovement(instance->cudaMoveDir, m_pcg_data->mc_squeue, instance->numVertices);
         // line search iteration stop 

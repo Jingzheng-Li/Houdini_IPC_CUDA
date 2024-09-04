@@ -21,6 +21,8 @@ public:
     bool IPC_Solver();
     int solve_subIP(std::unique_ptr<GeometryManager>& instance);
 
+	void computeGradientAndHessian(std::unique_ptr<GeometryManager>& instance);
+
 
 public:
     std::unique_ptr<GeometryManager>& m_instance;

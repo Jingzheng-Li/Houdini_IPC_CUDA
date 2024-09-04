@@ -1450,6 +1450,23 @@ namespace FEMENERGY {
         _computeXTilta <<<blockNum, threadNum>>> (instance->cudaBoundaryType, instance->cudaVertVel, instance->cudaOriginVertPos, instance->cudaXTilta, instance->IPC_dt, rate, numbers);
     }
 
+    __global__
+    void _calKineticGradient(double3* vertexes, double3* xTilta, double3* gradient, double* masses, int numbers) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= numbers) return;
+        
+        // deltax = (x_guess - (xn + dt*vn + g*dt^2))
+        double3 deltaX = MATHUTILS::__minus(vertexes[idx], xTilta[idx]); 
+        // gradient = M * deltax
+        gradient[idx] = make_double3(deltaX.x * masses[idx], deltaX.y * masses[idx], deltaX.z * masses[idx]);
+    }
+
+    void calKineticGradient(double3* _vertexes, double3* _xTilta, double3* _gradient, double* _masses, int numbers) {
+        const unsigned int threadNum = default_threads;
+        int blockNum = (numbers + threadNum - 1) / threadNum;
+        _calKineticGradient <<<blockNum, threadNum>>> (_vertexes, _xTilta, _gradient, _masses, numbers);
+    }
+
     void calculate_triangle_fem_gradient_hessian(MATHUTILS::Matrix2x2d* triDmInverses, const double3* vertexes, const uint3* triangles,
         MATHUTILS::Matrix9x9d* Hessians, const uint32_t& offset, const double* area, double3* gradient, int triangleNum, double stretchStiff, double shearStiff, double IPC_dt) {
         int numbers = triangleNum;
@@ -1499,6 +1516,61 @@ namespace FEMENERGY {
         _calculate_triangle_fem_gradient << <blockNum, threadNum >> > (triDmInverses, vertexes, triangles,
             area, gradient, triangleNum, stretchStiff, shearStiff, IPC_dt);
     }
+
+
+    // __global__
+    // void _computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, double3* gradient, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double dHat, double Kappa, int number) {
+    //     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    //     if (idx >= number) return;
+
+    //     double3 normal = *g_normal;
+    //     // only range for those collision points, if not collision at all, mesh points won't appear into this calculation at all
+    //     int gidx = _environment_collisionPair[idx];
+    //     double dist = MATHUTILS::__v_vec_dot(normal, vertexes[gidx]) - *g_offset;
+    //     double dist2 = dist * dist;
+
+    //     double t = dist2 - dHat;
+    //     double g_b = t * log(dist2 / dHat) * -2.0 - (t * t) / dist2;
+    //     double H_b = (log(dist2 / dHat) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
+
+    //     //printf("H_b   dist   g_b    is  %lf  %lf  %lf\n", H_b, dist2, g_b);
+
+    //     double3 grad = MATHUTILS::__s_vec_multiply(normal, Kappa * g_b * 2 * dist);
+
+    //     {
+    //         atomicAdd(&(gradient[gidx].x), grad.x);
+    //         atomicAdd(&(gradient[gidx].y), grad.y);
+    //         atomicAdd(&(gradient[gidx].z), grad.z);
+    //     }
+
+    //     double param = 4.0 * H_b * dist2 + 2.0 * g_b;
+    //     if (param > 0) {
+    //         MATHUTILS::Matrix3x3d nn = MATHUTILS::__v_vec_toMat(normal, normal);
+    //         MATHUTILS::Matrix3x3d Hpg = MATHUTILS::__S_Mat_multiply(nn, Kappa * param);
+
+    //         int pidx = atomicAdd(_gpNum, 1);
+    //         H3x3[pidx] = Hpg;
+    //         D1Index[pidx] = gidx;
+    //     }
+
+    //     //_environment_collisionPair[atomicAdd(_gpNum, 1)] = surfVertIds[idx];
+    // }
+
+
+    // void computeGroundGradientAndHessian(const double3* vertexes, const double* g_offset, const double3* g_normal, const uint32_t* _environment_collisionPair, uint32_t* _gpNum, MATHUTILS::Matrix3x3d* H3x3, uint32_t* D1Index, double3* _gradient, double dHat, double Kappa, uint32_t hostgpNum, uint32_t hostDNum, ) {
+    // #ifndef USE_FRICTION  
+    //     CUDA_SAFE_CALL(cudaMemset(_gpNum, 0, sizeof(uint32_t)));
+    // #endif
+    //     int numbers = hostgpNum;
+    //     if (numbers < 1) {
+    //         CUDA_SAFE_CALL(cudaMemcpy(&hostDNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+    //         return;
+    //     }
+    //     const unsigned int threadNum = default_threads;
+    //     int blockNum = (numbers + threadNum - 1) / threadNum; //
+    //     _computeGroundGradientAndHessian << <blockNum, threadNum >> > (vertexes, g_offset, g_normal, _environment_collisionPair,_gradient, _gpNum, H3x3, D1Index, dHat, Kappa, numbers);
+    //     CUDA_SAFE_CALL(cudaMemcpy(&hostDNum, _gpNum, sizeof(int), cudaMemcpyDeviceToHost));
+    // }
 
 
 }; // namespace FEMENERGY
