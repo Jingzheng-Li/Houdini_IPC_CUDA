@@ -986,7 +986,6 @@ void _selfQuery_vf(const int* _btype, const double3* _vertexes, const uint3* _fa
 	
 	double gapl = sqrt(dHat);//0.001 * sqrt(bboxDiagSize2);
 	//double dHat = gapl * gapl;// *bboxDiagSize2;
-	unsigned int num_found = 0;
 	
 	do {
 		const uint32_t node_id = *--stack_ptr;
@@ -1046,7 +1045,6 @@ void _selfQuery_vf_ccd(const int* _btype, const double3* _vertexes, const double
 	// printf("%f\n", bboxDiagSize2);
 	double gapl = sqrt(dHat); // 0.001 * sqrt(bboxDiagSize2);
 	//double dHat = gapl * gapl;// *bboxDiagSize2;
-	unsigned int num_found = 0;
 
 	do {
 		const uint32_t node_id = *--stack_ptr;
@@ -1101,7 +1099,6 @@ void _selfQuery_ee(const int* _btype, const double3* _vertexes, const double3* _
 	//printf("%f\n", bboxDiagSize2);
 	double gapl = sqrt(dHat);//0.001 * sqrt(bboxDiagSize2);
 	//double dHat = gapl * gapl;// *bboxDiagSize2;
-	unsigned int num_found = 0;
 	
 	do {
 		const uint32_t node_id = *--stack_ptr;
@@ -1161,7 +1158,6 @@ void _selfQuery_ee_ccd(const int* _btype, const double3* _vertexes, const double
 	//_bv.combines(edge_tvert0.x, edge_tvert0.y, edge_tvert0.z);
 	//_bv.combines(edge_tvert1.x, edge_tvert1.y, edge_tvert1.z);
 	double gapl = sqrt(dHat);
-	unsigned int num_found = 0;
 
 	do {
 		const uint32_t node_id = *--stack_ptr;

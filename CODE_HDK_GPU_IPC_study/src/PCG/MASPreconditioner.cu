@@ -87,8 +87,7 @@ __global__ void _preparePrefixSumL0(int* _prefixOriginal, unsigned int* _fineCon
     }
     cacheMask[threadIdx.x] = connectMsk;
     unsigned int visited   = (1U << laneId);
-    while(connectMsk != -1)
-    {
+    while(connectMsk != -1) {
         unsigned int todo = visited ^ connectMsk;
 
         if(!todo)

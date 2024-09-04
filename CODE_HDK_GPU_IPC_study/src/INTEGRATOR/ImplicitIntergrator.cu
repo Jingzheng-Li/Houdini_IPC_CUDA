@@ -26,8 +26,8 @@ ImplicitIntegrator::ImplicitIntegrator(std::unique_ptr<GeometryManager>& instanc
 ImplicitIntegrator::~ImplicitIntegrator() {};
 
 
-__device__ bool cuda_error = false;
-
+__device__ bool device_cuda_error = false;
+bool host_cuda_error = false;
 
 __global__
 void _reduct_min_groundTimeStep_to_double(const double3* vertexes, const uint32_t* surfVertIds, const double* g_offset, const double3* g_normal, const double3* moveDir, double* minStepSizes, double slackness, int number) {
@@ -421,7 +421,7 @@ double __cal_Barrier_energy(const double3* _vertexes, const double3* _rest_verte
 #elif (RANK == 6)
             double Energy = Kappa * (-(1 / (eps_x * eps_x)) * I1 * I1 + (2 / eps_x) * I1) * (dHat - dHat * I2) * (dHat - dHat * I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2);
 #endif
-            CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero pee", cuda_error);
+            CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero pee", device_cuda_error);
             // if (Energy < 0)
             //     printf("I am pee\n");
             return Energy;
@@ -454,7 +454,7 @@ double __cal_Barrier_energy(const double3* _vertexes, const double3* _rest_verte
 #elif (RANK == 6)
                 double Energy = Kappa * (-(1 / (eps_x * eps_x)) * I1 * I1 + (2 / eps_x) * I1) * (dHat - dHat * I2) * (dHat - dHat * I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2);
 #endif
-                CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero pp", cuda_error);
+                CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero pp", device_cuda_error);
                 // if (Energy < 0)
                 //     printf("I am pp\n");
                 return Energy;
@@ -505,7 +505,7 @@ double __cal_Barrier_energy(const double3* _vertexes, const double3* _rest_verte
 #elif (RANK == 6)
                 double Energy = Kappa * (-(1 / (eps_x * eps_x)) * I1 * I1 + (2 / eps_x) * I1) * (dHat - dHat * I2) * (dHat - dHat * I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2) * log(I2);
 #endif
-                CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero ppe", cuda_error);
+                CHECK_ERROR_CUDA(Energy >= 0, "barrier enery less than zero ppe", device_cuda_error);
                 // if (Energy < 0)
                 //     printf("I am ppe\n");
                 return Energy;
@@ -1895,7 +1895,7 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
         m_gipc->buildBVH();
         m_gipc->buildCP();
         testingE = computeEnergy(instance);
-        CHECK_ERROR_CUDA(numOfLineSearch <= 10, "energy not drops down correctly in more than ten iterations\n", cuda_error);
+        CHECK_ERROR_CUDA(numOfLineSearch <= 10, "energy not drops down correctly in more than ten iterations\n", host_cuda_error);
     }
     // if (numOfLineSearch > 8) {
     //     printf("!!!!!!!!!!!!! energy raise for %d times of numOfLineSearch\n", numOfLineSearch);
@@ -2030,8 +2030,9 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
 
 bool ImplicitIntegrator::IPC_Solver() {
 
-    bool host_cuda_error = false;
-    cudaMemcpyToSymbol(cuda_error, &host_cuda_error, sizeof(bool));
+    host_cuda_error = false;
+    device_cuda_error = false;
+    // cudaMemcpyToSymbol(cuda_error, &host_cuda_error, sizeof(bool));
 
     // calculate a lowerbound and upperbound of a kappa, mainly to keep stability of the system
     m_gipc->upperBoundKappa(m_instance->Kappa);
@@ -2143,8 +2144,10 @@ bool ImplicitIntegrator::IPC_Solver() {
 
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-    cudaMemcpyFromSymbol(&host_cuda_error, cuda_error, sizeof(bool));
-    return host_cuda_error;
+
+    bool _host_cuda_error;
+    cudaMemcpyFromSymbol(&_host_cuda_error, device_cuda_error, sizeof(bool));
+    return host_cuda_error || _host_cuda_error;
 
 }
 

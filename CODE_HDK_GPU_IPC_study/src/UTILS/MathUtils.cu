@@ -1489,7 +1489,6 @@ namespace MATHUTILS {
 	__device__ __host__ 
 	void __distancePointTriangle(const double3& v0, const double3& v1, const double3& v2, const double3& v3, double& d) {
 		double3 b = __v_vec_cross(__minus(v2, v1), __minus(v3, v1));
-		double3 test = __minus(v0, v1);
 		double aTb = __v_vec_dot(__minus(v0, v1), b);
 		d = aTb * aTb / __squaredNorm(b);
 	}
@@ -1523,10 +1522,7 @@ namespace MATHUTILS {
 
 	__device__ __host__ 
 	double __calculateVolume(const double3* vertexes, const uint4& index) {
-		int id0 = 0;
-		int id1 = 1;
-		int id2 = 2;
-		int id3 = 3;
+
 		double o1x = vertexes[index.y].x - vertexes[index.x].x;
 		double o1y = vertexes[index.y].y - vertexes[index.x].y;
 		double o1z = vertexes[index.y].z - vertexes[index.x].z;

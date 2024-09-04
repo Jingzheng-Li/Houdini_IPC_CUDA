@@ -353,8 +353,6 @@ namespace FEMENERGY {
 
         MATHUTILS::Matrix9x9d SH, M9_temp;
         MATHUTILS::__identify_Mat9x9(SH); // I9x9
-        MATHUTILS::Vector9 V9_temp;
-
 
         M9_temp = MATHUTILS::__v9_vec9_toMat9x9(t0, t0);
         M9_temp = MATHUTILS::__S_Mat9x9_multiply(M9_temp, -lambda0);

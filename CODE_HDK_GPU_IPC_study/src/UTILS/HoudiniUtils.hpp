@@ -26,6 +26,7 @@
 #include <DOP/DOP_Node.h>
 #include <DOP/DOP_Engine.h>
 
+#pragma nv_diag_suppress 20012
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 

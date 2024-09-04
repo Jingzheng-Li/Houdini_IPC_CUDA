@@ -4,6 +4,7 @@
 
 #include "MathUtils.hpp"
 
+#pragma nv_diag_suppress 20012
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 

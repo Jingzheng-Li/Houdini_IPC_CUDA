@@ -3,8 +3,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Core>
 
 #include "CUDAUtils.hpp"
 #include "MathUtils.hpp"

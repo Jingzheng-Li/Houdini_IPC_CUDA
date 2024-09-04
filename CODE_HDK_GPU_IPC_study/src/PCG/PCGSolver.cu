@@ -61,7 +61,7 @@ void PCG_vdv_Reduction(double* squeue, const double3* a, const double3* b, int n
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
+
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -107,7 +107,7 @@ void add_reduction(double* mem, int numbers) {
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
+
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -160,7 +160,7 @@ void PCG_add_Reduction_delta0(double* squeue, const MATHUTILS::Matrix3x3d* P, co
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
+
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -214,7 +214,7 @@ void PCG_add_Reduction_deltaN0(double* squeue, const MATHUTILS::Matrix3x3d* P, c
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
+
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -274,7 +274,7 @@ void PCG_add_Reduction_deltaN(double* squeue, double3* dx, const double3* c, dou
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
+
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -324,7 +324,7 @@ void PCG_add_Reduction_tempSum(double* squeue, const double3* c, double3* q, con
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
+
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
@@ -371,7 +371,7 @@ void PCG_add_Reduction_force(double* squeue, const double3* b, int numbers) {
 
     int warpTid = threadIdx.x % 32;
     int warpId = (threadIdx.x >> 5);
-    double nextTp;
+
     int warpNum;
     //int tidNum = 32;
     if (blockIdx.x == gridDim.x - 1) {
