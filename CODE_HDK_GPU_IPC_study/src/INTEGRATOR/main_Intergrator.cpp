@@ -78,7 +78,6 @@ void GAS_CUDA_Intergrator::transferDynamicCollisionToCUDA(SIM_Object* object) {
 void GAS_CUDA_Intergrator::gas_IPC_Solver() {
     auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "gas_IPC_Solver geoinstance not initialized");
-    CHECK_ERROR(instance->GIPC_ptr, "gas_IPC_Solver GIPC_ptr not initialized");
     CHECK_ERROR(instance->LBVH_E_ptr, "not initialize m_bvh_f");
     CHECK_ERROR(instance->LBVH_F_ptr, "not initialize m_bvh_e");
     CHECK_ERROR(instance->LBVH_EF_ptr, "not initialize m_bvh_ef");
@@ -151,15 +150,20 @@ void GAS_CUDA_Intergrator::debugPrint() {
 
 
 
-    // std::vector<double3> new_vel(instance->numVertices);
-    // CUDA_SAFE_CALL(cudaMemcpy(new_vel.data(), instance->cudaVertVel, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToHost));
-    // double3 sum_vel = std::accumulate(new_vel.begin(), new_vel.end(), make_double3(0.0, 0.0, 0.0), add_double3);
-	// std::cout << "sum_vel!!!!!!!!!!!! " << sum_vel.x << " " << sum_vel.y << " " << sum_vel.z << std::endl;
 
-    std::vector<double3> new_targetpos(instance->numSoftConstraints);
-    CUDA_SAFE_CALL(cudaMemcpy(new_targetpos.data(), instance->cudaTargetVertPos, instance->numSoftConstraints * sizeof(double3), cudaMemcpyDeviceToHost));
-    double3 sum_targetpos = std::accumulate(new_targetpos.begin(), new_targetpos.end(), make_double3(0.0, 0.0, 0.0), add_double3);
-    std::cout << "sum_targetpos! " << sum_targetpos.x << " " << sum_targetpos.y << " " << sum_targetpos.z << std::endl;
+
+    // std::vector<double3> new_originvertpos(instance->numVertices);
+    // CUDA_SAFE_CALL(cudaMemcpy(new_originvertpos.data(), instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToHost));
+    // double3 sum_originvertpos = std::accumulate(new_originvertpos.begin(), new_originvertpos.end(), make_double3(0.0, 0.0, 0.0), add_double3);
+    // std::cout << "sum_originvertpos! " << sum_originvertpos.x << " " << sum_originvertpos.y << " " << sum_originvertpos.z << std::endl;
+    // for (auto& overtpos : new_originvertpos) {
+    //     std::cout << overtpos.x << " " << overtpos.y << " " << overtpos.z << std::endl;
+    // }
+
+
+
+    // matindex
+
 
 }
 

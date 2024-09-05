@@ -98,7 +98,7 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "loadSIMParamsFromHoudini geoinstance not initialized");
 
-	instance->IPC_substep = 1;
+	instance->IPC_substep = 3;
 	instance->IPC_fps = 30;
 	instance->IPC_dt = 1.0 / instance->IPC_fps / instance->IPC_substep; // 1/30fps/3substep
 	instance->precondType = 0;
@@ -125,7 +125,7 @@ void GAS_Read_Buffer::loadSIMParamsFromHoudini() {
 	instance->pcg_threshold = 1e-3;
 	instance->collision_detection_buff_scale = 1;
 
-	instance->softMotionRate = double(instance->IPC_substep);
+	instance->softMotionRate = 1.0; // mass spring k of animation
 	instance->softAnimationSubRate = 1.0 / instance->IPC_substep;
 	instance->softAnimationFullRate = 0.0;
 
@@ -396,7 +396,7 @@ void GAS_Read_Buffer::transferDetailAttribTOCUDA() {
 	// if btype is 0/1/2 constraint set as identity matrix, 3 set as zero matrix
 	for (int i = 0; i < instance->numSoftConstraints; i++) {
 		instance->targetIndex[i] = i + instance->numSIMVertPos;
-		instance->targetVertPos.row(i) = instance->vertPos.row(i + instance->numSIMVertPos);
+		instance->targetVertPos.row(i) = instance->collisionVertPos.row(i);
 		if (instance->boundaryTypies[i] == 3)
 			instance->constraintsMat[i + instance->numSIMVertPos] = zeroMat;
 	}
@@ -509,6 +509,33 @@ void GAS_Read_Buffer::transferOtherAttribTOCUDA() {
 	CHECK_ERROR(instance->surfEdge.rows() == instance->numSurfEdges, "numSurfEdges not match with Eigen");
 	CHECK_ERROR(instance->surfFace.rows() == instance->numSurfFaces, "numSurfFaces not match with Eigen");
 
+	
+    instance->cpNum[0] = 0;
+    instance->cpNum[1] = 0;
+    instance->cpNum[2] = 0;
+    instance->cpNum[3] = 0;
+    instance->cpNum[4] = 0;
+    
+    instance->cpNumLast[0] = 0;
+    instance->cpNumLast[1] = 0;
+    instance->cpNumLast[2] = 0;
+    instance->cpNumLast[3] = 0;
+    instance->cpNumLast[4] = 0;
+
+	instance->DNum[0] = 0;
+	instance->DNum[1] = 0;
+	instance->DNum[2] = 0;
+	instance->DNum[3] = 0;
+
+	instance->ccdCpNum = 0;
+	instance->gpNum = 0;
+	instance->closeCpNum = 0;
+	instance->closeGpNum = 0;
+	instance->gpNumLast = 0;
+
+	instance->totalPCGCount = 0;
+	instance->totalCollisionPairs = 0;	
+
 }
 
 
@@ -604,6 +631,7 @@ void GAS_Read_Buffer::initSIMBVH() {
 	CUDA_SAFE_CALL(cudaMemcpy(&boundVolumes[0], instance->LBVH_E_ptr->mc_boundVolumes, (2 * instance->numSurfEdges - 1) * sizeof(AABB), cudaMemcpyDeviceToHost));
 	CUDA_SAFE_CALL(cudaMemcpy(&Nodes[0], instance->LBVH_E_ptr->mc_nodes, (2 * instance->numSurfEdges - 1) * sizeof(Node), cudaMemcpyDeviceToHost));
 
+	instance->Kappa = 0;
 
 	AABB AABBScene = instance->LBVH_F_ptr->m_scene;
 	instance->bboxDiagSize2 = MATHUTILS::__squaredNorm(MATHUTILS::__minus(AABBScene.m_upper, AABBScene.m_lower));
@@ -661,11 +689,8 @@ void GAS_Read_Buffer::initSIMIPC() {
 	auto &instance = GeometryManager::instance;
 	CHECK_ERROR(instance, "initSIMIPC geoinstance not initialized");
 
-
-    if (!instance->GIPC_ptr) {
-        instance->GIPC_ptr = std::make_unique<GIPC>(instance);
-    }
-	instance->GIPC_ptr->buildCP();
+	
+	GPUIPC::buildCP(instance, instance->LBVH_E_ptr, instance->LBVH_F_ptr);
 
 	if (!instance->Integrator_ptr) {
 		instance->Integrator_ptr = std::make_unique<ImplicitIntegrator>(instance);

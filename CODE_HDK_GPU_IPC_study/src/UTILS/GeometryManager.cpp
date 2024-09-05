@@ -107,10 +107,6 @@ void GeometryManager::freeCUDAptr() {
         instance->PCGData_ptr->CUDA_FREE_PCGDATA();
         instance->PCGData_ptr.reset();
     }
-    if (instance->GIPC_ptr) {
-        instance->GIPC_ptr->CUDA_FREE_GIPC();
-        instance->GIPC_ptr.reset();
-    }
     if (instance->Integrator_ptr) {
         instance->Integrator_ptr.reset();
     }

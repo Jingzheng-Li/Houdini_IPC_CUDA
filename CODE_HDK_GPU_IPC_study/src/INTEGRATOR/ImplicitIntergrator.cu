@@ -12,11 +12,13 @@
 
 
 #define RANK 2
+#define NEWF
+#define MAKEPD2
+#define OLDBARRIER2
 
 
 ImplicitIntegrator::ImplicitIntegrator(std::unique_ptr<GeometryManager>& instance) 
     : m_instance(instance),
-    m_gipc(instance->GIPC_ptr),
     m_bvh_f(instance->LBVH_F_ptr),
     m_bvh_e(instance->LBVH_E_ptr),
     m_bvh_ef(instance->LBVH_EF_ptr),
@@ -1468,13 +1470,14 @@ void ImplicitIntegrator::computeGradientAndHessian(std::unique_ptr<GeometryManag
     CUDA_SAFE_CALL(cudaMemset(instance->cudaCPNum, 0, 5 * sizeof(uint32_t)));
 
     // calculate barrier gradient and Hessian
-    m_gipc->calBarrierGradientAndHessian(
+    GPUIPC::calBarrierGradientAndHessian(
+        instance,
         instance->cudaFb, 
         m_instance->Kappa);
 
 #ifdef USE_FRICTION
-    m_gipc->calFrictionGradient(instance->cudaFb, instance);
-    m_gipc->calFrictionHessian(instance);
+    GPUIPC::calFrictionGradient(instance->cudaFb, instance);
+    GPUIPC::calFrictionHessian(instance);
 #endif
 
     // rhs += -dt^2 * vol * force
@@ -1857,7 +1860,7 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
 
     stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, instance->cudaMoveDir, instance->cudaBoundaryType, alpha, false, instance->numVertices);
 
-    m_gipc->buildBVH();
+    GPUIPC::buildBVH(m_bvh_e, m_bvh_f);
 
     // if (instance->cpNum[0] > 0) system("pause");
     int numOfIntersect = 0;
@@ -1867,17 +1870,17 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
 
     // if under all ACCD/Ground/CFL defined alpha, still intersection happens
     // then we return back to alpha/2 util find collision free alpha 
-    while (checkInterset && m_gipc->isIntersected(instance)) {
+    while (checkInterset && GPUIPC::isIntersected(instance, m_bvh_ef)) {
         printf("type 0 intersection happened:  %d\n", insectNum);
         insectNum++;
         alpha /= 2.0;
         numOfIntersect++;
         alpha = MATHUTILS::__m_min(cfl_alpha, alpha);
         stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, instance->cudaMoveDir, instance->cudaBoundaryType, alpha, false, instance->numVertices);
-        m_gipc->buildBVH();
+        GPUIPC::buildBVH(m_bvh_e, m_bvh_f);
     }
 
-    m_gipc->buildCP();
+    GPUIPC::buildCP(m_instance, m_bvh_e, m_bvh_f);
     //if (instance->cpNum[0] > 0) system("pause");
 
     //buildCollisionSets(mesh, sh, gd, true);
@@ -1892,28 +1895,31 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
         alpha /= 2.0;
         ++numOfLineSearch;
         stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, instance->cudaMoveDir, instance->cudaBoundaryType, alpha, false, instance->numVertices);
-        m_gipc->buildBVH();
-        m_gipc->buildCP();
+        GPUIPC::buildBVH(m_bvh_e, m_bvh_f);
+        GPUIPC::buildCP(instance, m_bvh_e, m_bvh_f);
         testingE = computeEnergy(instance);
-        CHECK_ERROR_CUDA(numOfLineSearch <= 10, "energy not drops down correctly in more than ten iterations\n", host_cuda_error);
-        if (numOfLineSearch > 10) return;
+        CHECK_ERROR_CUDA(numOfLineSearch <= 8, "energy not drops down correctly in more than ten iterations\n", host_cuda_error);
+        if (numOfLineSearch > 8) {
+            cudaDeviceReset();
+            exit(0);
+        }
     }
         
     // if alpha fails down in past process, then check again will there be intersection again
     if (alpha < LFStepSize) {
         bool needRecomputeCS = false;
-        while (checkInterset && m_gipc->isIntersected(instance)) {
+        while (checkInterset && GPUIPC::isIntersected(instance, m_bvh_ef)) {
             printf("type 1 intersection happened:  %d\n", insectNum);
             insectNum++;
             alpha /= 2.0;
             numOfIntersect++;
             alpha = MATHUTILS::__m_min(cfl_alpha, alpha);
             stepForward(instance->cudaVertPos, instance->cudaTempDouble3Mem, instance->cudaMoveDir, instance->cudaBoundaryType, alpha, false, instance->numVertices);
-            m_gipc->buildBVH();
+            GPUIPC::buildBVH(m_bvh_e, m_bvh_f);
             needRecomputeCS = true;
         }
         if (needRecomputeCS) {
-            m_gipc->buildCP();
+            GPUIPC::buildCP(m_instance, m_bvh_e, m_bvh_f);
         }
     }
     printf("lineSearch time step:  %f\n", alpha);
@@ -1923,7 +1929,7 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
 
 void ImplicitIntegrator::postLineSearch(std::unique_ptr<GeometryManager>& instance, double alpha) {
     if (m_instance->Kappa == 0.0) {
-        m_gipc->initKappa(instance);
+        GPUIPC::initKappa(instance, m_pcg_data);
     }
     else {
 
@@ -1987,8 +1993,8 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
 
         // build BVH tree of type ccd, get collision pairs num instance->ccdCpNum, 
         // if instance->ccdCpNum > 0, means there will be collision in temp_alpha substep
-        m_gipc->buildBVH_FULLCCD(temp_alpha);
-        m_gipc->buildFullCP(temp_alpha);
+        GPUIPC::buildBVH_FULLCCD(instance, m_bvh_e, m_bvh_f, temp_alpha);
+        GPUIPC::buildFullCP(instance, m_bvh_e, m_bvh_f, temp_alpha);
         if (instance->ccdCpNum > 0) {
             // obtain max velocity of moveDir
             double maxSpeed = cfl_largestSpeed(m_pcg_data->mc_squeue);
@@ -2033,12 +2039,12 @@ bool ImplicitIntegrator::IPC_Solver() {
     // cudaMemcpyToSymbol(cuda_error, &host_cuda_error, sizeof(bool));
 
     // calculate a lowerbound and upperbound of a kappa, mainly to keep stability of the system
-    m_gipc->upperBoundKappa(m_instance->Kappa);
+    GPUIPC::upperBoundKappa(m_instance, m_instance->Kappa);
     if (m_instance->Kappa < 1e-16) {
         // init Kappa, basically only active for 1st frame, to give you a first suggest kappa value.
-        m_gipc->suggestKappa(m_instance->Kappa);
+        GPUIPC::suggestKappa(m_instance, m_instance->Kappa);
     }
-    m_gipc->initKappa(m_instance);
+    GPUIPC::initKappa(m_instance, m_pcg_data);
 
 
 #ifdef USE_FRICTION
@@ -2049,7 +2055,7 @@ bool ImplicitIntegrator::IPC_Solver() {
     CUDAMallocSafe(m_instance->cudaMatIndexLast, m_instance->cpNum[0]);
     CUDAMallocSafe(m_instance->cudaLambdaLastHScalarGd, m_instance->gpNum);
     CUDAMallocSafe(m_instance->cudaCollisonPairsLastHGd, m_instance->gpNum);
-    m_gipc->buildFrictionSets();
+    GPUIPC::buildFrictionSets(m_instance);
 
 #endif
 
@@ -2113,7 +2119,7 @@ bool ImplicitIntegrator::IPC_Solver() {
         CUDAMallocSafe(m_instance->cudaMatIndexLast, m_instance->cpNum[0]);
         CUDAMallocSafe(m_instance->cudaLambdaLastHScalarGd, m_instance->gpNum);
         CUDAMallocSafe(m_instance->cudaCollisonPairsLastHGd, m_instance->gpNum);
-        m_gipc->buildFrictionSets();
+        GPUIPC::buildFrictionSets(m_instance);
 #endif
     }
 

@@ -35,7 +35,6 @@ public:
     std::unique_ptr<LBVH_EF> LBVH_EF_ptr;
     std::unique_ptr<MASPreconditioner> MAS_ptr;
     std::unique_ptr<PCGData> PCGData_ptr;
-    std::unique_ptr<GIPC> GIPC_ptr;
     std::unique_ptr<ImplicitIntegrator> Integrator_ptr;
 
 public:
@@ -77,8 +76,6 @@ public:
     Eigen::Matrix<MATHUTILS::Matrix2x2d, Eigen::Dynamic, 1> triDMInverse;
     MATHUTILS::Matrix2x2d* cudaTriDmInverses;
 
-
-
     double meanMass;
     double meanVolume;
 
@@ -105,7 +102,6 @@ public:
     uint32_t numSoftConstraints;
     double3* cudaTargetVertPos;
     uint32_t* cudaTargetIndex;
-    // std::vector<MATHUTILS::Matrix3x3d> constraintsMat;
     Eigen::Matrix<MATHUTILS::Matrix3x3d, Eigen::Dynamic, 1> constraintsMat;
     MATHUTILS::Matrix3x3d* cudaConstraintsMat;
     Eigen::VectorXi targetIndex;
@@ -132,8 +128,8 @@ public:
     // cpnum[4] = cps of pt
     uint32_t* cudaCPNum; // collision pair [5]
     uint32_t* cudaGPNum; // ground pair
-    uint32_t* cudaCloseGPNum; // close ground pair
     uint32_t* cudaCloseCPNum; // close collision pair
+    uint32_t* cudaCloseGPNum; // close ground pair
 
     double* cudaGroundOffset;
     double3* cudaGroundNormal;
@@ -173,6 +169,14 @@ public:
     double ground_far_offset;
     double ground_bottom_offset;
 
+    double Kappa;
+    double bboxDiagSize2;
+    double dTol;
+    double minKappaCoef;
+    double dHat;
+    double relative_dhat;
+    double fDhat;
+
     double3 gravityforce;
     double3 windforce;
 
@@ -197,26 +201,16 @@ public:
     int* cudaBoundaryType;
     int* cudaTempBoundaryType;
 
-    double Kappa;
-    double bboxDiagSize2;
-    double dTol;
-    double minKappaCoef;
-    double dHat;
-    double relative_dhat;
-    double fDhat;
-
-
     uint32_t cpNum[5];
+	uint32_t cpNumLast[5];
 	uint32_t ccdCpNum;
 	uint32_t gpNum;
 	uint32_t closeCpNum;
 	uint32_t closeGpNum;
 	uint32_t gpNumLast;
-	uint32_t cpNumLast[5];
 
     int totalPCGCount;
     int totalCollisionPairs;
-
 
 
     uint32_t* cudaCloseConstraintID;

@@ -8,53 +8,35 @@
 #include "LBVH/LBVH.cuh"
 
 
-class GIPC {
+namespace GPUIPC {
 
-public:
+void buildCP(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_E>& bvh_e, std::unique_ptr<LBVH_F>& bvh_f);
+void buildFullCP(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_E>& bvh_e, std::unique_ptr<LBVH_F>& bvh_f, const double& alpha);
+void buildBVH(std::unique_ptr<LBVH_E>& bvh_e, std::unique_ptr<LBVH_F>& bvh_f);
+void buildBVH_FULLCCD(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_E>& bvh_e, std::unique_ptr<LBVH_F>& bvh_f, const double& alpha);
+void GroundCollisionDetect(std::unique_ptr<GeometryManager>& instance);
+bool isIntersected(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<LBVH_EF>& bvh_ef);
+bool checkGroundIntersection(std::unique_ptr<GeometryManager>& instance);	
 
-	GIPC(std::unique_ptr<GeometryManager>& instance);
-	~GIPC();
-
-	void CUDA_FREE_GIPC();
-
-	void buildCP();
-	void buildFullCP(const double& alpha);
-	void buildBVH();
-	void buildBVH_FULLCCD(const double& alpha);
-	void GroundCollisionDetect();
-	bool isIntersected(std::unique_ptr<GeometryManager>& instance);
-	bool checkGroundIntersection();	
-
-    void calBarrierGradientAndHessian(double3* _gradient, double mKappa);
-	void calBarrierGradient(double3* _gradient, double mKap);
-	void calFrictionHessian(std::unique_ptr<GeometryManager>& instance);
-	void calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManager>& instance);
+void calBarrierGradientAndHessian(std::unique_ptr<GeometryManager>& instance, double3* _gradient, double mKappa);
+void calBarrierGradient(std::unique_ptr<GeometryManager>& instance, double3* _gradient, double mKap);
+void calFrictionHessian(std::unique_ptr<GeometryManager>& instance);
+void calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManager>& instance);
 
 
-	void initKappa(std::unique_ptr<GeometryManager>& instance);
-	void suggestKappa(double& kappa);
-	void upperBoundKappa(double& kappa);
+void initKappa(std::unique_ptr<GeometryManager>& instance, std::unique_ptr<PCGData>& pcg_data);
+void suggestKappa(std::unique_ptr<GeometryManager>& instance, double& kappa);
+void upperBoundKappa(std::unique_ptr<GeometryManager>& instance, double& kappa);
 
-	// int solve_subIP(std::unique_ptr<GeometryManager>& instance);
-	void buildFrictionSets();
-	bool Inverse_Physics(std::unique_ptr<GeometryManager>& instance);
+// int solve_subIP(std::unique_ptr<GeometryManager>& instance);
+void buildFrictionSets(std::unique_ptr<GeometryManager>& instance);
+bool Inverse_Physics(std::unique_ptr<GeometryManager>& instance);
 
-	void computeInverseHessian(std::unique_ptr<GeometryManager>& instance);
-	void computeGroundHessian(double3* _gradient);
-	void computeInverseGradient(std::unique_ptr<GeometryManager>& instance);
-	void computeFldm(double3* _deltaPos, double3* fldm);
-
-	// bool IPC_Solver();
-
-
-
-public:
-
-	std::unique_ptr<GeometryManager>& m_instance;
-    std::unique_ptr<LBVH_F>& m_bvh_f;
-    std::unique_ptr<LBVH_E>& m_bvh_e;
-	std::unique_ptr<LBVH_EF>& m_bvh_ef;
-    std::unique_ptr<PCGData>& m_pcg_data;
+void computeInverseHessian(std::unique_ptr<GeometryManager>& instance);
+void computeGroundHessian(double3* _gradient);
+void computeInverseGradient(std::unique_ptr<GeometryManager>& instance);
+void computeFldm(double3* _deltaPos, double3* fldm);
 
 };
+
 
