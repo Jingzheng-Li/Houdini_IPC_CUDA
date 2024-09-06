@@ -11,6 +11,7 @@
 
 const static int default_threads = 256;
 
+
 #define CHECK_ERROR_CUDA(cond, msg, error) \
     if (!(cond)) { \
         printf("\033[1;31mCUDA Error: %s\033[0m\n", msg); \

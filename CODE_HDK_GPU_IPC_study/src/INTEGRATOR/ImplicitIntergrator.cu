@@ -16,6 +16,10 @@
 #define MAKEPD2
 #define OLDBARRIER2
 
+#include <numeric>
+double3 add_double3_gipc(const double3& a, const double3& b) {
+    return make_double3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
 
 ImplicitIntegrator::ImplicitIntegrator(std::unique_ptr<GeometryManager>& instance) 
     : m_instance(instance),
@@ -1898,11 +1902,11 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
         GPUIPC::buildBVH(m_bvh_e, m_bvh_f);
         GPUIPC::buildCP(instance, m_bvh_e, m_bvh_f);
         testingE = computeEnergy(instance);
-        CHECK_ERROR_CUDA(numOfLineSearch <= 8, "energy not drops down correctly in more than ten iterations\n", host_cuda_error);
-        if (numOfLineSearch > 8) {
-            cudaDeviceReset();
-            exit(0);
-        }
+        // CHECK_ERROR_CUDA(numOfLineSearch <= 8, "energy not drops down correctly in more than ten iterations\n", host_cuda_error);
+        // if (numOfLineSearch > 8) {
+        //     cudaDeviceReset();
+        //     exit(0);
+        // }
     }
         
     // if alpha fails down in past process, then check again will there be intersection again
@@ -1922,7 +1926,7 @@ void ImplicitIntegrator::lineSearch(std::unique_ptr<GeometryManager>& instance, 
             GPUIPC::buildCP(m_instance, m_bvh_e, m_bvh_f);
         }
     }
-    printf("lineSearch time step:  %f\n", alpha);
+
 
 }
 
@@ -1946,8 +1950,6 @@ void ImplicitIntegrator::postLineSearch(std::unique_ptr<GeometryManager>& instan
 
 
 
-
-
 int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) {
 
     std::cout.precision(18);
@@ -1967,6 +1969,24 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
         // calculate gradient gradx(g) and Hessian gradx^2(g)
         computeGradientAndHessian(instance);
 
+
+        std::vector<double3> new_fb(10);
+        CUDA_SAFE_CALL(cudaMemcpy(new_fb.data(), instance->cudaFb, 10 * sizeof(double3), cudaMemcpyDeviceToHost));
+        for (auto &v : new_fb) {
+            std::cout << "new_fb: " << v.x << " " << v.y << " " << v.z << std::endl;
+        }
+        std::vector<double3> new_totalfb(instance->numVertices);
+        CUDA_SAFE_CALL(cudaMemcpy(new_totalfb.data(), instance->cudaFb, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToHost));
+        double3 sum_totalfb = std::accumulate(new_totalfb.begin(), new_totalfb.end(), make_double3(0.0, 0.0, 0.0), add_double3_gipc);
+        std::cout << "sum_totalfb: " << sum_totalfb.x << " " << sum_totalfb.y << " " << sum_totalfb.z << std::endl;
+
+
+
+
+
+
+
+
         double distToOpt_PN = calcMinMovement(instance->cudaMoveDir, m_pcg_data->mc_squeue, instance->numVertices);
         // line search iteration stop 
         bool gradVanish = (distToOpt_PN < sqrt(instance->Newton_solver_threshold * instance->Newton_solver_threshold * instance->bboxDiagSize2 * instance->IPC_dt * instance->IPC_dt));
@@ -1976,6 +1996,14 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
 
         // solve PCG with MAS Preconditioner and get instance->cudaMoveDir (i.e. dx)
         instance->totalPCGCount += calculateMovingDirection(instance, instance->cpNum[0], instance->precondType);
+        std::cout << "cpNum0:~~~~~" << instance->cpNum[0] << std::endl;
+
+        // std::vector<double3> new_movedir(10);
+        // CUDA_SAFE_CALL(cudaMemcpy(new_movedir.data(), instance->cudaMoveDir, 10 * sizeof(double3), cudaMemcpyDeviceToHost));
+        // for (auto &v : new_movedir) {
+        //     std::cout << "new_movedir: " << v.x << " " << v.y << " " << v.z << std::endl;
+        // }
+        
 
         double alpha = 1.0, slackness_a = 0.8, slackness_m = 0.8;
 
@@ -1983,6 +2011,8 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
         // alpha = MATHUTILS::__m_min(alpha, InjectiveStepSize(0.2, 1e-6, m_pcg_data->mc_squeue, instance->cudaTetElement));
         alpha = MATHUTILS::__m_min(alpha, self_largestFeasibleStepSize(slackness_m, m_pcg_data->mc_squeue, instance->cpNum[0]));
         
+        printf("alpha before temp alpha:  %f\n", alpha);
+
         double temp_alpha = alpha;
         double alpha_CFL = alpha;
 
@@ -2006,10 +2036,16 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
             }
         }
 
-        //printf("alpha:  %f\n", alpha);
+        printf("alpha before line search:  %f\n", alpha);
 
         lineSearch(instance, alpha, alpha_CFL);
+
+        printf("alpha after line search:  %f\n", alpha);
+
         postLineSearch(instance, alpha);
+
+        printf("alpha after post line search:  %f\n", alpha);
+
 
         CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
@@ -2045,6 +2081,8 @@ bool ImplicitIntegrator::IPC_Solver() {
         GPUIPC::suggestKappa(m_instance, m_instance->Kappa);
     }
     GPUIPC::initKappa(m_instance, m_pcg_data);
+    std::cout << "init kappa ~~~~~~~~~~~: " << m_instance->Kappa << std::endl;
+
 
 
 #ifdef USE_FRICTION
@@ -2056,10 +2094,12 @@ bool ImplicitIntegrator::IPC_Solver() {
     CUDAMallocSafe(m_instance->cudaLambdaLastHScalarGd, m_instance->gpNum);
     CUDAMallocSafe(m_instance->cudaCollisonPairsLastHGd, m_instance->gpNum);
     GPUIPC::buildFrictionSets(m_instance);
-
 #endif
 
     m_instance->softAnimationFullRate = m_instance->softAnimationSubRate;
+    std::cout << "IPC_dt: " << m_instance->IPC_dt << std::endl;
+    std::cout << "soft animation rate: " << m_instance->softAnimationFullRate << std::endl;
+    std::cout << "soft_animation_sub_rate: " << m_instance->softAnimationSubRate << std::endl;
 
     while (true) {
         tempMalloc_closeConstraint();

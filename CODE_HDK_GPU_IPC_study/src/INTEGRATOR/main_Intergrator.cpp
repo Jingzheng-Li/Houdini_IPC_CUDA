@@ -34,9 +34,9 @@ bool GAS_CUDA_Intergrator::solveGasSubclass(SIM_Engine& engine,
 
     transferDynamicCollisionToCUDA(object);
 
-    debugPrint();
-
     gas_IPC_Solver();
+
+    debugPrint();
 
     return true;
 }
@@ -99,6 +99,9 @@ double3 add_double3(const double3& a, const double3& b) {
 void GAS_CUDA_Intergrator::debugPrint() {
     auto &instance = GeometryManager::instance;
 
+
+    // 主要是很难稳定复现 如果第一帧就能够出现就好了 现在第一帧没法出现？？就很难办
+
     // std::cout << "IPC_substep: " << instance->IPC_substep << std::endl;
     // std::cout << "IPC_fps: " << instance->IPC_fps << std::endl;
     // std::cout << "IPC_dt: " << instance->IPC_dt << std::endl;
@@ -151,7 +154,6 @@ void GAS_CUDA_Intergrator::debugPrint() {
 
 
 
-
     // std::vector<double3> new_originvertpos(instance->numVertices);
     // CUDA_SAFE_CALL(cudaMemcpy(new_originvertpos.data(), instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToHost));
     // double3 sum_originvertpos = std::accumulate(new_originvertpos.begin(), new_originvertpos.end(), make_double3(0.0, 0.0, 0.0), add_double3);
@@ -160,9 +162,6 @@ void GAS_CUDA_Intergrator::debugPrint() {
     //     std::cout << overtpos.x << " " << overtpos.y << " " << overtpos.z << std::endl;
     // }
 
-
-
-    // matindex
 
 
 }
