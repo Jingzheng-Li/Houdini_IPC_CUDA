@@ -2675,14 +2675,16 @@ void calBarrierGradient(std::unique_ptr<GeometryManager>& instance, double3* _gr
 }
 
 
-void calBarrierGradientAndHessian(std::unique_ptr<GeometryManager>& instance, double3* _gradient, double mKappa) {
-    int numbers = instance->cpNum[0];
-    if (numbers < 1)return;
+void calBarrierGradientAndHessian(const double3* _vertexes, const double3* _rest_vertexes, const int4* _collisionPair, double3* _gradient, MATHUTILS::Matrix12x12d* H12x12, MATHUTILS::Matrix9x9d* H9x9, MATHUTILS::Matrix6x6d* H6x6, uint4* D4Index, uint3* D3Index, uint2* D2Index, uint32_t* _cpNum, int* matIndex, double dHat, double Kappa, uint32_t* hCpNum) {
+    int numbers = hCpNum[0];
+    if (numbers < 1) return;
     const unsigned int threadNum = 256;
     int blockNum = (numbers + threadNum - 1) / threadNum;
 
-    _calBarrierGradientAndHessian << <blockNum, threadNum >> > (instance->cudaVertPos, instance->cudaRestVertPos, instance->cudaCollisionPairs, _gradient, instance->cudaH12x12, instance->cudaH9x9, instance->cudaH6x6, instance->cudaD4Index, instance->cudaD3Index, instance->cudaD2Index, instance->cudaCPNum, instance->cudaMatIndex, instance->dHat, mKappa, numbers);
+    _calBarrierGradientAndHessian <<<blockNum, threadNum>>> (_vertexes, _rest_vertexes, _collisionPair, _gradient, H12x12, H9x9, H6x6, D4Index, D3Index, D2Index, _cpNum, matIndex, dHat, Kappa, numbers);
 }
+
+
 
 void calFrictionGradient(double3* _gradient, std::unique_ptr<GeometryManager>& instance) {
     int numbers = instance->cpNumLast[0];

@@ -7,6 +7,9 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Core>
+
 #include "MathUtils.hpp"
 
 const static int default_threads = 256;
@@ -60,8 +63,17 @@ static void CUDAFreeSafe(T*& cudaData) {
 template <typename T>
 void CUDAMallocSafe(T*& cudaData, int size) {
     CUDA_SAFE_CALL(cudaMalloc((void**)&cudaData, size * sizeof(T)));
+    CUDA_SAFE_CALL(cudaMemset(cudaData, 0, size * sizeof(T)));
 }
 
+
+
+
+template <typename CudaType>
+static void CUDAMemcpyHToDSafe(CudaType* dstCudaData, const std::vector<CudaType>& srcVectorData) {
+    size_t dataSize = srcVectorData.size();
+    CUDA_SAFE_CALL(cudaMemcpy(dstCudaData, srcVectorData.data(), dataSize * sizeof(CudaType), cudaMemcpyHostToDevice));
+}
 
 template <typename EigenType, typename CudaType>
 static void CUDAMemcpyHToDSafe(CudaType* dstCudaData, const EigenType& srcEigenData) {
@@ -156,3 +168,81 @@ static void CUDAMemcpyDToHSafe(EigenType& dstEigenData, const CudaType* srcCudaD
         }
     }
 }
+
+
+template <typename CudaType>
+static void CUDAMemcpyDToHSafe(std::vector<CudaType>& dstVectorData, const CudaType* srcCudaData) {
+    size_t dataSize = dstVectorData.size();
+    std::vector<CudaType> temp(dataSize);
+    CUDA_SAFE_CALL(cudaMemcpy(temp.data(), srcCudaData, dataSize * sizeof(CudaType), cudaMemcpyDeviceToHost));
+    for (size_t i = 0; i < dataSize; ++i) {
+        dstVectorData[i] = temp[i];
+    }
+}
+
+
+template <typename VectorType>
+double debug_accumulate_vector_elements(const std::vector<VectorType>& data) {
+    double sum = 0.0;
+    size_t dataSize = data.size();
+    for (size_t i = 0; i < dataSize; ++i) {
+        if constexpr (std::is_same_v<VectorType, double> ||
+                      std::is_same_v<VectorType, int> ||
+                      std::is_same_v<VectorType, uint32_t>) {
+            sum += data[i];
+        } else if constexpr (std::is_same_v<VectorType, double2>) {
+            sum += data[i].x + data[i].y;
+        } else if constexpr (std::is_same_v<VectorType, double3>) {
+            sum += data[i].x + data[i].y + data[i].z;
+        } else if constexpr (std::is_same_v<VectorType, double4>) {
+            sum += data[i].x + data[i].y + data[i].z + data[i].w;
+        } else if constexpr (std::is_same_v<VectorType, int2>) {
+            sum += data[i].x + data[i].y;
+        } else if constexpr (std::is_same_v<VectorType, int3>) {
+            sum += data[i].x + data[i].y + data[i].z;
+        } else if constexpr (std::is_same_v<VectorType, int4>) {
+            sum += data[i].x + data[i].y + data[i].z + data[i].w;
+        } else if constexpr (std::is_same_v<VectorType, uint2>) {
+            sum += data[i].x + data[i].y;
+        } else if constexpr (std::is_same_v<VectorType, uint3>) {
+            sum += data[i].x + data[i].y + data[i].z;
+        } else if constexpr (std::is_same_v<VectorType, uint4>) {
+            sum += data[i].x + data[i].y + data[i].z + data[i].w;
+        } else {
+            std::cerr << "\033[1;31mUnsupported vector data type in debug_accumulate_vector_elements\033[0m" << std::endl;
+            return 0.0;
+        }
+    }
+
+    return sum;
+}
+
+
+template <typename EigenType>
+double debug_accumulate_eigen_elements(const EigenType& data) {
+    double sum = 0.0;
+    size_t dataSize = data.rows();
+    for (size_t i = 0; i < dataSize; ++i) {
+        if constexpr (std::is_same_v<typename EigenType::Scalar, double> ||
+                      std::is_same_v<typename EigenType::Scalar, int> ||
+                      std::is_same_v<typename EigenType::Scalar, uint32_t>) {
+            if (data.cols() == 1) {
+                sum += data(i);
+            } else if (data.cols() == 2) {
+                sum += data(i, 0) + data(i, 1);
+            } else if (data.cols() == 3) {
+                sum += data(i, 0) + data(i, 1) + data(i, 2);
+            } else if (data.cols() == 4) {
+                sum += data(i, 0) + data(i, 1) + data(i, 2) + data(i, 3);
+            } else {
+                std::cerr << "\033[1;31mUnsupported number of columns in Eigen matrix in debug_accumulate_eigen_elements\033[0m" << std::endl;
+                return 0.0;
+            }
+        } else {
+            std::cerr << "\033[1;31mUnsupported Eigen data type in debug_accumulate_eigen_elements\033[0m" << std::endl;
+            return 0.0;
+        }
+    }
+    return sum;
+}
+

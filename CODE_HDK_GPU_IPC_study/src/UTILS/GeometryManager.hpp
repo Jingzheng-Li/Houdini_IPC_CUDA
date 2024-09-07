@@ -87,7 +87,6 @@ public:
     uint2* cudaSurfEdge;
 
     Eigen::MatrixX3i triElement; // numTris * 3
-    // std::vector<uint3> vectriElement;
     uint3* cudaTriElement;
     Eigen::MatrixX2i triEdges; // only work for cloth bending
     uint2* cudaTriEdges;

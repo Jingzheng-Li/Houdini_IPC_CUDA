@@ -92,10 +92,6 @@ void GAS_CUDA_Intergrator::gas_IPC_Solver() {
 }
 
 
-double3 add_double3(const double3& a, const double3& b) {
-    return make_double3(a.x + b.x, a.y + b.y, a.z + b.z);
-}
-
 void GAS_CUDA_Intergrator::debugPrint() {
     auto &instance = GeometryManager::instance;
 
@@ -152,15 +148,6 @@ void GAS_CUDA_Intergrator::debugPrint() {
     // std::cout << "numSoftConstraints: " << instance->numSoftConstraints << std::endl;
 
 
-
-
-    // std::vector<double3> new_originvertpos(instance->numVertices);
-    // CUDA_SAFE_CALL(cudaMemcpy(new_originvertpos.data(), instance->cudaOriginVertPos, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToHost));
-    // double3 sum_originvertpos = std::accumulate(new_originvertpos.begin(), new_originvertpos.end(), make_double3(0.0, 0.0, 0.0), add_double3);
-    // std::cout << "sum_originvertpos! " << sum_originvertpos.x << " " << sum_originvertpos.y << " " << sum_originvertpos.z << std::endl;
-    // for (auto& overtpos : new_originvertpos) {
-    //     std::cout << overtpos.x << " " << overtpos.y << " " << overtpos.z << std::endl;
-    // }
 
 
 

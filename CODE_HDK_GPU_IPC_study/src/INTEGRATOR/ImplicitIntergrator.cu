@@ -16,10 +16,157 @@
 #define MAKEPD2
 #define OLDBARRIER2
 
-#include <numeric>
-double3 add_double3_gipc(const double3& a, const double3& b) {
-    return make_double3(a.x + b.x, a.y + b.y, a.z + b.z);
+
+
+void ImplicitIntegrator::debug_print_Hessian_val(std::unique_ptr<GeometryManager>& instance) {
+
+    int numH3x3 = 2 * instance->numSurfVerts;
+    int numH6x6 = 2 * (instance->numSurfVerts + instance->numSurfEdges);
+    int numH9x9 = 2 * (instance->numSurfEdges + instance->numSurfVerts) + instance->numTriElements;
+    int numH12x12 = 2 * (instance->numSurfVerts + instance->numSurfEdges) + instance->numTetElements + instance->numTriEdges;
+    
+
+    // 定义和复制 H3x3
+    std::vector<MATHUTILS::Matrix3x3d> new_H3x3(numH3x3);
+    CUDA_SAFE_CALL(cudaMemcpy(new_H3x3.data(), instance->cudaH3x3, numH3x3 * sizeof(MATHUTILS::Matrix3x3d), cudaMemcpyDeviceToHost));
+
+    // 定义和复制 H6x6
+    std::vector<MATHUTILS::Matrix6x6d> new_H6x6(numH6x6);
+    CUDA_SAFE_CALL(cudaMemcpy(new_H6x6.data(), instance->cudaH6x6, numH6x6 * sizeof(MATHUTILS::Matrix6x6d), cudaMemcpyDeviceToHost));
+
+    // 定义和复制 H9x9
+    std::vector<MATHUTILS::Matrix9x9d> new_H9x9(numH9x9);
+    CUDA_SAFE_CALL(cudaMemcpy(new_H9x9.data(), instance->cudaH9x9, numH9x9 * sizeof(MATHUTILS::Matrix9x9d), cudaMemcpyDeviceToHost));
+
+    // 定义和复制 H12x12
+    std::vector<MATHUTILS::Matrix12x12d> new_H12x12(numH12x12);
+    CUDA_SAFE_CALL(cudaMemcpy(new_H12x12.data(), instance->cudaH12x12, numH12x12 * sizeof(MATHUTILS::Matrix12x12d), cudaMemcpyDeviceToHost));
+
+    // 初始化累加矩阵和结果变量
+    MATHUTILS::Matrix3x3d sum_totalH3x3;
+    MATHUTILS::Matrix6x6d sum_totalH6x6;
+    MATHUTILS::Matrix9x9d sum_totalH9x9;
+    MATHUTILS::Matrix12x12d sum_totalH12x12;
+    double sum_totalH3x3_val = 0.0, sum_totalH6x6_val = 0.0, sum_totalH9x9_val = 0.0, sum_totalH12x12_val = 0.0;
+
+    // 初始化 H3x3, H6x6, H9x9, H12x12 的累加矩阵
+    for (int row = 0; row < 3; ++row)
+        for (int col = 0; col < 3; ++col)
+            sum_totalH3x3.m[row][col] = 0.0;
+
+    for (int row = 0; row < 6; ++row)
+        for (int col = 0; col < 6; ++col)
+            sum_totalH6x6.m[row][col] = 0.0;
+
+    for (int row = 0; row < 9; ++row)
+        for (int col = 0; col < 9; ++col)
+            sum_totalH9x9.m[row][col] = 0.0;
+
+    for (int row = 0; row < 12; ++row)
+        for (int col = 0; col < 12; ++col)
+            sum_totalH12x12.m[row][col] = 0.0;
+
+    // 累加 H3x3
+    for (int i = 0; i < numH3x3; ++i) {
+        for (int row = 0; row < 3; ++row) {
+            for (int col = 0; col < 3; ++col) {
+                sum_totalH3x3.m[row][col] += new_H3x3[i].m[row][col];
+            }
+        }
+    }
+
+    // 累加 H6x6
+    for (int i = 0; i < numH6x6; ++i) {
+        for (int row = 0; row < 6; ++row) {
+            for (int col = 0; col < 6; ++col) {
+                sum_totalH6x6.m[row][col] += new_H6x6[i].m[row][col];
+            }
+        }
+    }
+
+    // 累加 H9x9
+    for (int i = 0; i < numH9x9; ++i) {
+        for (int row = 0; row < 9; ++row) {
+            for (int col = 0; col < 9; ++col) {
+                sum_totalH9x9.m[row][col] += new_H9x9[i].m[row][col];
+            }
+        }
+    }
+
+    // 累加 H12x12
+    for (int i = 0; i < numH12x12; ++i) {
+        for (int row = 0; row < 12; ++row) {
+            for (int col = 0; col < 12; ++col) {
+                sum_totalH12x12.m[row][col] += new_H12x12[i].m[row][col];
+            }
+        }
+    }
+
+    // 将每个矩阵的元素累加为总和
+    for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 3; ++col) {
+            sum_totalH3x3_val += sum_totalH3x3.m[row][col];
+        }
+    }
+    for (int row = 0; row < 6; ++row) {
+        for (int col = 0; col < 6; ++col) {
+            sum_totalH6x6_val += sum_totalH6x6.m[row][col];
+        }
+    }
+    for (int row = 0; row < 9; ++row) {
+        for (int col = 0; col < 9; ++col) {
+            sum_totalH9x9_val += sum_totalH9x9.m[row][col];
+        }
+    }
+    for (int row = 0; row < 12; ++row) {
+        for (int col = 0; col < 12; ++col) {
+            sum_totalH12x12_val += sum_totalH12x12.m[row][col];
+        }
+    }
+
+    // 打印结果
+    std::cout << " " << std::endl;
+    std::cout << "Total H3x3 sum: " << sum_totalH3x3_val << std::endl;
+    std::cout << "Total H6x6 sum: " << sum_totalH6x6_val << std::endl;
+    std::cout << "Total H9x9 sum: " << sum_totalH9x9_val << std::endl;
+    std::cout << "Total H12x12 sum: " << sum_totalH12x12_val << std::endl;
+    std::cout << " " << std::endl;
+
+
+    std::vector<uint32_t> debug_d1index(numH3x3);
+    std::vector<uint2> debug_d2index(numH6x6);
+    std::vector<uint3> debug_d3index(numH9x9);
+    std::vector<uint4> debug_d4index(numH12x12);
+    CUDAMemcpyDToHSafe(debug_d1index, instance->cudaD1Index);
+    CUDAMemcpyDToHSafe(debug_d2index, instance->cudaD2Index);
+    CUDAMemcpyDToHSafe(debug_d3index, instance->cudaD3Index);
+    CUDAMemcpyDToHSafe(debug_d4index, instance->cudaD4Index);
+    double sum_debug_d1index = debug_accumulate_vector_elements(debug_d1index);
+    double sum_debug_d2index = debug_accumulate_vector_elements(debug_d2index);
+    double sum_debug_d3index = debug_accumulate_vector_elements(debug_d3index);
+    double sum_debug_d4index = debug_accumulate_vector_elements(debug_d4index);
+    std::cout << "total d1index sum: " << sum_debug_d1index << std::endl;
+    std::cout << "total d2index sum: " << sum_debug_d2index << std::endl;
+    std::cout << "total d3index sum: " << sum_debug_d3index << std::endl;
+    std::cout << "total d4index sum: " << sum_debug_d4index << std::endl;
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ImplicitIntegrator::ImplicitIntegrator(std::unique_ptr<GeometryManager>& instance) 
     : m_instance(instance),
@@ -1473,11 +1620,76 @@ void ImplicitIntegrator::computeGradientAndHessian(std::unique_ptr<GeometryManag
 
     CUDA_SAFE_CALL(cudaMemset(instance->cudaCPNum, 0, 5 * sizeof(uint32_t)));
 
-    // calculate barrier gradient and Hessian
+
+
+    debug_print_Hessian_val(instance);
+
+
+    std::vector<double3> debug_vertpos(instance->numVertices);
+    CUDAMemcpyDToHSafe(debug_vertpos, instance->cudaVertPos);
+    double debug_vertpos_val = debug_accumulate_vector_elements(debug_vertpos);
+    std::cout << "debug_vertpos_val: " << debug_vertpos_val << std::endl;
+    
+    std::vector<double3> debug_restvertpos(instance->numVertices);
+    CUDAMemcpyDToHSafe(debug_restvertpos, instance->cudaRestVertPos);
+    double debug_restvertpos_val = debug_accumulate_vector_elements(debug_restvertpos);
+    std::cout << "debug_restvertpos_val: " << debug_restvertpos_val << std::endl;
+
+    std::vector<int4> debug_collisionpairs(instance->MAX_COLLITION_PAIRS_NUM);
+    CUDAMemcpyDToHSafe(debug_collisionpairs, instance->cudaCollisionPairs);
+    double debug_collisionpairs_val = debug_accumulate_vector_elements(debug_collisionpairs);
+    std::cout << "debug_collisionpairs_val: " << debug_collisionpairs_val << std::endl;
+
+    std::vector<double3> debug_fb(instance->numVertices);
+    CUDAMemcpyDToHSafe(debug_fb, instance->cudaFb);
+    double debug_fb_val = debug_accumulate_vector_elements(debug_fb);
+    std::cout << "debug_fb_val: " << debug_fb_val << std::endl;
+
+    std::vector<uint32_t> debug_cpnum(5);
+    CUDAMemcpyDToHSafe(debug_cpnum, instance->cudaCPNum);
+    double debug_cpnum_val = debug_accumulate_vector_elements(debug_cpnum);
+    std::cout << "debug_cpnum_val: " << debug_cpnum_val << std::endl;
+
+    std::vector<int> debug_matindex(instance->MAX_COLLITION_PAIRS_NUM);
+    CUDAMemcpyDToHSafe(debug_matindex, instance->cudaMatIndex);
+    double debug_matindex_val = debug_accumulate_vector_elements(debug_matindex);
+    std::cout << "debug_matindex_val: " << debug_matindex_val << std::endl;
+
+    std::cout << "dHat: " << instance->dHat << std::endl;
+    std::cout << "Kappa: " << instance->Kappa << std::endl;
+    std::cout << "cPnum: " << instance->cpNum[0] << " " 
+                            << instance->cpNum[1] << " "
+                            << instance->cpNum[2] << " "
+                            << instance->cpNum[3] << " "
+                            << instance->cpNum[4] << std::endl;
+
+
+
     GPUIPC::calBarrierGradientAndHessian(
-        instance,
+        instance->cudaVertPos, 
+        instance->cudaRestVertPos, 
+        instance->cudaCollisionPairs, 
         instance->cudaFb, 
-        m_instance->Kappa);
+        instance->cudaH12x12, 
+        instance->cudaH9x9, 
+        instance->cudaH6x6, 
+        instance->cudaD4Index, 
+        instance->cudaD3Index, 
+        instance->cudaD2Index, 
+        instance->cudaCPNum, 
+        instance->cudaMatIndex, 
+        instance->dHat,
+        instance->Kappa,
+        instance->cpNum
+    );
+
+
+
+
+    // debug_print_Hessian_val(instance);
+
+
+
 
 #ifdef USE_FRICTION
     GPUIPC::calFrictionGradient(instance->cudaFb, instance);
@@ -1970,15 +2182,35 @@ int ImplicitIntegrator::solve_subIP(std::unique_ptr<GeometryManager>& instance) 
         computeGradientAndHessian(instance);
 
 
-        std::vector<double3> new_fb(10);
-        CUDA_SAFE_CALL(cudaMemcpy(new_fb.data(), instance->cudaFb, 10 * sizeof(double3), cudaMemcpyDeviceToHost));
-        for (auto &v : new_fb) {
-            std::cout << "new_fb: " << v.x << " " << v.y << " " << v.z << std::endl;
-        }
-        std::vector<double3> new_totalfb(instance->numVertices);
-        CUDA_SAFE_CALL(cudaMemcpy(new_totalfb.data(), instance->cudaFb, instance->numVertices * sizeof(double3), cudaMemcpyDeviceToHost));
-        double3 sum_totalfb = std::accumulate(new_totalfb.begin(), new_totalfb.end(), make_double3(0.0, 0.0, 0.0), add_double3_gipc);
-        std::cout << "sum_totalfb: " << sum_totalfb.x << " " << sum_totalfb.y << " " << sum_totalfb.z << std::endl;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // debug_print_Hessian_val(m_instance);
+
+
 
 
 

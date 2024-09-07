@@ -45,9 +45,14 @@ public:
     double2 minMaxGroundDist();
 	double2 minMaxSelfDist();
 
-
-
     void updateDNum(const int& tri_Num, const int& tet_number, const uint32_t* cpNums, const uint32_t* last_cpNums, const int& tri_edge_number);
+
+
+
+    void debug_print_Hessian_val(std::unique_ptr<GeometryManager>& instance);
+
+
+
 
 public:
     std::unique_ptr<GeometryManager>& m_instance;
