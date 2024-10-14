@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/OpenCL_CUDA_Transpose_code/build",
-  "command": "/usr/bin/c++ -DAMD64 -DENABLE_THREADS -DFBX_ENABLED=1 -DHDK_DOP_gasopencl_cuda_EXPORTS -DLINUX -DMAKING_DSO -DOPENCL_ENABLED=1 -DOPENVDB_ENABLED=1 -DSESI_LITTLE_ENDIAN -DSIZEOF_VOID_P=8 -DUSE_PTHREADS -DUSE_PYTHON3=1 -DUT_ASSERT_LEVEL=2 -DVERSION=\\\"19.5.493\\\" -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_REENTRANT -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS=1 -I/usr/include/eigen3 -I/usr/local/cuda/include -isystem /opt/hfs19.5/toolkit/include -isystem /opt/hfs19.5/toolkit/include/python3.9 -g -fPIC -fPIC -std=c++17 -W -Wall -Wno-parentheses -Wno-reorder -Wno-sign-compare -Wno-uninitialized -Wno-unused-parameter -Wunused -Wdeprecated-declarations -Wno-deprecated -D_GLIBCXX_USE_CXX11_ABI=0 -fno-strict-aliasing -Wno-unused-local-typedefs -o CMakeFiles/HDK_DOP_gasopencl_cuda.dir/main_test.cpp.o -c /home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/OpenCL_CUDA_Transpose_code/main_test.cpp",
-  "file": "/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/OpenCL_CUDA_Transpose_code/main_test.cpp"
-}
-]

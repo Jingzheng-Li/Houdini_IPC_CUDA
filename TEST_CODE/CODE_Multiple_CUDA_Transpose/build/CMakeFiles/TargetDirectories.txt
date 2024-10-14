@@ -1,5 +1,0 @@
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/Multiple_CUDA_Transpose_code/build/CMakeFiles/edit_cache.dir
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/Multiple_CUDA_Transpose_code/build/CMakeFiles/rebuild_cache.dir
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/Multiple_CUDA_Transpose_code/build/src/CMakeFiles/HDK_DOP_Multiple.dir
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/Multiple_CUDA_Transpose_code/build/src/CMakeFiles/edit_cache.dir
-/home/jingzheng/Public/Study/HoudiniLearn/Houdini_HDK_CUDA/Multiple_CUDA_Transpose_code/build/src/CMakeFiles/rebuild_cache.dir

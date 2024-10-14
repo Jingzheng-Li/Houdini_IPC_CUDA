@@ -1,0 +1,98 @@
+maxConer: 0.789383  1.713159   0.271813           minCorner: -0.801350  0.021975   -0.202274
+restSNKE: 0.000000
+cg counts = 3
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+cg counts = 9
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+cg counts = 16
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+cg counts = 24
+alpha before linesearch: 1
+alpha after linesearch: 0.602418998587182952
+alpha after postlinesearch: 0.602418998587182952
+
+
+      Kappa: 5.069622                               iteration k:  4
+
+
+average time cost:     34.238720,    frame id:   1
+boundary alpha: 1.000000
+  finished a step
+sumpos, sumvel: 20003.4810220183208 -138.105216021718036
+
+
+ 
+Status: Using GLEW 2.2.0
+triBendEdges_temp size: 17762
+triBendVerts temp size: 17762
+filename in loadmesh: /home/jingzheng/Work/CppRef/GPU_IPC_REF/GPU_IPC_Ref_V7/Assets/tshirt/Tshirt_total.obj
+triedges size: 17762
+triBendVerts size: 17762
+filename in loadmesh: /home/jingzheng/Work/CppRef/GPU_IPC_REF/GPU_IPC_Ref_V7/Assets/tshirt/body_1.obj
+triedges size: 17762
+triBendVerts size: 17762
+tribendedge: 17762
+tribendface: 17762
+cg counts = 3
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+cg counts = 9
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+cg counts = 17
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+cg counts = 22
+alpha before linesearch: 1
+alpha after linesearch: 0.648503367423212129
+alpha after postlinesearch: 0.648503367423212129
+
+
+      Kappa: 5.069622                               iteration k:  4
+
+
+average time cost:     24.648647,    frame id:   1 (大提速了！！！)
+boundary alpha: 1.000000
+  finished a step
+sumpos, sumvel: 20003.5132648897743 -134.88092901569334
+deconstruct GeometryManager
+~GeometryManager freeGeometryManager
+
+
+
+
+
+
+
+MASPreconditioner:
+
+axConer: 0.789383  1.713159   0.271813           minCorner: -0.801350  0.021975   -0.202274
+restSNKE: 0.000000
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+alpha before linesearch: 1
+alpha after linesearch: 0.599999999999999978
+alpha after postlinesearch: 0.599999999999999978
+alpha before linesearch: 1
+alpha after linesearch: 0.657905329308858033
+alpha after postlinesearch: 0.657905329308858033
+
+
+      Kappa: 5.069622                               iteration k:  3
+
+
+average time cost:     84.383062,    frame id:   1
+boundary alpha: 1.000000
+  finished a step
+sumpos, sumvel: 20001.9048759811303 -295.719482495866316
+
